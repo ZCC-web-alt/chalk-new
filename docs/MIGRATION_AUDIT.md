@@ -45,5 +45,5 @@ These are not missing buttons in the user Web application:
 - Next.js production build and ESLint.
 - Playwright desktop and mobile workflows, including the final search, lab and evidence handoffs.
 - Dependency audit.
-- Legacy regression suite, with pre-existing failures reported separately.
-
+- Legacy regression suite, with every source test mapped in
+  [Legacy Test Migration Audit](LEGACY_TEST_MIGRATION.md).

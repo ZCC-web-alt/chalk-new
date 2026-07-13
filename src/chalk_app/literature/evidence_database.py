@@ -35,6 +35,7 @@ REACTION_ADSORBATE_MAP: Dict[str, List[str]] = {
     "OER": ["*O", "*OH", "*OOH"],
     "ORR": ["*O", "*OH", "*OOH"],
     "HER": ["*H"],
+    "HOR": ["*H"],
     "CO2RR": ["*CO2", "*COOH", "*CO", "*OCHO"],
     "NRR": ["*N2", "*NNH", "*N", "*NH", "*NH2", "*NH3"],
 }
@@ -1603,7 +1604,7 @@ def evidence_search_bundle_to_dict(bundle: EvidenceSearchBundle) -> Dict[str, An
 def extract_query_facets(text: str, domain: str = "") -> Dict[str, str]:
     """Best-effort facet extraction for database lookup."""
     lower = str(text or "").lower()
-    reaction = _first_token_match(lower, ["HER", "OER", "ORR", "CO2RR", "NRR"])
+    reaction = _first_token_match(lower, ["HER", "HOR", "OER", "ORR", "CO2RR", "NRR"])
     ion = _first_ion_match(lower)
     battery_type = ""
     for candidate in ["lithium-ion", "sodium-ion", "potassium-ion", "zinc-ion", "solid-state"]:
@@ -1876,7 +1877,7 @@ def _normalize_manifest_key(key: Any) -> str:
 
 def _normalize_reaction_label(value: str) -> str:
     upper = str(value or "").strip().upper()
-    for reaction in ["OER", "ORR", "HER", "CO2RR", "NRR"]:
+    for reaction in ["OER", "ORR", "HER", "HOR", "CO2RR", "NRR"]:
         if reaction in upper:
             return reaction
     return _clean(value)
@@ -2506,7 +2507,7 @@ def _extract_material_hint(text: str) -> str:
     ]
     ignored = {
         "DOI", "PDF", "HTML", "XRD", "SEM", "TEM", "XPS", "EIS", "CV",
-        "HER", "OER", "ORR", "NRR", "CO2RR", "FE", "CE",
+        "HER", "HOR", "OER", "ORR", "NRR", "CO2RR", "FE", "CE",
         "O", "OH", "OOH", "H", "CO", "CO2", "COOH", "OCHO", "N2", "N", "NH", "NH2",
         "OCP", "OC20", "OC22", "OC25", "ODAC23", "ADSORBML",
     }
