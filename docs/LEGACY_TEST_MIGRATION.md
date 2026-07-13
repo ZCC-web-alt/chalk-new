@@ -15,7 +15,7 @@ The migrated suite runs with:
 python -m pytest tests/legacy -q
 ```
 
-Current result: 88 tests. This includes 86 applicable source tests plus two
+Current result: 91 tests. This includes 89 applicable source tests plus two
 additional NRR normalization regressions added during M0.
 
 ## Source File Disposition
@@ -23,7 +23,7 @@ additional NRR normalization regressions added during M0.
 | Source test | Source tests | Disposition | Web coverage |
 | --- | ---: | --- | --- |
 | `test_atomate2_dryrun.py` | 3 | Excluded | Heavy atomate2 integration explicitly deferred by the M0 plan. Web modeling remains dry-run and is covered by backend job/artifact tests. |
-| `test_docling_and_evidence_rag.py` | 5 | Excluded | Heavy Docling integration explicitly deferred; the file also imports desktop worker/UI surfaces. |
+| `test_docling_and_evidence_rag.py` | 5 | Partially migrated: 3 | Markdown block parsing, typed chunking, and evidence-context formatting are in `tests/legacy/test_docling_and_evidence_rag.py`; the desktop worker/UI tests are excluded. |
 | `test_document_image_extractor.py` | 3 | Migrated | `tests/legacy/test_document_image_extractor.py` |
 | `test_domain_hypothesis_prompts.py` | 9 | Migrated | `tests/legacy/test_domain_hypothesis_prompts.py` |
 | `test_evidence_database.py` | 17 | Migrated | `tests/legacy/test_evidence_database.py` |
