@@ -62,8 +62,10 @@ def _generation_prompt(question: str) -> str:
         "Generate a research-v1 JSON object for the scientific question below. "
         "Return JSON only, with exactly H1, H2, H3 and null hypothesis H0. "
         "Use profile general_science. This transport canary has no retrieved evidence: "
-        "do not invent citations; mark missing evidence explicitly and use source references "
-        "such as unavailable:canary-no-evidence. Provide an executable, falsifiable plan.\n\n"
+        "do not invent citations. Create evidenceClaims with IDs such as E1. "
+        "supportingEvidenceRefs must contain only evidenceClaims IDs; for example, a "
+        "hypothesis may reference E1. sourceRefs may use unavailable:canary-no-evidence "
+        "to mark missing retrieved evidence. Provide an executable, falsifiable plan.\n\n"
         f"QUESTION:\n{question}\n\nJSON SCHEMA:\n{_contract_schema_text()}"
     )
 
@@ -72,6 +74,8 @@ def _repair_prompt(question: str, raw_output: str, validation_error: Exception) 
     return (
         "Repair the candidate response into a valid research-v1 JSON object. Return JSON only. "
         "Keep exactly H1, H2, H3 and H0, use general_science, and do not invent citations.\n\n"
+        "Keep unavailable:canary-no-evidence only in evidenceClaims.sourceRefs. "
+        "supportingEvidenceRefs must contain only IDs defined in evidenceClaims, such as E1.\n\n"
         f"QUESTION:\n{question}\n\nVALIDATION ERROR:\n{validation_error}\n\n"
         f"CANDIDATE RESPONSE:\n{raw_output}\n\nJSON SCHEMA:\n{_contract_schema_text()}"
     )

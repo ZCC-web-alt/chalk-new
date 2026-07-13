@@ -33,6 +33,15 @@ class ScienceCanaryTestCase(unittest.TestCase):
 
         self.assertEqual(parse_model_json('```json\n{"ok":true}\n```'), {"ok": True})
 
+    def test_generation_prompt_separates_claim_ids_from_source_placeholders(self) -> None:
+        from app.services.science_canary import _generation_prompt
+
+        prompt = _generation_prompt("How can interfaces be measured?")
+
+        self.assertIn("supportingEvidenceRefs must contain only evidenceClaims IDs", prompt)
+        self.assertIn("sourceRefs may use unavailable:canary-no-evidence", prompt)
+        self.assertIn("hypothesis may reference E1", prompt)
+
     def test_repairs_invalid_first_output_and_writes_raw_and_validated_artifacts(self) -> None:
         from app.services.science_canary import run_canary_item
         from chalk_app.core.llm_client import LLMBudget, LLMConfig

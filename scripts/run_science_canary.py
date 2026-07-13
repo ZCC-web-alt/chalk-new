@@ -54,7 +54,7 @@ def main() -> int:
     parser.add_argument("--summary-path", type=Path, required=True)
     parser.add_argument("--ledger-path", type=Path, default=PROJECT_ROOT / "data" / "web.db")
     parser.add_argument("--model", default="qwen3.7-max")
-    parser.add_argument("--max-total-tokens", type=int, default=60_000)
+    parser.add_argument("--max-total-tokens", type=int, default=120_000)
     parser.add_argument(
         "--max-estimated-cost-cny",
         type=float,
