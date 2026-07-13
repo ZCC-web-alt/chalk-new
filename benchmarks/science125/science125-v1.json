@@ -1,0 +1,1300 @@
+{
+  "manifestVersion": "science125-v1",
+  "title": "125 Questions: Exploration and Discovery",
+  "source": {
+    "publisher": "Science/AAAS Custom Publishing Office",
+    "sponsor": "Shanghai Jiao Tong University",
+    "publicationDate": "2021-05-14",
+    "sourceVersion": "2021-05-14",
+    "sourcePdfFilename": "sjtu-booklet.pdf",
+    "sourcePdfSha256": "4bda50e8e3c90f8968f1bfd72ded4d9587ae80cd40ba66656a12c93abcf8e576"
+  },
+  "canonicalization": {
+    "version": "unicode-nfc-collapse-whitespace-v1",
+    "itemContentSha256": "SHA-256 of the UTF-8 canonical question text",
+    "manifestContentSha256": "SHA-256 of NFC canonical JSON with sorted keys and this field omitted"
+  },
+  "orderingPolicy": "Ascending PDF page, then visual text-frame reading order within each source section",
+  "sourceCategoryCounts": {
+    "Mathematical Sciences": 3,
+    "Chemistry": 9,
+    "Medicine & Health": 11,
+    "Biology": 22,
+    "Astronomy": 23,
+    "Physics": 18,
+    "Engineering & Materials Science": 4,
+    "Information Science": 4,
+    "Neuroscience": 12,
+    "Ecology": 8,
+    "Energy Science": 3,
+    "Artificial Intelligence": 8
+  },
+  "benchmarkCategoryCounts": {
+    "Mathematical Sciences": 3,
+    "Chemistry": 9,
+    "Medicine & Health": 12,
+    "Biology": 21,
+    "Astronomy": 23,
+    "Physics": 18,
+    "Engineering & Materials Science": 4,
+    "Information Science": 4,
+    "Neuroscience": 12,
+    "Ecology": 8,
+    "Energy Science": 3,
+    "Artificial Intelligence": 8
+  },
+  "questions": [
+    {
+      "id": "S125-001",
+      "question": "What makes prime numbers so special?",
+      "sourceDomain": "Mathematical Sciences",
+      "benchmarkDomain": "Mathematical Sciences",
+      "pdfPage": 7,
+      "bookletPage": 5,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "e2e129974b6dc5679230b98bd2fd556c926066fd3c258534743cccd09a5129a3"
+    },
+    {
+      "id": "S125-002",
+      "question": "Is the Riemann hypothesis true?",
+      "sourceDomain": "Mathematical Sciences",
+      "benchmarkDomain": "Mathematical Sciences",
+      "pdfPage": 7,
+      "bookletPage": 5,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "cd3c7fe8193935cd3d5fafc389d18fdb4025b0e6b189050207887c281b1f830b"
+    },
+    {
+      "id": "S125-003",
+      "question": "Will the Navier–Stokes problem ever be solved?",
+      "sourceDomain": "Mathematical Sciences",
+      "benchmarkDomain": "Mathematical Sciences",
+      "pdfPage": 7,
+      "bookletPage": 5,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "bcd8953aafd0c759fcd13f33f3aaf7100be86a8b65f9883c7823c9c3c2aa318d"
+    },
+    {
+      "id": "S125-004",
+      "question": "Are there more color pigments to discover?",
+      "sourceDomain": "Chemistry",
+      "benchmarkDomain": "Chemistry",
+      "pdfPage": 7,
+      "bookletPage": 5,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "3ca659bb9d038072426f1b5f72cbac51f76449ffe396d958430e0907aa567d0a"
+    },
+    {
+      "id": "S125-005",
+      "question": "Will the periodic table ever be complete?",
+      "sourceDomain": "Chemistry",
+      "benchmarkDomain": "Chemistry",
+      "pdfPage": 7,
+      "bookletPage": 5,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "8daf45a9030a78c570cf07134a7e0e9f657977a717b87b886704986276c631bc"
+    },
+    {
+      "id": "S125-006",
+      "question": "How can we measure interface phenomena on the microscopic level?",
+      "sourceDomain": "Chemistry",
+      "benchmarkDomain": "Chemistry",
+      "pdfPage": 8,
+      "bookletPage": 6,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "f7fa79a574de557070efba72fad34e731c5f47c40b175c1249a0dda4d6b97ba3"
+    },
+    {
+      "id": "S125-007",
+      "question": "What is the future for energy storage?",
+      "sourceDomain": "Chemistry",
+      "benchmarkDomain": "Chemistry",
+      "pdfPage": 8,
+      "bookletPage": 6,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "7984811466a50331ddd2a93f88304b2df9abe016ee2645f9a919d1ec5643e2e0"
+    },
+    {
+      "id": "S125-008",
+      "question": "Why does life require chirality?",
+      "sourceDomain": "Chemistry",
+      "benchmarkDomain": "Chemistry",
+      "pdfPage": 9,
+      "bookletPage": 7,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "4ae1a7c7aa39585f61f2fd0516d46fcb78b927cc56e986640c019b6ff0e116a1"
+    },
+    {
+      "id": "S125-009",
+      "question": "How can we better manage the world’s plastic waste?",
+      "sourceDomain": "Chemistry",
+      "benchmarkDomain": "Chemistry",
+      "pdfPage": 9,
+      "bookletPage": 7,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "7e39b7a7538ab27d14e3249bde10410ed67a34d15e0f4ab880b825d62b568966"
+    },
+    {
+      "id": "S125-010",
+      "question": "Will AI redefine the future of chemistry?",
+      "sourceDomain": "Chemistry",
+      "benchmarkDomain": "Chemistry",
+      "pdfPage": 9,
+      "bookletPage": 7,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "4fc8924ee25299a5ffbdff4701b58c8abfe901b9512b4665c8341123be0e12d8"
+    },
+    {
+      "id": "S125-011",
+      "question": "How can matter be programmed into living materials?",
+      "sourceDomain": "Chemistry",
+      "benchmarkDomain": "Chemistry",
+      "pdfPage": 9,
+      "bookletPage": 7,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "4c1ecb62856b18c1c78691ffe40d071584599c9670f55aa2154ef8a96e0f7c1d"
+    },
+    {
+      "id": "S125-012",
+      "question": "What drives reproduction in living systems?",
+      "sourceDomain": "Chemistry",
+      "benchmarkDomain": "Chemistry",
+      "pdfPage": 9,
+      "bookletPage": 7,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "6ea915c4bbf73dedcbfef57f8167ed23660a5f11ab1b389f3b87d2e732903db2"
+    },
+    {
+      "id": "S125-013",
+      "question": "Can we predict the next pandemic?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 10,
+      "bookletPage": 8,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "179d2b2fbee6084ad7178f95261fed2747e263706d26ecf8ccb07e1266254b4b"
+    },
+    {
+      "id": "S125-014",
+      "question": "Will we ever find a cure for the common cold?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 10,
+      "bookletPage": 8,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "e94eaee40c9c8ce83e19cef4ca7e1de5d74f081aa58b0f50047be10218e8b0c7"
+    },
+    {
+      "id": "S125-015",
+      "question": "Can we design and manufacture medicines customized for individual people?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 10,
+      "bookletPage": 8,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "aa2d54d67f54a310884f745a9605d59dd092ed27cd3a4cbf8cf9cd64b8ad75c7"
+    },
+    {
+      "id": "S125-016",
+      "question": "Can a human tissue or organ be fully regenerated?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 11,
+      "bookletPage": 9,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "1bd8ce70b2053d64cf17c41e970137c8135f363a8df8f5754d4f0b34be3f22c2"
+    },
+    {
+      "id": "S125-017",
+      "question": "How is immune homeostasis maintained and regulated?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 11,
+      "bookletPage": 9,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "b9a28c37e83214d7c93258130100ce7f37fb73607e44ed048f1f8b2dd6b53f4b"
+    },
+    {
+      "id": "S125-018",
+      "question": "Is there a scientific basis to the Meridian System in traditional Chinese medicine?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 12,
+      "bookletPage": 10,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "5d27825be60ade7c31975c5a2d4db1ce87251c08052095e7d36264a30132b213"
+    },
+    {
+      "id": "S125-019",
+      "question": "How will the next generation of vaccines be made?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 12,
+      "bookletPage": 10,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "203c04eee3c67d623f28b15102d05b912e074629972b680e7de9ec928f903a9e"
+    },
+    {
+      "id": "S125-020",
+      "question": "What is the etiology of autism?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 12,
+      "bookletPage": 10,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "a5cb93196df12eb8b777ac6ff5f2f8362631112155b81723152b743ccbe86149"
+    },
+    {
+      "id": "S125-021",
+      "question": "Can we ever overcome antibiotic resistance?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 12,
+      "bookletPage": 10,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "fa7b7c45f2f6cddad7a69efdad152bbe22f24b2b5b7b168d8c37151181bb3253"
+    },
+    {
+      "id": "S125-022",
+      "question": "What role does our microbiome play in health and disease?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 13,
+      "bookletPage": 11,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "331baa57984a7afb046d6cdf2c9cee69d670300d3857562d1a36b4b32e45926d"
+    },
+    {
+      "id": "S125-023",
+      "question": "Can xenotransplantation solve the shortage of donor organs?",
+      "sourceDomain": "Medicine & Health",
+      "benchmarkDomain": "Medicine & Health",
+      "pdfPage": 13,
+      "bookletPage": 11,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "4db474badd09b1171a204c5bad85b166a44931c86c4be07d063b8c36592a404d"
+    },
+    {
+      "id": "S125-024",
+      "question": "What could help conservation of the oceans?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 13,
+      "bookletPage": 11,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "692b59e7cf4f19f2cccddb4509fba9751d57b00daf2982e9d0e2358e97d60aef"
+    },
+    {
+      "id": "S125-025",
+      "question": "Can we stop ourselves from aging?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Medicine & Health",
+      "classificationOverrideReason": "The competition benchmark taxonomy maps aging to Medicine & Health; the source booklet visually places it under Biology.",
+      "pdfPage": 13,
+      "bookletPage": 11,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "324ad48f7d877d8d6b331e7478e315a044bb36d3f3afab4ceeb40899e9a66400"
+    },
+    {
+      "id": "S125-026",
+      "question": "Why can only some cells become other cells?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 14,
+      "bookletPage": 12,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "b83f4e9b3c9900f1ddce2521643126007876d9de3e039c9f743bf319522c9480"
+    },
+    {
+      "id": "S125-027",
+      "question": "Why are some genomes so big and others very small?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 14,
+      "bookletPage": 12,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "9b6ad09eb51583e29cd15de9c194c2648aa4841360fb9609964f5ac513e9b3d1"
+    },
+    {
+      "id": "S125-028",
+      "question": "Will it be possible to cure all cancers?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 15,
+      "bookletPage": 13,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "c99f3abc1271b4bca5d6e9eff44fd9b36eded801404730c2e06ee0cdc4426ad8"
+    },
+    {
+      "id": "S125-029",
+      "question": "What genes make us uniquely human?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 15,
+      "bookletPage": 13,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "ec60ed96c7c252b0bc8e1eadf8f2fe6a71a667bd1416efa9961ad0fc8ddf68d7"
+    },
+    {
+      "id": "S125-030",
+      "question": "How do migratory animals know where they’re going?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 16,
+      "bookletPage": 14,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "62cd7de0c4c2054d837a491709f49b547f8975be01244c2a790cf847a1cdaa58"
+    },
+    {
+      "id": "S125-031",
+      "question": "Why did dinosaurs grow to be so big?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 16,
+      "bookletPage": 14,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "8f00a481fd9a9faefd984bfc538b38c049fe07d7ea4c823453f47243443124c1"
+    },
+    {
+      "id": "S125-032",
+      "question": "How many species are there on Earth?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 17,
+      "bookletPage": 15,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "a1d527fba6c62507cccff43be2f327ec1d304966c9b27ff266b46d9fa76d83d0"
+    },
+    {
+      "id": "S125-033",
+      "question": "How do organisms evolve?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 17,
+      "bookletPage": 15,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "90ebd72013b3997376e3d79bd5e7a25924fa944d574219b9b8ba839ef7bb74ed"
+    },
+    {
+      "id": "S125-034",
+      "question": "Is de-extinction possible?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 17,
+      "bookletPage": 15,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "f5276a467387b1f6ce7239e6c91bf46e08178d0727d26b435f3d71f57326c935"
+    },
+    {
+      "id": "S125-035",
+      "question": "Did ancient humans interbreed with other human-like ancestors?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 17,
+      "bookletPage": 15,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "de7c1f59d25d25d8383d16c68f139917dde79c4ee2a677612cf1f367544db4a4"
+    },
+    {
+      "id": "S125-036",
+      "question": "Why do humans get so attached to dogs and cats?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 17,
+      "bookletPage": 15,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "898f817464d08a8d8a0a3fb8e64f202289f6791b399d3fa015b20368e632c8d1"
+    },
+    {
+      "id": "S125-037",
+      "question": "Where do human emotions originate?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 18,
+      "bookletPage": 16,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "aca3e7e2ec421343c25d802cf78536d74d76ea7462e9560259d4089e9d84f6b8"
+    },
+    {
+      "id": "S125-038",
+      "question": "Will the world’s population keep growing indefinitely?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 18,
+      "bookletPage": 16,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "ffebdd8648bff340d9bf60b183a33111a06ece626843dc75bbabada940fb1e9f"
+    },
+    {
+      "id": "S125-039",
+      "question": "Why do we stop growing?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 18,
+      "bookletPage": 16,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "2296ee8cfb4010f80b0340c5f0d0f1591244736bb25e68bf119599aa10e38676"
+    },
+    {
+      "id": "S125-040",
+      "question": "Can humans hibernate?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 18,
+      "bookletPage": 16,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "f0c2eeaa0a2465f1f02f5b54878dbae06645e275edce7bf57050bb75dacc4f5b"
+    },
+    {
+      "id": "S125-041",
+      "question": "Will humans look physically different in the future?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 18,
+      "bookletPage": 16,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "14397b6322dfffe5f48c0254c4b84ccf18edd655e28bf0bebf38912c57b29fbe"
+    },
+    {
+      "id": "S125-042",
+      "question": "Why were there species explosions and mass extinctions?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 19,
+      "bookletPage": 17,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "ea7c75d24e65ec51919a01aaf22e5d2741918f815e9d51a0f87ccaa955cd442e"
+    },
+    {
+      "id": "S125-043",
+      "question": "How might genome editing be used to cure disease?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 19,
+      "bookletPage": 17,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "95264264b81a10bba635eac6ab686b00e25b1bdf598e314590e76e0684e58a7e"
+    },
+    {
+      "id": "S125-044",
+      "question": "Can a cell be artificially synthesized?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 20,
+      "bookletPage": 18,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "5b3fcf5e9e52da3be40c40af9f09fdae22fec28fa4c83010a4715b06c7f2e477"
+    },
+    {
+      "id": "S125-045",
+      "question": "How are biomolecules organized in cells to function orderly and effectively?",
+      "sourceDomain": "Biology",
+      "benchmarkDomain": "Biology",
+      "pdfPage": 20,
+      "bookletPage": 18,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "e6f8afb9e9d5dd10b40c163ec9b838d2e14e8ef85a0810b202c573a3d1ce5238"
+    },
+    {
+      "id": "S125-046",
+      "question": "How many dimensions are there in space?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 21,
+      "bookletPage": 19,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "c9b01b9609b2f17fa5ffbf7bbd7aa01fb4590532bfcac68df9fa15c81eaa66c1"
+    },
+    {
+      "id": "S125-047",
+      "question": "What is the shape of the universe?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 21,
+      "bookletPage": 19,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "2d5f70514817679788f6e310f94c433d75065e91c58303aafd733d0fa1fb0b04"
+    },
+    {
+      "id": "S125-048",
+      "question": "Where did the Big Bang start?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 21,
+      "bookletPage": 19,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "42c0f7136b5e2de9cda02ab333025bc9a89062cf435017bc5e4d3e65ef31b1cd"
+    },
+    {
+      "id": "S125-049",
+      "question": "Why don’t the orbits of planets decay and cause them to crash into each other?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 21,
+      "bookletPage": 19,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "eb49d0194b1a207d292f12608722515a2acecbd72015563e657acdceb94d1a1b"
+    },
+    {
+      "id": "S125-050",
+      "question": "When will the universe die? Will it continue to expand?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 21,
+      "bookletPage": 19,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "757d43730253a7eb0c1d20250aa5cc8c99897d12eb9d2f532da2cd217ea67cbc"
+    },
+    {
+      "id": "S125-051",
+      "question": "Is it possible to live permanently on another planet?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 21,
+      "bookletPage": 19,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "a3ce81f38fba35f33c1ed11ee6ca3f88fad2e9fb40559052fa21c411a3352dac"
+    },
+    {
+      "id": "S125-052",
+      "question": "Why do black holes exist?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 21,
+      "bookletPage": 19,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "012164c0d32d3465fc692695954e0fccb025f0490477049cea1c09ecfa6968a1"
+    },
+    {
+      "id": "S125-053",
+      "question": "What is the universe made of?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 21,
+      "bookletPage": 19,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "b11432fb8d41b3ac9c591f254cec5d5b284532d5e27a5cd2b9db71e3f5bf2f5b"
+    },
+    {
+      "id": "S125-054",
+      "question": "What is the origin of cosmic rays?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 22,
+      "bookletPage": 20,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "bff0741a1e1bfe96dbc4c76792ad6983a6153d84da5a46d62448aa4a1e468b40"
+    },
+    {
+      "id": "S125-055",
+      "question": "Are we alone in the universe?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 22,
+      "bookletPage": 20,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "abeb4312a189ca6a040d3c72e7a408f14bf7270d15b39cd3c2948c7a7ae0ceba"
+    },
+    {
+      "id": "S125-056",
+      "question": "What is the origin of mass?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 22,
+      "bookletPage": 20,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "b784bfa3db49ba49e230b1913a263123c8c34dd02df192e7c252b90e1792e681"
+    },
+    {
+      "id": "S125-057",
+      "question": "Is our Milky Way Galaxy special?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 22,
+      "bookletPage": 20,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "23888d445a11774d8208a6646be64de57ad982c5df7e38b6ea4856664473283b"
+    },
+    {
+      "id": "S125-058",
+      "question": "What is the smallest scale of space-time?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 23,
+      "bookletPage": 21,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "07eac7144e4d035a91740c27666e5a5debfa7da0f50e5108a364bc25f9d70779"
+    },
+    {
+      "id": "S125-059",
+      "question": "Is Einstein’s general theory of relativity correct?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 23,
+      "bookletPage": 21,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "cc7f7ffcae53b8f4842066028facb0eb21498e9fa10f4d7ff34f47554c342c0e"
+    },
+    {
+      "id": "S125-060",
+      "question": "Is water necessary for all life in the universe, or just on Earth?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 23,
+      "bookletPage": 21,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "d9a34122c31f75df8f7c1a1c114deea7b08213c3383195aecc02f27ceedfdc58"
+    },
+    {
+      "id": "S125-061",
+      "question": "How are pulsars formed?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 23,
+      "bookletPage": 21,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "b9745936af137343f90a8d602b536d69ac0a79be1a4904e1db72aa7974802acf"
+    },
+    {
+      "id": "S125-062",
+      "question": "What is preventing humans from carrying out deep-space exploration?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 23,
+      "bookletPage": 21,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "0a05aa427d57d7b5193926fe09ab96e6b6f5e62c7e1f56f57814b316c7d6f456"
+    },
+    {
+      "id": "S125-063",
+      "question": "What is the volume, composition, and significance of the deep biosphere?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 24,
+      "bookletPage": 22,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "9fd55620e5eb439a0ff34a92e35246227bde2d4ddb14945d3ef347639cb95cf6"
+    },
+    {
+      "id": "S125-064",
+      "question": "Will humans one day have to leave the planet (or die trying)?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 24,
+      "bookletPage": 22,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "2728443358ff7b6493ed208ea722ae18e937e290d40739d3e93e5ae3348acdf3"
+    },
+    {
+      "id": "S125-065",
+      "question": "Is it possible to understand the structure of compact stars and matter?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 24,
+      "bookletPage": 22,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "fe8c61f7cdb9c03fa0f93b0018ae7f1646b425fc274a81c4f4984157014357cb"
+    },
+    {
+      "id": "S125-066",
+      "question": "What is the origin of high-energy cosmic neutrinos?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 24,
+      "bookletPage": 22,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "e00c1b4f7bc87d362c62668b3408d12c7c39b75222898305c5428eee91de7380"
+    },
+    {
+      "id": "S125-067",
+      "question": "What is gravity?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 24,
+      "bookletPage": 22,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "e07e2d919152194d8ba8d96ddb40e265b371c9ba91842621148fcd60aaeed95f"
+    },
+    {
+      "id": "S125-068",
+      "question": "Where do the heavy elements in the universe come from?",
+      "sourceDomain": "Astronomy",
+      "benchmarkDomain": "Astronomy",
+      "pdfPage": 25,
+      "bookletPage": 23,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "df2fb1d459c3e6aa4be2d970ffdb167bdb477c9dc623d0c52e4e560b5bbd4e03"
+    },
+    {
+      "id": "S125-069",
+      "question": "Is there a diffraction limit?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 25,
+      "bookletPage": 23,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "fffb2255d66a9df018b540945077bbddfb517d83084145ba406bff888ad40ac5"
+    },
+    {
+      "id": "S125-070",
+      "question": "What is the microscopic mechanism for high-temperature superconductivity?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 25,
+      "bookletPage": 23,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "66254475e2f2e0f064ad4b0378f8e4d79346469b9ae01b10a4d76aa434081b4d"
+    },
+    {
+      "id": "S125-071",
+      "question": "What are the limits of heat transfer in matter?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 25,
+      "bookletPage": 23,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "5da84b98c288dc050ddf2f05a6f308f5d571e856dfffd7a7005b92265097b975"
+    },
+    {
+      "id": "S125-072",
+      "question": "What are the fundamental principles of collective motion?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 26,
+      "bookletPage": 24,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "4ed8c17de08a4013b0f8ce2171fabcb52b412122929e05b1720833cd7260a00d"
+    },
+    {
+      "id": "S125-073",
+      "question": "Will we ever travel at the speed of light?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 26,
+      "bookletPage": 24,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "f5981de00ab90cffa2c9c6222a57a7ebf68cc4b55802b21cb4feb22a71c102b4"
+    },
+    {
+      "id": "S125-074",
+      "question": "What is quantum uncertainty and why is it important?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 26,
+      "bookletPage": 24,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "33093d0d4482fa61456d8dfd416a1f38890057631b57acde52826f9a410794fe"
+    },
+    {
+      "id": "S125-075",
+      "question": "What are the smallest building blocks of matter?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 27,
+      "bookletPage": 25,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "957060bb2e38fffac225a3ebb34c4774aa233e745b444db64770c46fa1f492a9"
+    },
+    {
+      "id": "S125-076",
+      "question": "Why does time seem to flow in only one direction?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 27,
+      "bookletPage": 25,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "51d8bcdd732240fb13389c8e6bd814e6c4b7f77315192c0d17173349a9215a58"
+    },
+    {
+      "id": "S125-077",
+      "question": "Are there any particles that behave oppositely to the properties or states of photons?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 27,
+      "bookletPage": 25,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "f18de287aec307d59a758da4c9bd60dfdf66648dfa549dedac66ce4238756198"
+    },
+    {
+      "id": "S125-078",
+      "question": "Will Bose–Einstein condensates be widely used in the future?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 27,
+      "bookletPage": 25,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "e13291cdf78210b753cd28e35541f50fe2c49383869e3ea0ef05fbd55b7b38b9"
+    },
+    {
+      "id": "S125-079",
+      "question": "What is the maximum speed to which we can accelerate a particle?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 27,
+      "bookletPage": 25,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "dcf9da8091b5f44b1f47d2fba50d88a5af30cf78d33e105ffa4cacadf5f33cc6"
+    },
+    {
+      "id": "S125-080",
+      "question": "Can we accurately simulate the macro- and microworld?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 27,
+      "bookletPage": 25,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "696264e9f08ddbaafd1b0b64db6917dd2d312528a6b10103905550e1e033eec0"
+    },
+    {
+      "id": "S125-081",
+      "question": "Can humans make intense lasers with incoherence comparable to sunlight?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 28,
+      "bookletPage": 26,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "a53c6e89e9d1205197f640da9395bc4f3cba0dd09a961060e05ceb5f9105135c"
+    },
+    {
+      "id": "S125-082",
+      "question": "Is quantum many-body entanglement more fundamental than quantum fields?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 28,
+      "bookletPage": 26,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "620f75fa7d1db96ac1c3aa3458367daeb0fdba096644f0c52561152ed8d9d7e9"
+    },
+    {
+      "id": "S125-083",
+      "question": "Can we make a real, human-size invisibility cloak?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 28,
+      "bookletPage": 26,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "6a4f82225ba5d1ec6bf4af849f613383033c4a72ddae774b752d0179c2de7278"
+    },
+    {
+      "id": "S125-084",
+      "question": "Will there ever be a “theory of everything”?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 28,
+      "bookletPage": 26,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "d87b23c687e87a57fc919bb0a93213f30a0a5cb412aace28eb4b86a81900eb92"
+    },
+    {
+      "id": "S125-085",
+      "question": "What is dark matter?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 29,
+      "bookletPage": 27,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "ba89c04a1c2de4b23565723d8d747b67925fc75b127d69781d6e7e07ac95f62d"
+    },
+    {
+      "id": "S125-086",
+      "question": "What is the optimum hardware for quantum computers?",
+      "sourceDomain": "Physics",
+      "benchmarkDomain": "Physics",
+      "pdfPage": 29,
+      "bookletPage": 27,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "fc5654ac45de407ee8a79d3becdb8b68a0fc8b37a00dfcea08960758fa8722b9"
+    },
+    {
+      "id": "S125-087",
+      "question": "What is the ultimate statistical invariance of turbulence?",
+      "sourceDomain": "Engineering & Materials Science",
+      "benchmarkDomain": "Engineering & Materials Science",
+      "pdfPage": 29,
+      "bookletPage": 27,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "65210c1c133616be0bbdefa05401973768dc72e71c3094d960bd7334f6120cd4"
+    },
+    {
+      "id": "S125-088",
+      "question": "How can we develop manufacturing systems on Mars?",
+      "sourceDomain": "Engineering & Materials Science",
+      "benchmarkDomain": "Engineering & Materials Science",
+      "pdfPage": 30,
+      "bookletPage": 28,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "612d412c0145e13b174d611f06d3c2a5e708b6f44d430495b06c43e04a14fd3b"
+    },
+    {
+      "id": "S125-089",
+      "question": "How can we break the current limit on energy-conversion efficiencies?",
+      "sourceDomain": "Engineering & Materials Science",
+      "benchmarkDomain": "Engineering & Materials Science",
+      "pdfPage": 30,
+      "bookletPage": 28,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "f10445460d782e5eb9546bf24909477448e215e6b5b5db1e009733f86768a4d6"
+    },
+    {
+      "id": "S125-090",
+      "question": "Is a future of only self-driving cars realistic?",
+      "sourceDomain": "Engineering & Materials Science",
+      "benchmarkDomain": "Engineering & Materials Science",
+      "pdfPage": 30,
+      "bookletPage": 28,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "4489097a8bee489a3c13fc038a2ff18a7db341cf9680f673354b03c40575e5f7"
+    },
+    {
+      "id": "S125-091",
+      "question": "Is there an upper limit to computer processing speed?",
+      "sourceDomain": "Information Science",
+      "benchmarkDomain": "Information Science",
+      "pdfPage": 31,
+      "bookletPage": 29,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "247c4b9f224ef863cbfed3d64ac2a0c4ba907f7278761fdda2bac5ffb11e9473"
+    },
+    {
+      "id": "S125-092",
+      "question": "Can DNA act as an information storage medium?",
+      "sourceDomain": "Information Science",
+      "benchmarkDomain": "Information Science",
+      "pdfPage": 32,
+      "bookletPage": 30,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "3570982d42d17aa39faab712523bf295de71bf3bd57776c1145f0eba3442ba0c"
+    },
+    {
+      "id": "S125-093",
+      "question": "Can AI replace a doctor?",
+      "sourceDomain": "Information Science",
+      "benchmarkDomain": "Information Science",
+      "pdfPage": 32,
+      "bookletPage": 30,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "3cca283cc0639f2571cbae2c3d44e794fd05e078c13e27d498e4a60f03e64ffb"
+    },
+    {
+      "id": "S125-094",
+      "question": "Can topological quantum computing be realized?",
+      "sourceDomain": "Information Science",
+      "benchmarkDomain": "Information Science",
+      "pdfPage": 32,
+      "bookletPage": 30,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "101fb978ab426a3f030e135b7a9d238f150335cb1d20295d1257f3b4772814ed"
+    },
+    {
+      "id": "S125-095",
+      "question": "Where does consciousness lie?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 33,
+      "bookletPage": 31,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "915363525e879008bffb525faea8f4d68a3b894d5d419d5cc76f46f1c96145d9"
+    },
+    {
+      "id": "S125-096",
+      "question": "What are the coding principles embedded in neuronal spike trains?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 33,
+      "bookletPage": 31,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "b01451a020f89187682ad97294721de044cbd0aa1b532e941081ff182a728add"
+    },
+    {
+      "id": "S125-097",
+      "question": "Can human memory be stored, manipulated, and transplanted digitally?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 34,
+      "bookletPage": 32,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "2f8ad13827a2e1716ec977ed00d33af147eebc4dae9d85b8b9d14fd94f717645"
+    },
+    {
+      "id": "S125-098",
+      "question": "Why do we need sleep?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 34,
+      "bookletPage": 32,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "21efcc96365daba55c6930a78617bdb539b47b5f6fd3f2d83b61d304008635a3"
+    },
+    {
+      "id": "S125-099",
+      "question": "What is addiction and how does it work?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 34,
+      "bookletPage": 32,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "c662f3f2fa97c13b4dcbd3a716a66c00e82c67ee343c7e7b8bef75e5a0d2615e"
+    },
+    {
+      "id": "S125-100",
+      "question": "Why do we fall in love?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 35,
+      "bookletPage": 33,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "962dc28aa4481e3ab527a02723fb61a1b51366a52d360a3cefc64d9436f24606"
+    },
+    {
+      "id": "S125-101",
+      "question": "Can we cure neurodegenerative diseases?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 35,
+      "bookletPage": 33,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "2806e61e3633bf2bfd74db0c5544eb2bc443fa6b7f67d39d9c6a1956e1cc8cb6"
+    },
+    {
+      "id": "S125-102",
+      "question": "Why are most people right-handed?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 36,
+      "bookletPage": 34,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "54c069a1ff37e5dd92069690ea4a4c8bde6f7642f1fc557dedab532af6567019"
+    },
+    {
+      "id": "S125-103",
+      "question": "Is it possible to predict the future?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 36,
+      "bookletPage": 34,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "9e0f4caf9ddcfbbd5ed63091a5f132e20ef3661e577adabc54eca11bde95d0f5"
+    },
+    {
+      "id": "S125-104",
+      "question": "How did speech evolve and what parts of the brain control it?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 36,
+      "bookletPage": 34,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "e821df8e37f1bc363b76e1db2d3996a9237129cc6077a8842ae1b87c839ba97e"
+    },
+    {
+      "id": "S125-105",
+      "question": "How smart are nonhuman animals?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 36,
+      "bookletPage": 34,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "5145057eae56bc76b27ed85a2e297818169552886a23b512b5663d35c25c3661"
+    },
+    {
+      "id": "S125-106",
+      "question": "Can we more effectively diagnose and treat complex mental disorders?",
+      "sourceDomain": "Neuroscience",
+      "benchmarkDomain": "Neuroscience",
+      "pdfPage": 36,
+      "bookletPage": 34,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "12fbc01cb1f67b2acbe97860e36537f533267ebe7a5f5979c0c66238c6ff57bb"
+    },
+    {
+      "id": "S125-107",
+      "question": "Can we stop global climate change?",
+      "sourceDomain": "Ecology",
+      "benchmarkDomain": "Ecology",
+      "pdfPage": 37,
+      "bookletPage": 35,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "66a972a0e232c514c7417839ce51fd54f1324099fd3147ac7a0c082d6c065797"
+    },
+    {
+      "id": "S125-108",
+      "question": "Where do we put all the excess carbon dioxide?",
+      "sourceDomain": "Ecology",
+      "benchmarkDomain": "Ecology",
+      "pdfPage": 37,
+      "bookletPage": 35,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "eba38b65a96db6cffa8364d3a4852f1fb284d4c2425289cd24e1cdf67ed16404"
+    },
+    {
+      "id": "S125-109",
+      "question": "What creates the Earth’s magnetic field (and why does it move)?",
+      "sourceDomain": "Ecology",
+      "benchmarkDomain": "Ecology",
+      "pdfPage": 37,
+      "bookletPage": 35,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "48d4c82964def36c6b4d8c4eb69d34bc3a7c9dba529163db95ae81595659af74"
+    },
+    {
+      "id": "S125-110",
+      "question": "Will we be able to predict catastrophic weather events (tsunamis, hurricanes, earthquakes) more accurately?",
+      "sourceDomain": "Ecology",
+      "benchmarkDomain": "Ecology",
+      "pdfPage": 38,
+      "bookletPage": 36,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "3e48fcdb340ecfaed71125891c584ca9917239df077f382e19bce181f606b2f6"
+    },
+    {
+      "id": "S125-111",
+      "question": "What happens if all the ice on the planet melts?",
+      "sourceDomain": "Ecology",
+      "benchmarkDomain": "Ecology",
+      "pdfPage": 38,
+      "bookletPage": 36,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "1cf4680cc08c2174dba3e3ac51ed943790b0749360d4a4d4efbc87bee88ae7ca"
+    },
+    {
+      "id": "S125-112",
+      "question": "Can we create an environmentally friendly replacement for plastics?",
+      "sourceDomain": "Ecology",
+      "benchmarkDomain": "Ecology",
+      "pdfPage": 39,
+      "bookletPage": 37,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "418a6b0abc2cf9c15d0825418a3fd75f34784def8e4a7639837ec367ab658ab0"
+    },
+    {
+      "id": "S125-113",
+      "question": "Can we achieve a situation where essentially every material can be recycled and reused?",
+      "sourceDomain": "Ecology",
+      "benchmarkDomain": "Ecology",
+      "pdfPage": 39,
+      "bookletPage": 37,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "094d1435a2b14504fa2889549dbc0aacb2f2e2d69bae0b009f5e69dc1917a60e"
+    },
+    {
+      "id": "S125-114",
+      "question": "Will we soon see the end of monocultures like wheat, maize, rice, and soy?",
+      "sourceDomain": "Ecology",
+      "benchmarkDomain": "Ecology",
+      "pdfPage": 39,
+      "bookletPage": 37,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "5d33b291ef4566a96f0a8f9017ac8b5a729ae6951f7af9f429e1ee39e95b7caf"
+    },
+    {
+      "id": "S125-115",
+      "question": "Could we live in a fossil-fuel-free world?",
+      "sourceDomain": "Energy Science",
+      "benchmarkDomain": "Energy Science",
+      "pdfPage": 40,
+      "bookletPage": 38,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "57a8c847062690b28ef6a729a233d976529cab55a5087c0701cc06cb4771b33e"
+    },
+    {
+      "id": "S125-116",
+      "question": "What is the future of hydrogen energy?",
+      "sourceDomain": "Energy Science",
+      "benchmarkDomain": "Energy Science",
+      "pdfPage": 40,
+      "bookletPage": 38,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "6cf4f5a422ae4abf64847c3088602e62ebe31eba1e9d50b6d1b9559634cd4428"
+    },
+    {
+      "id": "S125-117",
+      "question": "Will cold fusion ever be possible?",
+      "sourceDomain": "Energy Science",
+      "benchmarkDomain": "Energy Science",
+      "pdfPage": 40,
+      "bookletPage": 38,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "83e1963c3563e978331cf67027c85505008f62328c6112e9b21a5ad8cdd1f1c5"
+    },
+    {
+      "id": "S125-118",
+      "question": "Will injectable, disease-fighting nanobots ever be a reality?",
+      "sourceDomain": "Artificial Intelligence",
+      "benchmarkDomain": "Artificial Intelligence",
+      "pdfPage": 41,
+      "bookletPage": 39,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "7f492b714d76f83e4282f2804231f17ded4fe62401ecd0877fc4123be4d97e7d"
+    },
+    {
+      "id": "S125-119",
+      "question": "Is there a limit to human intelligence?",
+      "sourceDomain": "Artificial Intelligence",
+      "benchmarkDomain": "Artificial Intelligence",
+      "pdfPage": 41,
+      "bookletPage": 39,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "d73c88620c83566c09a44c43e70804808af07457236bc9f4747b74333b036d83"
+    },
+    {
+      "id": "S125-120",
+      "question": "Will it be possible to create sentient robots?",
+      "sourceDomain": "Artificial Intelligence",
+      "benchmarkDomain": "Artificial Intelligence",
+      "pdfPage": 41,
+      "bookletPage": 39,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "c1adc47f3433783441c9b3d464fb09e3aa6ca02a7dde66e7983b79a1c425cf7c"
+    },
+    {
+      "id": "S125-121",
+      "question": "Will artificial intelligence replace humans?",
+      "sourceDomain": "Artificial Intelligence",
+      "benchmarkDomain": "Artificial Intelligence",
+      "pdfPage": 41,
+      "bookletPage": 39,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "ce343bf6d63db1c01099ecb37a649186ac01bdae5cb6c3125b484eb73a50d4eb"
+    },
+    {
+      "id": "S125-122",
+      "question": "Could we integrate with computers to form a human–machine hybrid species?",
+      "sourceDomain": "Artificial Intelligence",
+      "benchmarkDomain": "Artificial Intelligence",
+      "pdfPage": 42,
+      "bookletPage": 40,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "2458ae13a6f3a3f582425ab730ae49d7b6a6bdeece688d5a82bad8f4c18cd30f"
+    },
+    {
+      "id": "S125-123",
+      "question": "How does group intelligence emerge?",
+      "sourceDomain": "Artificial Intelligence",
+      "benchmarkDomain": "Artificial Intelligence",
+      "pdfPage": 42,
+      "bookletPage": 40,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "8903578687a01d0a531222ebd7314ffc806eca468e52e023de09128c00c5cf4b"
+    },
+    {
+      "id": "S125-124",
+      "question": "Can robots or AIs have human creativity?",
+      "sourceDomain": "Artificial Intelligence",
+      "benchmarkDomain": "Artificial Intelligence",
+      "pdfPage": 42,
+      "bookletPage": 40,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "71e6c866e7f2d19b96a92ad4000e691a4ecd15587be9a4a993ec3e568e9df7f6"
+    },
+    {
+      "id": "S125-125",
+      "question": "Can quantum artificial intelligence imitate the human brain?",
+      "sourceDomain": "Artificial Intelligence",
+      "benchmarkDomain": "Artificial Intelligence",
+      "pdfPage": 42,
+      "bookletPage": 40,
+      "sourceVersion": "2021-05-14",
+      "contentSha256": "50ee66452f75b0b8d3210262c5bd09a2449b48051969c961d4c8a771d4227831"
+    }
+  ],
+  "manifestContentSha256": "de0a173974a4ac1863186ff11c68d6946975228d53a552442aec8f8d951226d3"
+}
