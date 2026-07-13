@@ -1,0 +1,1059 @@
+{
+  "$defs": {
+    "CandidateHypothesis": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "counterEvidence": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Counterevidence",
+          "type": "array"
+        },
+        "evidenceGaps": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Evidencegaps",
+          "type": "array"
+        },
+        "falsificationCriteria": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Falsificationcriteria",
+          "type": "array"
+        },
+        "id": {
+          "enum": [
+            "H1",
+            "H2",
+            "H3",
+            "H4",
+            "H5"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "mechanism": {
+          "minLength": 1,
+          "title": "Mechanism",
+          "type": "string"
+        },
+        "predictions": {
+          "items": {
+            "$ref": "#/$defs/ObservablePrediction"
+          },
+          "minItems": 1,
+          "title": "Predictions",
+          "type": "array"
+        },
+        "prerequisites": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Prerequisites",
+          "type": "array"
+        },
+        "statement": {
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "supported",
+            "refuted",
+            "insufficient_evidence"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "supportingEvidenceRefs": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Supportingevidencerefs",
+          "type": "array"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "statement",
+        "mechanism",
+        "prerequisites",
+        "predictions",
+        "supportingEvidenceRefs",
+        "counterEvidence",
+        "evidenceGaps",
+        "falsificationCriteria",
+        "confidence",
+        "id",
+        "status"
+      ],
+      "title": "CandidateHypothesis",
+      "type": "object"
+    },
+    "ChemistryDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "activeSites": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Activesites",
+          "type": "array"
+        },
+        "adsorptionFreeEnergies": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Adsorptionfreeenergies",
+          "type": "array"
+        },
+        "catalystSystem": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Catalystsystem"
+        },
+        "characterizationPlan": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Characterizationplan",
+          "type": "array"
+        },
+        "descriptors": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Descriptors",
+          "type": "array"
+        },
+        "dftPlan": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Dftplan",
+          "type": "array"
+        },
+        "electrochemicalMetrics": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Electrochemicalmetrics",
+          "type": "array"
+        },
+        "electrolyte": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Electrolyte"
+        },
+        "intermediates": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Intermediates",
+          "type": "array"
+        },
+        "reactionPathways": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Reactionpathways",
+          "type": "array"
+        }
+      },
+      "title": "ChemistryDetails",
+      "type": "object"
+    },
+    "EvidenceClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "minLength": 1,
+          "title": "Claim",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "sourceRefs": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Sourcerefs",
+          "type": "array"
+        },
+        "stance": {
+          "enum": [
+            "supports",
+            "refutes",
+            "context",
+            "uncertain"
+          ],
+          "title": "Stance",
+          "type": "string"
+        },
+        "strength": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Strength",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "claim",
+        "stance",
+        "sourceRefs",
+        "strength",
+        "limitations"
+      ],
+      "title": "EvidenceClaim",
+      "type": "object"
+    },
+    "FeedbackSource": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "reference": {
+          "minLength": 1,
+          "title": "Reference",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "csv",
+            "multimodal",
+            "lab_record",
+            "manual_observation",
+            "external_api"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "reference"
+      ],
+      "title": "FeedbackSource",
+      "type": "object"
+    },
+    "MeasurementMethod": {
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "minLength": 1,
+          "title": "Method",
+          "type": "string"
+        },
+        "schedule": {
+          "minLength": 1,
+          "title": "Schedule",
+          "type": "string"
+        },
+        "unit": {
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        },
+        "variable": {
+          "minLength": 1,
+          "title": "Variable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variable",
+        "method",
+        "unit",
+        "schedule"
+      ],
+      "title": "MeasurementMethod",
+      "type": "object"
+    },
+    "ModelProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "generatedAt": {
+          "format": "date-time",
+          "title": "Generatedat",
+          "type": "string"
+        },
+        "model": {
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "promptHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Prompthash",
+          "type": "string"
+        },
+        "provider": {
+          "minLength": 1,
+          "title": "Provider",
+          "type": "string"
+        },
+        "requestId": {
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "responseHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Responsehash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "requestId",
+        "generatedAt",
+        "promptHash",
+        "responseHash"
+      ],
+      "title": "ModelProvenance",
+      "type": "object"
+    },
+    "NullHypothesis": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "counterEvidence": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Counterevidence",
+          "type": "array"
+        },
+        "evidenceGaps": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Evidencegaps",
+          "type": "array"
+        },
+        "falsificationCriteria": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Falsificationcriteria",
+          "type": "array"
+        },
+        "id": {
+          "const": "H0",
+          "title": "Id",
+          "type": "string"
+        },
+        "mechanism": {
+          "minLength": 1,
+          "title": "Mechanism",
+          "type": "string"
+        },
+        "predictions": {
+          "items": {
+            "$ref": "#/$defs/ObservablePrediction"
+          },
+          "minItems": 1,
+          "title": "Predictions",
+          "type": "array"
+        },
+        "prerequisites": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Prerequisites",
+          "type": "array"
+        },
+        "statement": {
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "status": {
+          "const": "null",
+          "title": "Status",
+          "type": "string"
+        },
+        "supportingEvidenceRefs": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Supportingevidencerefs",
+          "type": "array"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "statement",
+        "mechanism",
+        "prerequisites",
+        "predictions",
+        "supportingEvidenceRefs",
+        "counterEvidence",
+        "evidenceGaps",
+        "falsificationCriteria",
+        "confidence",
+        "id",
+        "status"
+      ],
+      "title": "NullHypothesis",
+      "type": "object"
+    },
+    "ObservablePrediction": {
+      "additionalProperties": false,
+      "properties": {
+        "expectedDirection": {
+          "enum": [
+            "increase",
+            "decrease",
+            "no_change",
+            "nonlinear",
+            "qualitative"
+          ],
+          "title": "Expecteddirection",
+          "type": "string"
+        },
+        "falsificationThreshold": {
+          "minLength": 1,
+          "title": "Falsificationthreshold",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "measurement": {
+          "minLength": 1,
+          "title": "Measurement",
+          "type": "string"
+        },
+        "observable": {
+          "minLength": 1,
+          "title": "Observable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "observable",
+        "expectedDirection",
+        "measurement",
+        "falsificationThreshold"
+      ],
+      "title": "ObservablePrediction",
+      "type": "object"
+    },
+    "ResearchBrief": {
+      "additionalProperties": false,
+      "properties": {
+        "background": {
+          "minLength": 1,
+          "title": "Background",
+          "type": "string"
+        },
+        "objectives": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Objectives",
+          "type": "array"
+        },
+        "researchQuestion": {
+          "minLength": 1,
+          "title": "Researchquestion",
+          "type": "string"
+        },
+        "scope": {
+          "minLength": 1,
+          "title": "Scope",
+          "type": "string"
+        }
+      },
+      "required": [
+        "researchQuestion",
+        "background",
+        "objectives",
+        "scope"
+      ],
+      "title": "ResearchBrief",
+      "type": "object"
+    },
+    "ResearchPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "applicabilityBoundaries": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Applicabilityboundaries",
+          "type": "array"
+        },
+        "controlVariables": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Controlvariables",
+          "type": "array"
+        },
+        "decisionThresholds": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Decisionthresholds",
+          "type": "array"
+        },
+        "dependentVariables": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Dependentvariables",
+          "type": "array"
+        },
+        "independentVariables": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Independentvariables",
+          "type": "array"
+        },
+        "measurements": {
+          "items": {
+            "$ref": "#/$defs/MeasurementMethod"
+          },
+          "minItems": 1,
+          "title": "Measurements",
+          "type": "array"
+        },
+        "resources": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "risks": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Risks",
+          "type": "array"
+        },
+        "stopConditions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Stopconditions",
+          "type": "array"
+        },
+        "uncertainties": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Uncertainties",
+          "type": "array"
+        }
+      },
+      "required": [
+        "independentVariables",
+        "dependentVariables",
+        "controlVariables",
+        "measurements",
+        "decisionThresholds",
+        "stopConditions",
+        "resources",
+        "risks",
+        "uncertainties",
+        "applicabilityBoundaries"
+      ],
+      "title": "ResearchPlan",
+      "type": "object"
+    },
+    "ResearchQuality": {
+      "additionalProperties": false,
+      "properties": {
+        "applicability": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Applicability",
+          "type": "number"
+        },
+        "completeness": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Completeness",
+          "type": "number"
+        },
+        "explainability": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Explainability",
+          "type": "number"
+        },
+        "factualAccuracy": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Factualaccuracy",
+          "type": "number"
+        },
+        "notes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "overall": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Overall",
+          "type": "number"
+        },
+        "technicalDepth": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Technicaldepth",
+          "type": "number"
+        }
+      },
+      "required": [
+        "factualAccuracy",
+        "explainability",
+        "completeness",
+        "technicalDepth",
+        "applicability",
+        "overall",
+        "notes"
+      ],
+      "title": "ResearchQuality",
+      "type": "object"
+    },
+    "ResultFeedback": {
+      "additionalProperties": false,
+      "properties": {
+        "affectedPaths": {
+          "items": {
+            "minLength": 1,
+            "pattern": "^/(?:[^~]|~[01])*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Affectedpaths",
+          "type": "array"
+        },
+        "dataQuality": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "unknown"
+          ],
+          "title": "Dataquality",
+          "type": "string"
+        },
+        "observations": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Observations",
+          "type": "array"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/FeedbackSource"
+        },
+        "verdict": {
+          "enum": [
+            "supports",
+            "refutes",
+            "insufficient_evidence"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "observations",
+        "dataQuality",
+        "verdict",
+        "reason",
+        "affectedPaths"
+      ],
+      "title": "ResultFeedback",
+      "type": "object"
+    },
+    "RoundChange": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "title": "After"
+        },
+        "before": {
+          "title": "Before"
+        },
+        "evidenceRef": {
+          "minLength": 1,
+          "title": "Evidenceref",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "pattern": "^/(?:[^~]|~[01])*$",
+          "title": "Path",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidenceRef",
+        "path",
+        "before",
+        "after",
+        "reason"
+      ],
+      "title": "RoundChange",
+      "type": "object"
+    },
+    "RoundChangeSet": {
+      "additionalProperties": false,
+      "properties": {
+        "changes": {
+          "items": {
+            "$ref": "#/$defs/RoundChange"
+          },
+          "minItems": 1,
+          "title": "Changes",
+          "type": "array"
+        },
+        "fromRound": {
+          "minimum": 1,
+          "title": "Fromround",
+          "type": "integer"
+        },
+        "toRound": {
+          "minimum": 2,
+          "title": "Toround",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "fromRound",
+        "toRound",
+        "changes"
+      ],
+      "title": "RoundChangeSet",
+      "type": "object"
+    }
+  },
+  "$id": "https://chalk.local/contracts/research-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "const": "chemistry"
+          }
+        },
+        "required": [
+          "profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "chemistrySubdomain": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "chemistrySubdomain"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "const": "general_science"
+          }
+        },
+        "required": [
+          "profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "chemistry": {
+            "type": "null"
+          },
+          "chemistrySubdomain": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "properties": {
+    "brief": {
+      "$ref": "#/$defs/ResearchBrief"
+    },
+    "chemistry": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ChemistryDetails"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "chemistrySubdomain": {
+      "anyOf": [
+        {
+          "maxLength": 120,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Chemistrysubdomain"
+    },
+    "contractVersion": {
+      "const": "research-v1",
+      "title": "Contractversion",
+      "type": "string"
+    },
+    "evidenceClaims": {
+      "items": {
+        "$ref": "#/$defs/EvidenceClaim"
+      },
+      "title": "Evidenceclaims",
+      "type": "array"
+    },
+    "hypotheses": {
+      "items": {
+        "$ref": "#/$defs/CandidateHypothesis"
+      },
+      "maxItems": 5,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CandidateHypothesis"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "H1"
+            }
+          }
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CandidateHypothesis"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "H2"
+            }
+          }
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CandidateHypothesis"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "H3"
+            }
+          }
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CandidateHypothesis"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "H4"
+            }
+          }
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/CandidateHypothesis"
+            }
+          ],
+          "properties": {
+            "id": {
+              "const": "H5"
+            }
+          }
+        }
+      ],
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "nullHypothesis": {
+      "$ref": "#/$defs/NullHypothesis"
+    },
+    "profile": {
+      "enum": [
+        "general_science",
+        "chemistry"
+      ],
+      "title": "Profile",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/ModelProvenance"
+    },
+    "quality": {
+      "$ref": "#/$defs/ResearchQuality"
+    },
+    "researchPlan": {
+      "$ref": "#/$defs/ResearchPlan"
+    }
+  },
+  "required": [
+    "contractVersion",
+    "profile",
+    "brief",
+    "hypotheses",
+    "nullHypothesis",
+    "evidenceClaims",
+    "researchPlan",
+    "quality",
+    "provenance"
+  ],
+  "title": "ResearchOutput",
+  "type": "object"
+}
