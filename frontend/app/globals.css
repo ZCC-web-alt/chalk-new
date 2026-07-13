@@ -1,0 +1,130 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-soft: var(--primary-soft);
+  --color-purple: var(--purple);
+  --color-purple-soft: var(--purple-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --color-topbar: var(--topbar);
+  --color-topbar-foreground: var(--topbar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  --font-sans: 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei', -apple-system,
+    BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  --font-mono: 'SFMono-Regular', 'JetBrains Mono', Consolas, 'Liberation Mono', Menlo,
+    monospace;
+}
+
+:root {
+  color-scheme: light;
+  --background: #f0f2f5;
+  --foreground: #1f2329;
+  --card: #ffffff;
+  --card-foreground: #1f2329;
+  --popover: #ffffff;
+  --popover-foreground: #1f2329;
+
+  --primary: #1890ff;
+  --primary-foreground: #ffffff;
+  --primary-hover: #40a9ff;
+  --primary-active: #096dd9;
+  --primary-soft: #e6f4ff;
+
+  --purple: #722ed1;
+  --purple-soft: #f3ebfc;
+
+  --success: #52c41a;
+  --success-soft: #f0fbe6;
+  --warning: #faad14;
+  --warning-soft: #fff8e6;
+  --danger: #ff4d4f;
+  --danger-soft: #fff1f0;
+
+  --secondary: #f5f7fa;
+  --secondary-foreground: #1f2329;
+  --muted: #f5f7fa;
+  --muted-foreground: #8c8c8c;
+  --accent: #f5f7fa;
+  --accent-foreground: #1f2329;
+  --destructive: #ff4d4f;
+
+  --border: #e8e8e8;
+  --input: #d9d9d9;
+  --ring: #1890ff;
+
+  --radius: 6px;
+
+  --topbar: #001529;
+  --topbar-foreground: #ffffff;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #4b5563;
+  --sidebar-hover: #f0f7ff;
+  --sidebar-active: #e6f4ff;
+  --sidebar-active-foreground: #1890ff;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+}
+
+/* Compact scrollbars for the workstation feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d0d5dd;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b0b7c3;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

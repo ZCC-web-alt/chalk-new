@@ -1,0 +1,770 @@
+[
+  {
+    "domain": "electrocatalysis",
+    "title": "Open Catalyst Project OC20/OC22 public computational catalysis datasets",
+    "doi": "",
+    "year": "2020-2022",
+    "journal": "Open Catalyst Project / FAIR-Chem",
+    "material_system": "adsorbate-catalyst surfaces; oxide electrocatalysts",
+    "reaction_type": "OER/ORR/HER/CO2RR",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Public computational datasets for adsorption structures, energies, forces, and catalyst machine-learning benchmarks.",
+    "key_mechanism": "Computational adsorbate-surface energetics can guide descriptor hypotheses, but they are not experimental activity evidence.",
+    "source_text": "https://opencatalystproject.org/",
+    "source_kind": "curated_public_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "OCP adsorbate-surface systems",
+        "reaction_type": "OER/ORR/HER/CO2RR",
+        "metric_name": "adsorption_energy_descriptor",
+        "metric_value": "dataset-dependent",
+        "metric_unit": "eV",
+        "condition_text": "Use only when a matching computational_index row supplies a concrete adsorbate-surface energy.",
+        "baseline": "",
+        "key_mechanism": "Adsorbate binding energies can guide mechanistic hypotheses but do not equal experimental performance."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Catalysis-Hub public surface reaction and adsorption-energy database",
+    "doi": "",
+    "year": "2019",
+    "journal": "Catalysis-Hub",
+    "material_system": "heterogeneous catalyst surfaces",
+    "reaction_type": "surface catalysis",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Searchable public database of computational catalysis reactions and adsorption energies.",
+    "key_mechanism": "Supports descriptor screening and mechanism comparison across catalyst surfaces.",
+    "source_text": "https://www.catalysis-hub.org/",
+    "source_kind": "curated_public_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "heterogeneous catalyst surfaces",
+        "reaction_type": "surface catalysis",
+        "metric_name": "adsorption_energy",
+        "metric_value": "database-query",
+        "metric_unit": "eV",
+        "condition_text": "Use as source registry unless specific computational rows are imported.",
+        "baseline": "",
+        "key_mechanism": "Adsorption energies link surface composition to activity descriptors."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "McCrory 2013 benchmarking heterogeneous electrocatalysts for the oxygen evolution reaction",
+    "doi": "10.1021/ja407115p",
+    "year": "2013",
+    "journal": "Journal of the American Chemical Society",
+    "material_system": "heterogeneous OER electrocatalysts",
+    "reaction_type": "OER",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Benchmarking framework for OER catalysts using activity and stability reporting under specified electrochemical conditions.",
+    "key_mechanism": "OER claims should be tied to current-density-normalized overpotential, Tafel kinetics, and stability protocols.",
+    "source_text": "https://pubmed.ncbi.nlm.nih.gov/24171402/",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "heterogeneous OER electrocatalysts",
+        "reaction_type": "OER",
+        "metric_name": "overpotential_at_10_mA_cm-2",
+        "metric_value": "benchmark-required",
+        "metric_unit": "mV",
+        "condition_text": "Report at a specified geometric or normalized current density with electrolyte, pH, scan protocol, and iR correction stated.",
+        "baseline": "",
+        "key_mechanism": "Overpotential at benchmark current density is a primary OER activity comparison metric."
+      },
+      {
+        "material_system": "heterogeneous OER electrocatalysts",
+        "reaction_type": "OER",
+        "metric_name": "Tafel_slope",
+        "metric_value": "benchmark-required",
+        "metric_unit": "mV dec-1",
+        "condition_text": "Report fitting range and correction method when deriving Tafel slope from polarization data.",
+        "baseline": "",
+        "key_mechanism": "Tafel slope constrains apparent kinetic behavior and mechanistic interpretation."
+      },
+      {
+        "material_system": "heterogeneous OER electrocatalysts",
+        "reaction_type": "OER",
+        "metric_name": "stability_duration",
+        "metric_value": "benchmark-required",
+        "metric_unit": "h",
+        "condition_text": "Report chronoamperometry/chronopotentiometry duration and post-test catalyst state where available.",
+        "baseline": "",
+        "key_mechanism": "Stability is required to separate transient activation from durable catalytic performance."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "McCrory 2015 benchmarking HER and OER electrocatalysts for solar water splitting devices",
+    "doi": "10.1021/ja510442p",
+    "year": "2015",
+    "journal": "Journal of the American Chemical Society",
+    "material_system": "HER and OER water-splitting electrocatalysts",
+    "reaction_type": "HER/OER",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Benchmarking guidance for HER and OER catalyst activity, normalization, and stability in water-splitting contexts.",
+    "key_mechanism": "Comparable water-splitting catalyst claims require matched electrolyte conditions, normalization basis, and durability checks.",
+    "source_text": "https://pubmed.ncbi.nlm.nih.gov/25668483/",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "HER/OER electrocatalysts",
+        "reaction_type": "HER/OER",
+        "metric_name": "overpotential_at_10_mA_cm-2",
+        "metric_value": "benchmark-required",
+        "metric_unit": "mV",
+        "condition_text": "Report electrolyte, electrode loading, normalization area, and iR correction alongside benchmark overpotential.",
+        "baseline": "",
+        "key_mechanism": "Benchmark overpotential supports cross-catalyst comparison only under explicitly stated conditions."
+      },
+      {
+        "material_system": "HER/OER electrocatalysts",
+        "reaction_type": "HER/OER",
+        "metric_name": "ECSA_normalized_activity",
+        "metric_value": "report-required",
+        "metric_unit": "current per active area",
+        "condition_text": "Use ECSA or another stated normalization to separate surface area effects from intrinsic activity.",
+        "baseline": "",
+        "key_mechanism": "ECSA-normalized activity helps distinguish true activity improvement from roughness/loading effects."
+      },
+      {
+        "material_system": "HER/OER electrocatalysts",
+        "reaction_type": "HER/OER",
+        "metric_name": "stability_duration",
+        "metric_value": "benchmark-required",
+        "metric_unit": "h",
+        "condition_text": "Report stability protocol, current or potential hold, and pre/post characterization when possible.",
+        "baseline": "",
+        "key_mechanism": "Durability is a core requirement for water-splitting device relevance."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Wei 2019 recommended practices and benchmark activity for hydrogen and oxygen electrocatalysis",
+    "doi": "10.1002/adma.201806296",
+    "year": "2019",
+    "journal": "Advanced Materials",
+    "material_system": "HER/HOR/OER/ORR electrocatalysts",
+    "reaction_type": "HER/HOR/OER/ORR",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Recommended practices for acquiring and reporting hydrogen and oxygen electrocatalysis benchmark activities.",
+    "key_mechanism": "Reliable comparisons require consistent protocols for current normalization, electrolyte conditions, and catalyst loading.",
+    "source_text": "https://pubmed.ncbi.nlm.nih.gov/30656754/",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "HER/HOR/OER/ORR electrocatalysts",
+        "reaction_type": "HER/OER",
+        "metric_name": "overpotential_at_10_mA_cm-2",
+        "metric_value": "benchmark-required",
+        "metric_unit": "mV",
+        "condition_text": "Report overpotential with electrolyte, pH, reference conversion, catalyst loading, and iR correction.",
+        "baseline": "",
+        "key_mechanism": "Benchmark overpotential is meaningful only with full acquisition metadata."
+      },
+      {
+        "material_system": "HER/HOR/OER/ORR electrocatalysts",
+        "reaction_type": "HER/HOR/OER/ORR",
+        "metric_name": "Tafel_slope",
+        "metric_value": "report-required",
+        "metric_unit": "mV dec-1",
+        "condition_text": "Report scan rate, fitting range, and steady-state assumptions for kinetic interpretation.",
+        "baseline": "",
+        "key_mechanism": "Tafel analysis supports kinetic comparison but is sensitive to mass transport and uncompensated resistance."
+      },
+      {
+        "material_system": "HER/HOR/OER/ORR electrocatalysts",
+        "reaction_type": "HER/HOR/OER/ORR",
+        "metric_name": "ECSA_normalized_activity",
+        "metric_value": "report-required",
+        "metric_unit": "current per active area",
+        "condition_text": "State how ECSA or active site density was estimated before intrinsic activity comparison.",
+        "baseline": "",
+        "key_mechanism": "Normalization reduces ambiguity between activity and surface-area effects."
+      },
+      {
+        "material_system": "HER/HOR/OER/ORR electrocatalysts",
+        "reaction_type": "ORR",
+        "metric_name": "half_wave_potential",
+        "metric_value": "benchmark-required",
+        "metric_unit": "V vs RHE",
+        "condition_text": "Report rotating-disk conditions, electrolyte, reference conversion, and loading for ORR comparisons.",
+        "baseline": "",
+        "key_mechanism": "Half-wave potential is a widely used ORR activity benchmark when transport conditions are controlled."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Gasteiger 2005 activity benchmarks and requirements for Pt, Pt-alloy, and non-Pt oxygen reduction catalysts",
+    "doi": "10.1016/j.apcatb.2004.06.021",
+    "year": "2005",
+    "journal": "Applied Catalysis B: Environmental",
+    "material_system": "Pt, Pt-alloy, and non-Pt ORR catalysts for PEMFCs",
+    "reaction_type": "ORR",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Benchmark framework and requirements for ORR catalyst activity in proton exchange membrane fuel cell contexts.",
+    "key_mechanism": "ORR catalyst comparison should distinguish mass activity, specific activity, and kinetic current under defined potential and transport conditions.",
+    "source_text": "https://portal.fis.tum.de/en/publications/activity-benchmarks-and-requirements-for-pt-pt-alloy-and-non-pt-o/",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "ORR catalysts for PEMFCs",
+        "reaction_type": "ORR",
+        "metric_name": "mass_activity",
+        "metric_value": "benchmark-required",
+        "metric_unit": "A mgPGM-1",
+        "condition_text": "Report catalyst loading, potential, temperature, gas, and correction method for PEMFC-relevant ORR activity.",
+        "baseline": "",
+        "key_mechanism": "Mass activity is central for precious-metal utilization and PEMFC catalyst targets."
+      },
+      {
+        "material_system": "ORR catalysts for PEMFCs",
+        "reaction_type": "ORR",
+        "metric_name": "specific_activity",
+        "metric_value": "benchmark-required",
+        "metric_unit": "current per surface area",
+        "condition_text": "Normalize by electrochemically accessible surface area or another stated active-area estimate.",
+        "baseline": "",
+        "key_mechanism": "Specific activity separates intrinsic site activity from catalyst dispersion."
+      },
+      {
+        "material_system": "ORR catalysts for PEMFCs",
+        "reaction_type": "ORR",
+        "metric_name": "kinetic_current_density",
+        "metric_value": "report-required",
+        "metric_unit": "A cm-2",
+        "condition_text": "Report mass-transport correction and rotating electrode or MEA protocol.",
+        "baseline": "",
+        "key_mechanism": "Kinetic current density supports ORR activity comparison after transport correction."
+      },
+      {
+        "material_system": "ORR catalysts for PEMFCs",
+        "reaction_type": "ORR",
+        "metric_name": "half_wave_potential",
+        "metric_value": "benchmark-required",
+        "metric_unit": "V vs RHE",
+        "condition_text": "Use with stated RDE/RRDE conditions and electrolyte composition.",
+        "baseline": "",
+        "key_mechanism": "Half-wave potential is a practical ORR screening descriptor."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Man 2011 universality in oxygen evolution electrocatalysis on oxide surfaces",
+    "doi": "10.1002/cctc.201000397",
+    "year": "2011",
+    "journal": "ChemCatChem",
+    "material_system": "oxide OER catalyst surfaces",
+    "reaction_type": "OER",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Computational descriptor framework for OER on oxide surfaces based on adsorbate scaling and theoretical overpotential.",
+    "key_mechanism": "OER activity trends can be rationalized with scaling relations among oxygenated intermediates.",
+    "source_text": "https://suncat.stanford.edu/publications/universality-oxygen-evolution-electrocatalysis-oxide-surfaces",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "oxide OER catalyst surfaces",
+        "reaction_type": "OER",
+        "metric_name": "adsorbate_scaling_relation",
+        "metric_value": "descriptor",
+        "metric_unit": "",
+        "condition_text": "Use as mechanistic descriptor context, not as direct experimental performance.",
+        "baseline": "",
+        "key_mechanism": "Scaling relations among OER intermediates constrain achievable overpotential."
+      },
+      {
+        "material_system": "oxide OER catalyst surfaces",
+        "reaction_type": "OER",
+        "metric_name": "theoretical_overpotential",
+        "metric_value": "descriptor",
+        "metric_unit": "V",
+        "condition_text": "Requires explicitly stated DFT method, surface model, and reaction free-energy assumptions.",
+        "baseline": "",
+        "key_mechanism": "Theoretical overpotential provides descriptor evidence, not experimental validation."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Huang 2019 descriptor for oxygen evolution on reducible oxide surfaces",
+    "doi": "10.1039/C8SC04521F",
+    "year": "2019",
+    "journal": "Chemical Science",
+    "material_system": "reducible oxide OER catalyst surfaces",
+    "reaction_type": "OER",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Descriptor-oriented study for OER activity on reducible oxide surfaces.",
+    "key_mechanism": "Electronic/surface descriptors can connect reducible oxide structure to OER energetics.",
+    "source_text": "https://pubs.rsc.org/en/content/articlelanding/2019/sc/c8sc04521f",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "reducible oxide OER catalyst surfaces",
+        "reaction_type": "OER",
+        "metric_name": "eg_occupancy_or_surface_descriptor",
+        "metric_value": "descriptor",
+        "metric_unit": "",
+        "condition_text": "Use as descriptor evidence only when linked to stated surface composition and oxidation state.",
+        "baseline": "",
+        "key_mechanism": "Surface electronic descriptors can rationalize OER intermediate energetics."
+      },
+      {
+        "material_system": "reducible oxide OER catalyst surfaces",
+        "reaction_type": "OER",
+        "metric_name": "theoretical_overpotential",
+        "metric_value": "descriptor",
+        "metric_unit": "V",
+        "condition_text": "Use with computational methodology and explicit free-energy assumptions.",
+        "baseline": "",
+        "key_mechanism": "Descriptor-derived overpotential should be separated from measured overpotential."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Kuhl 2012 new insights into electrochemical reduction of carbon dioxide on metallic copper surfaces",
+    "doi": "10.1039/C2EE21234J",
+    "year": "2012",
+    "journal": "Energy & Environmental Science",
+    "material_system": "metallic copper CO2RR surfaces",
+    "reaction_type": "CO2RR",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Product-resolved CO2 electroreduction study on copper surfaces, emphasizing product distribution and quantification.",
+    "key_mechanism": "CO2RR hypotheses require product-specific selectivity and current reporting rather than total current alone.",
+    "source_text": "https://pubs.rsc.org/en/content/articlelanding/2012/ee/c2ee21234j",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "CO2RR catalysts",
+        "reaction_type": "CO2RR",
+        "metric_name": "Faradaic_efficiency",
+        "metric_value": "report-required",
+        "metric_unit": "%",
+        "condition_text": "Report product-specific Faradaic efficiency with analytical method and calibration.",
+        "baseline": "",
+        "key_mechanism": "Faradaic efficiency separates selectivity from total current response."
+      },
+      {
+        "material_system": "CO2RR catalysts",
+        "reaction_type": "CO2RR",
+        "metric_name": "partial_current_density",
+        "metric_value": "report-required",
+        "metric_unit": "mA cm-2",
+        "condition_text": "Report product-specific partial current density with electrode area and cell configuration.",
+        "baseline": "",
+        "key_mechanism": "Partial current density couples activity and selectivity for a target product."
+      },
+      {
+        "material_system": "CO2RR catalysts",
+        "reaction_type": "CO2RR",
+        "metric_name": "product_quantification_method",
+        "metric_value": "protocol-required",
+        "metric_unit": "",
+        "condition_text": "State GC, NMR, HPLC, ion chromatography, or other quantification method and calibration.",
+        "baseline": "",
+        "key_mechanism": "Product quantification method determines confidence in selectivity claims."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Clark 2018 standards and protocols for data acquisition and reporting for electrochemical CO2 reduction",
+    "doi": "10.1021/acscatal.8b01340",
+    "year": "2018",
+    "journal": "ACS Catalysis",
+    "material_system": "CO2RR catalyst testing systems",
+    "reaction_type": "CO2RR",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Standards and reporting protocols for CO2 electroreduction data acquisition, products, and cell conditions.",
+    "key_mechanism": "CO2RR evidence should include carbon balance, product quantification, electrolyte, cell geometry, and operating conditions.",
+    "source_text": "https://www.osti.gov/pages/biblio/1469215",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "CO2RR catalyst testing systems",
+        "reaction_type": "CO2RR",
+        "metric_name": "carbon_balance",
+        "metric_value": "protocol-required",
+        "metric_unit": "%",
+        "condition_text": "Report carbon-containing products and account for input/output carbon where possible.",
+        "baseline": "",
+        "key_mechanism": "Carbon balance guards against incomplete product accounting."
+      },
+      {
+        "material_system": "CO2RR catalyst testing systems",
+        "reaction_type": "CO2RR",
+        "metric_name": "product_quantification_method",
+        "metric_value": "protocol-required",
+        "metric_unit": "",
+        "condition_text": "Report calibration, detection limits, and liquid/gas product sampling methods.",
+        "baseline": "",
+        "key_mechanism": "Analytical protocol controls evidence quality for CO2RR selectivity."
+      },
+      {
+        "material_system": "CO2RR catalyst testing systems",
+        "reaction_type": "CO2RR",
+        "metric_name": "Faradaic_efficiency",
+        "metric_value": "report-required",
+        "metric_unit": "%",
+        "condition_text": "Report product-specific FE with current integration method and product analysis.",
+        "baseline": "",
+        "key_mechanism": "FE is a required selectivity metric but must be supported by product accounting."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Seger 2023 best practices for electrochemical reduction of carbon dioxide",
+    "doi": "10.1038/s41893-022-01034-z",
+    "year": "2023",
+    "journal": "Nature Sustainability",
+    "material_system": "CO2RR electrolyzer and catalyst systems",
+    "reaction_type": "CO2RR",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Best-practice recommendations for reliable CO2 electroreduction measurement and reporting.",
+    "key_mechanism": "Cell configuration, product analysis, and energy metrics are required to compare CO2RR systems.",
+    "source_text": "https://profiles.wustl.edu/en/publications/best-practices-for-electrochemical-reduction-of-carbon-dioxide",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "CO2RR electrolyzer and catalyst systems",
+        "reaction_type": "CO2RR",
+        "metric_name": "Faradaic_efficiency",
+        "metric_value": "report-required",
+        "metric_unit": "%",
+        "condition_text": "Report product-specific FE with full product analysis and current density.",
+        "baseline": "",
+        "key_mechanism": "Selectivity evidence must be coupled to production rate and operating state."
+      },
+      {
+        "material_system": "CO2RR electrolyzer and catalyst systems",
+        "reaction_type": "CO2RR",
+        "metric_name": "cell_voltage_or_energy_efficiency",
+        "metric_value": "report-required",
+        "metric_unit": "V or %",
+        "condition_text": "Report full-cell voltage and energy-efficiency assumptions for device-level comparison.",
+        "baseline": "",
+        "key_mechanism": "Energy metrics prevent overinterpreting half-cell selectivity as system performance."
+      },
+      {
+        "material_system": "CO2RR electrolyzer and catalyst systems",
+        "reaction_type": "CO2RR",
+        "metric_name": "product_quantification_method",
+        "metric_value": "protocol-required",
+        "metric_unit": "",
+        "condition_text": "Report analytical method, calibration, sampling position, and time averaging.",
+        "baseline": "",
+        "key_mechanism": "Transparent product quantification is required for reproducible CO2RR claims."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Niu 2021 rigorous assessment of CO2 electroreduction products in a flow cell",
+    "doi": "10.1039/D1EE01664D",
+    "year": "2021",
+    "journal": "Energy & Environmental Science",
+    "material_system": "flow-cell CO2RR systems",
+    "reaction_type": "CO2RR",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Flow-cell CO2RR assessment emphasizing product accounting and reliable high-current measurements.",
+    "key_mechanism": "Flow-cell claims need product-specific partial currents, carbon balance, and operating condition metadata.",
+    "source_text": "https://pubs.rsc.org/en/content/articlelanding/2021/ee/d1ee01664d",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "flow-cell CO2RR systems",
+        "reaction_type": "CO2RR",
+        "metric_name": "partial_current_density",
+        "metric_value": "report-required",
+        "metric_unit": "mA cm-2",
+        "condition_text": "Report geometric area, flow configuration, electrolyte, pressure, and product-specific current.",
+        "baseline": "",
+        "key_mechanism": "Partial current density is central for high-rate CO2RR evaluation."
+      },
+      {
+        "material_system": "flow-cell CO2RR systems",
+        "reaction_type": "CO2RR",
+        "metric_name": "carbon_balance",
+        "metric_value": "protocol-required",
+        "metric_unit": "%",
+        "condition_text": "Account for gaseous and liquid carbon products under flow operation.",
+        "baseline": "",
+        "key_mechanism": "Carbon balance identifies missing products and carbonate crossover artifacts."
+      },
+      {
+        "material_system": "flow-cell CO2RR systems",
+        "reaction_type": "CO2RR",
+        "metric_name": "product_quantification_method",
+        "metric_value": "protocol-required",
+        "metric_unit": "",
+        "condition_text": "Report collection, calibration, and analysis methods for gas and liquid products.",
+        "baseline": "",
+        "key_mechanism": "High-rate flow-cell claims require rigorous product quantification."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Andersen 2019 rigorous electrochemical ammonia synthesis protocol using isotope measurements",
+    "doi": "10.1038/s41586-019-1260-x",
+    "year": "2019",
+    "journal": "Nature",
+    "material_system": "electrochemical NRR ammonia synthesis systems",
+    "reaction_type": "NRR",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Protocol for rigorous electrochemical ammonia synthesis assessment using isotope labeling and contamination controls.",
+    "key_mechanism": "NRR evidence must rule out ammonia contamination and verify nitrogen source with isotope controls.",
+    "source_text": "https://www.nature.com/articles/s41586-019-1260-x",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "NRR ammonia synthesis systems",
+        "reaction_type": "NRR",
+        "metric_name": "ammonia_yield_rate",
+        "metric_value": "report-required",
+        "metric_unit": "amount per time per catalyst/electrode basis",
+        "condition_text": "Report normalization basis, electrolyte, gas purity, and analytical calibration.",
+        "baseline": "",
+        "key_mechanism": "Yield rate is meaningful only after contamination and isotope controls are satisfied."
+      },
+      {
+        "material_system": "NRR ammonia synthesis systems",
+        "reaction_type": "NRR",
+        "metric_name": "Faradaic_efficiency",
+        "metric_value": "report-required",
+        "metric_unit": "%",
+        "condition_text": "Report FE only with validated ammonia quantification and blank controls.",
+        "baseline": "",
+        "key_mechanism": "FE alone cannot establish NRR unless ammonia origin is verified."
+      },
+      {
+        "material_system": "NRR ammonia synthesis systems",
+        "reaction_type": "NRR",
+        "metric_name": "15N2_isotope_control",
+        "metric_value": "protocol-required",
+        "metric_unit": "",
+        "condition_text": "Use isotope labeling to verify ammonia nitrogen source where NRR is claimed.",
+        "baseline": "",
+        "key_mechanism": "Isotope control is a critical safeguard against false positive ammonia signals."
+      },
+      {
+        "material_system": "NRR ammonia synthesis systems",
+        "reaction_type": "NRR",
+        "metric_name": "blank_contamination_control",
+        "metric_value": "protocol-required",
+        "metric_unit": "",
+        "condition_text": "Report Ar/N2 blanks, open-circuit or no-catalyst controls, and ammonia impurity assessment.",
+        "baseline": "",
+        "key_mechanism": "Blank controls identify contamination from electrolyte, gas, membrane, or environment."
+      }
+    ]
+  },
+  {
+    "domain": "electrocatalysis",
+    "title": "Suryanto 2020 challenges and false positives in electrochemical nitrogen reduction to ammonia",
+    "doi": "10.1038/s41467-020-19130-z",
+    "year": "2020",
+    "journal": "Nature Communications",
+    "material_system": "electrochemical NRR ammonia synthesis systems",
+    "reaction_type": "NRR",
+    "battery_type": "",
+    "ion_type": "",
+    "key_data": "Analysis of false positives and reliability challenges in electrochemical nitrogen reduction experiments.",
+    "key_mechanism": "NRR claims require contamination audits, isotope tracing, and carefully validated ammonia detection.",
+    "source_text": "https://www.nature.com/articles/s41467-020-19130-z",
+    "source_kind": "curated_literature_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "NRR ammonia synthesis systems",
+        "reaction_type": "NRR",
+        "metric_name": "15N2_isotope_control",
+        "metric_value": "protocol-required",
+        "metric_unit": "",
+        "condition_text": "Require isotope tracing and careful analysis of isotope gas impurities before assigning ammonia to NRR.",
+        "baseline": "",
+        "key_mechanism": "Isotope tracing helps distinguish true nitrogen reduction from contamination."
+      },
+      {
+        "material_system": "NRR ammonia synthesis systems",
+        "reaction_type": "NRR",
+        "metric_name": "blank_contamination_control",
+        "metric_value": "protocol-required",
+        "metric_unit": "",
+        "condition_text": "Report blank electrolyte, gas, membrane, catalyst, and environmental contamination checks.",
+        "baseline": "",
+        "key_mechanism": "Contamination controls are essential because ammonia background levels can dominate apparent yield."
+      },
+      {
+        "material_system": "NRR ammonia synthesis systems",
+        "reaction_type": "NRR",
+        "metric_name": "ammonia_yield_rate",
+        "metric_value": "report-required",
+        "metric_unit": "amount per time per catalyst/electrode basis",
+        "condition_text": "Report only after verified ammonia origin and validated quantification.",
+        "baseline": "",
+        "key_mechanism": "Apparent yield without controls should not be treated as evidence of nitrogen reduction."
+      }
+    ]
+  },
+  {
+    "domain": "battery",
+    "title": "Battery Archive public cycling data repository",
+    "doi": "",
+    "year": "public",
+    "journal": "Battery Archive",
+    "material_system": "lithium-ion battery cells",
+    "reaction_type": "",
+    "battery_type": "lithium-ion",
+    "ion_type": "Li",
+    "key_data": "Public searchable battery cycling data repository with cell metadata and cycling measurements.",
+    "key_mechanism": "Supports hypotheses about capacity fade, cycle life, rate capability, and protocol-dependent degradation.",
+    "source_text": "https://www.batteryarchive.org/",
+    "source_kind": "curated_public_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "lithium-ion battery cells",
+        "reaction_type": "",
+        "metric_name": "capacity_retention",
+        "metric_value": "dataset-dependent",
+        "metric_unit": "%",
+        "condition_text": "Depends on cycling protocol, temperature, C-rate, and voltage window.",
+        "baseline": "",
+        "battery_type": "lithium-ion",
+        "ion_type": "Li",
+        "key_mechanism": "Capacity retention tracks degradation across cycles."
+      },
+      {
+        "material_system": "lithium-ion battery cells",
+        "reaction_type": "",
+        "metric_name": "cycle_number",
+        "metric_value": "dataset-dependent",
+        "metric_unit": "cycles",
+        "condition_text": "Use with protocol metadata.",
+        "baseline": "",
+        "battery_type": "lithium-ion",
+        "ion_type": "Li",
+        "key_mechanism": "Cycle life must be interpreted with depth of discharge and cutoff criteria."
+      }
+    ]
+  },
+  {
+    "domain": "battery",
+    "title": "NASA Prognostics Center Li-ion Battery Aging Datasets",
+    "doi": "",
+    "year": "public",
+    "journal": "NASA PCoE Data Repository",
+    "material_system": "Li-ion cells under aging protocols",
+    "reaction_type": "",
+    "battery_type": "lithium-ion",
+    "ion_type": "Li",
+    "key_data": "Public battery aging data with charge/discharge, impedance, and degradation trajectories.",
+    "key_mechanism": "Useful for cycle-life, SOH, impedance growth, and prognostics hypotheses.",
+    "source_text": "https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/",
+    "source_kind": "curated_public_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "Li-ion cells under aging protocols",
+        "reaction_type": "",
+        "metric_name": "state_of_health",
+        "metric_value": "dataset-dependent",
+        "metric_unit": "%",
+        "condition_text": "Derived from capacity fade relative to rated or initial capacity.",
+        "baseline": "",
+        "battery_type": "lithium-ion",
+        "ion_type": "Li",
+        "key_mechanism": "SOH connects cycling history to degradation state."
+      },
+      {
+        "material_system": "Li-ion cells under aging protocols",
+        "reaction_type": "",
+        "metric_name": "impedance_growth",
+        "metric_value": "dataset-dependent",
+        "metric_unit": "ohm",
+        "condition_text": "Use impedance records where available.",
+        "baseline": "",
+        "battery_type": "lithium-ion",
+        "ion_type": "Li",
+        "key_mechanism": "Impedance growth can indicate interfacial and transport degradation."
+      }
+    ]
+  },
+  {
+    "domain": "battery",
+    "title": "CALCE Battery Research Group public battery datasets",
+    "doi": "",
+    "year": "public",
+    "journal": "CALCE Battery Data",
+    "material_system": "Li-ion battery cells",
+    "reaction_type": "",
+    "battery_type": "lithium-ion",
+    "ion_type": "Li",
+    "key_data": "Public battery test datasets for degradation, cycling, and prognostics studies.",
+    "key_mechanism": "Provides reference metadata for degradation and lifetime hypothesis validation.",
+    "source_text": "https://calce.umd.edu/battery-data",
+    "source_kind": "curated_public_metadata",
+    "reliability_level": "curated_public_metadata",
+    "metrics": [
+      {
+        "material_system": "Li-ion battery cells",
+        "reaction_type": "",
+        "metric_name": "specific_capacity",
+        "metric_value": "dataset-dependent",
+        "metric_unit": "mAh g-1",
+        "condition_text": "Requires electrode mass loading and protocol metadata.",
+        "baseline": "",
+        "battery_type": "lithium-ion",
+        "ion_type": "Li",
+        "key_mechanism": "Specific capacity should be compared under matched current and voltage windows."
+      },
+      {
+        "material_system": "Li-ion battery cells",
+        "reaction_type": "",
+        "metric_name": "coulombic_efficiency",
+        "metric_value": "dataset-dependent",
+        "metric_unit": "%",
+        "condition_text": "Charge/discharge capacity ratio by cycle.",
+        "baseline": "",
+        "battery_type": "lithium-ion",
+        "ion_type": "Li",
+        "key_mechanism": "CE is sensitive to parasitic reactions and inventory loss."
+      }
+    ]
+  }
+]

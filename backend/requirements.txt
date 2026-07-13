@@ -1,0 +1,17 @@
+-e ..
+fastapi>=0.136.0
+httpx>=0.28,<1
+uvicorn[standard]>=0.30.0
+pydantic-settings>=2.0.0
+SQLAlchemy
+passlib[bcrypt]==1.7.4
+requests>=2.32.5,<3
+numpy
+scikit-learn
+PyMuPDF
+python-multipart>=0.0.9
+Pillow
+pandas
+openpyxl
+xlrd
+pymatgen

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+# Chalk Web installs this package editable so project-owned runtime paths remain explicit.
+
+[project]
+name = "chalk-web-science-core"
+version = "0.1.0"
+description = "Self-contained scientific core vendored for Chalk Web"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+agents = ["json5", "qwen-agent[rag,code_interpreter,mcp]>=0.0.34"]
+documents = ["docling>=2.95.0", "paper-qa>=2026.3.18"]
+modeling = ["ase>=3.28.0", "atomate2>=0.1.4", "jobflow", "mp-api", "rdkit"]
+visualization = ["jieba", "matplotlib"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["chalk_app*"]
+
+[tool.setuptools.package-data]
+chalk_app = ["literature/curated_energy_evidence.json"]

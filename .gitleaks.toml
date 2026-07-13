@@ -1,0 +1,9 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public scientific metadata misidentified as a generic API key"
+regexTarget = "secret"
+regexes = [
+  '''^Electronic/surface$''',
+]

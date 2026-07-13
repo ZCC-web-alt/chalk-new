@@ -1,0 +1,53 @@
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+
+# Runtime data, uploads, and generated assets
+data/
+backend/data/
+uploads/
+.uploads/
+workspace/
+
+# Build and package outputs
+build/
+dist/
+frontend/.next/
+frontend/node_modules/
+*.tsbuildinfo
+*.egg-info/
+
+# Tests, coverage, and caches
+frontend/test-results/
+frontend/playwright-report/
+.pytest_cache/
+**/.pytest_cache/
+**/__pycache__/
+*.py[cod]
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+tmp/
+temp/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
