@@ -74,6 +74,41 @@ class ScienceCanaryTestCase(unittest.TestCase):
         self.assertEqual(first_raw, "not-json")
         self.assertEqual(json.loads(repair_raw)["contractVersion"], "research-v1")
 
+    def test_failed_schema_repair_keeps_raw_outputs_without_validated_artifact(self) -> None:
+        from app.services.science_canary import run_canary_item
+        from chalk_app.core.llm_client import LLMBudget, LLMConfig
+
+        with tempfile.TemporaryDirectory() as temp_dir, patch(
+            "app.services.science_canary._chat_result",
+            side_effect=[
+                self.result("not-json", "request-first"),
+                self.result("still-not-json", "request-repair"),
+            ],
+        ) as call:
+            output_dir = Path(temp_dir)
+            with self.assertRaisesRegex(ValueError, "did not contain a JSON object"):
+                run_canary_item(
+                    {
+                        "id": "S125-006",
+                        "question": "How can we measure interface phenomena on the microscopic level?",
+                    },
+                    config=LLMConfig(api_key="test-key", model="qwen-test"),
+                    budget=LLMBudget(max_total_tokens=1000),
+                    telemetry_sink=lambda _: None,
+                    output_dir=output_dir,
+                )
+
+            self.assertEqual(call.call_count, 2)
+            self.assertEqual(
+                (output_dir / "S125-006.initial.raw.txt").read_text(encoding="utf-8"),
+                "not-json",
+            )
+            self.assertEqual(
+                (output_dir / "S125-006.repair.raw.txt").read_text(encoding="utf-8"),
+                "still-not-json",
+            )
+            self.assertFalse((output_dir / "S125-006.json").exists())
+
     def test_repairs_a_structurally_valid_response_with_the_wrong_contract_version(self) -> None:
         from app.services.science_canary import run_canary_item
         from chalk_app.core.llm_client import LLMBudget, LLMConfig
