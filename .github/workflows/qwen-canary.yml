@@ -1,0 +1,46 @@
+name: Qwen Canary
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    environment: qwen-canary
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - working-directory: backend
+        run: python -m pip install -r requirements.txt
+      - run: python scripts/generate_research_contract.py --check
+      - run: python scripts/validate_science125_manifest.py benchmarks/science125/science125-v1.json
+      - env:
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          QWEN_MAX_ESTIMATED_COST_CNY: ${{ vars.QWEN_MAX_ESTIMATED_COST_CNY }}
+          QWEN_INPUT_COST_PER_MILLION_CNY: ${{ vars.QWEN_INPUT_COST_PER_MILLION_CNY }}
+          QWEN_OUTPUT_COST_PER_MILLION_CNY: ${{ vars.QWEN_OUTPUT_COST_PER_MILLION_CNY }}
+        run: >-
+          python scripts/run_science_canary.py
+          --manifest benchmarks/science125/science125-v1.json
+          --output-dir data/canary
+          --summary-path canary-summary.json
+          --ledger-path data/canary-ledger.db
+          --model qwen3.7-max
+          --max-total-tokens 60000
+          --require-cost-budget
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qwen-canary-evidence
+          path: |
+            canary-summary.json
+            data/canary/*
+            data/canary-ledger.db
+          if-no-files-found: warn
+          retention-days: 14
