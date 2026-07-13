@@ -32,7 +32,7 @@ jobs:
           --summary-path canary-summary.json
           --ledger-path data/canary-ledger.db
           --model qwen3.7-max
-          --max-total-tokens 60000
+          --max-total-tokens 120000
           --require-cost-budget
       - uses: actions/upload-artifact@v4
         if: always()
