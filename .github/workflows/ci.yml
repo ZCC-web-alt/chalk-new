@@ -115,5 +115,5 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
       - working-directory: backend
         run: python -m pip_audit --requirement requirements.txt --progress-spinner off
-      - run: go install github.com/gitleaks/gitleaks/v8@v8.24.3
+      - run: go install github.com/zricethezav/gitleaks/v8@v8.24.3
       - run: $(go env GOPATH)/bin/gitleaks git --redact --verbose --config .gitleaks.toml .
