@@ -239,6 +239,40 @@ class ResearchContractTestCase(unittest.TestCase):
         with self.assertRaises(ValidationError):
             ResearchOutput.model_validate(dangling_reference)
 
+    def test_science125_extension_is_strict_and_general_science_only(self) -> None:
+        from app.schemas.research import ResearchOutput
+
+        science125 = valid_contract()
+        science125["science125"] = {
+            "questionId": "S125-054",
+            "routingVersion": "science125-routing-v1",
+            "benchmarkDomain": "Astronomy",
+            "primarySubdomain": "astro.cosmic_rays",
+            "crossDomainTags": ["physics"],
+            "methodProfile": {"primary": "observational", "secondary": ["computational"]},
+            "promptProfile": "s125.astronomy.v1",
+            "retrievalProfile": "retrieval.astro.high_energy.v1",
+            "evidenceStatus": "sufficient",
+            "domainChecks": ["source_traceability", "negative_evidence", "measurement_plan"],
+        }
+        parsed = ResearchOutput.model_validate(science125)
+        self.assertEqual(parsed.science125.question_id, "S125-054")  # type: ignore[union-attr]
+
+        polluted = valid_contract()
+        polluted["profile"] = "chemistry"
+        polluted["chemistrySubdomain"] = "electrocatalysis"
+        polluted["science125"] = science125["science125"]
+        with self.assertRaises(ValidationError):
+            ResearchOutput.model_validate(polluted)
+
+        unknown_check = valid_contract()
+        unknown_check["science125"] = {
+            **science125["science125"],  # type: ignore[dict-item]
+            "domainChecks": ["model_says_it_is_correct"],
+        }
+        with self.assertRaises(ValidationError):
+            ResearchOutput.model_validate(unknown_check)
+
     def test_generated_json_schema_and_readonly_types_are_current(self) -> None:
         result = subprocess.run(
             [sys.executable, str(PROJECT_DIR / "scripts" / "generate_research_contract.py"), "--check"],

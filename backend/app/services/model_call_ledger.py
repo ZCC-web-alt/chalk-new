@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping
 
-from sqlalchemy import DateTime, Float, Integer, String, create_engine, select
+from sqlalchemy import DateTime, Float, Integer, String, create_engine, inspect, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
@@ -69,6 +69,8 @@ class ModelCallLedgerRow(ModelLedgerBase):
     estimated_cost: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     prompt_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     response_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    policy_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    evidence_snapshot_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -91,6 +93,8 @@ class StoredModelCall:
     estimated_cost: float
     prompt_hash: str | None
     response_hash: str | None
+    policy_hash: str | None
+    evidence_snapshot_hash: str | None
     status: str
     created_at: datetime
 
@@ -106,6 +110,15 @@ class ModelCallLedgerStore:
         )
         self.session_factory = sessionmaker(bind=self.engine, expire_on_commit=False, future=True)
         ModelLedgerBase.metadata.create_all(self.engine)
+        columns = {column["name"] for column in inspect(self.engine).get_columns("model_call_ledger")}
+        missing_columns = {
+            "policy_hash": "VARCHAR(64)",
+            "evidence_snapshot_hash": "VARCHAR(64)",
+        }
+        with self.engine.begin() as connection:
+            for name, definition in missing_columns.items():
+                if name not in columns:
+                    connection.exec_driver_sql(f"ALTER TABLE model_call_ledger ADD COLUMN {name} {definition}")
 
     @staticmethod
     def _stored(row: ModelCallLedgerRow) -> StoredModelCall:
@@ -126,6 +139,8 @@ class ModelCallLedgerStore:
             estimated_cost=row.estimated_cost,
             prompt_hash=row.prompt_hash,
             response_hash=row.response_hash,
+            policy_hash=row.policy_hash,
+            evidence_snapshot_hash=row.evidence_snapshot_hash,
             status=row.status,
             created_at=row.created_at,
         )
@@ -156,6 +171,8 @@ class ModelCallLedgerStore:
             estimated_cost=_nonnegative_float(event.get("estimated_cost")),
             prompt_hash=_hash(event.get("prompt_hash")),
             response_hash=_hash(event.get("response_hash")),
+            policy_hash=_hash(event.get("policy_hash")),
+            evidence_snapshot_hash=_hash(event.get("evidence_snapshot_hash")),
             status=status,
             created_at=utc_now(),
         )

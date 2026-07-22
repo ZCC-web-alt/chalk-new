@@ -20,7 +20,7 @@ from app.core.legacy import llm_client as load_llm_client  # noqa: E402
 CANARY_IDS = ("S125-006", "S125-043", "S125-054")
 
 
-def _load_canary_items(path: Path) -> list[dict[str, object]]:
+def _load_canary_items(path: Path, evidence_path: Path) -> list[dict[str, object]]:
     manifest = json.loads(path.read_text(encoding="utf-8"))
     if manifest.get("manifestVersion") != "science125-v1":
         raise ValueError("The canary runner requires the science125-v1 manifest.")
@@ -35,7 +35,18 @@ def _load_canary_items(path: Path) -> list[dict[str, object]]:
     missing = [item_id for item_id in CANARY_IDS if item_id not in by_id]
     if missing:
         raise ValueError(f"Science 125 canary items are missing: {', '.join(missing)}")
-    return [by_id[item_id] for item_id in CANARY_IDS]
+    evidence_payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+    if not isinstance(evidence_payload, dict):
+        raise ValueError("The canary evidence file must map pilot IDs to reviewed records.")
+    items: list[dict[str, object]] = []
+    for item_id in CANARY_IDS:
+        records = evidence_payload.get(item_id)
+        if not isinstance(records, list) or len(records) < 3:
+            raise ValueError(f"Canary item {item_id} requires at least three reviewed evidence records.")
+        item = dict(by_id[item_id])
+        item["evidenceRecords"] = records
+        items.append(item)
+    return items
 
 
 def _write_summary(path: Path, payload: dict[str, object]) -> None:
@@ -50,6 +61,12 @@ def _write_summary(path: Path, payload: dict[str, object]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run three real, auditable Science 125 Qwen canaries.")
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument(
+        "--evidence",
+        type=Path,
+        required=True,
+        help="Controlled JSON mapping each pilot ID to reviewed EvidenceRecord objects.",
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--summary-path", type=Path, required=True)
     parser.add_argument("--ledger-path", type=Path, default=PROJECT_ROOT / "data" / "web.db")
@@ -104,7 +121,7 @@ def main() -> int:
             return 2
 
     try:
-        items = _load_canary_items(args.manifest.resolve())
+        items = _load_canary_items(args.manifest.resolve(), args.evidence.resolve())
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"Cannot load Science 125 manifest: {exc}", file=sys.stderr)
         return 2

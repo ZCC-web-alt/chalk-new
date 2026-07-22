@@ -5,7 +5,21 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routers import analyses, auth, documents, evidence, glossary, health, hypotheses, jobs, lab_records, modeling, multimodal, settings
+from app.api.routers import (
+    analyses,
+    auth,
+    documents,
+    evidence,
+    glossary,
+    health,
+    hypotheses,
+    jobs,
+    lab_records,
+    modeling,
+    multimodal,
+    science125,
+    settings,
+)
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.legacy import db
@@ -68,6 +82,7 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router, prefix="/api")
     app.include_router(multimodal.router, prefix="/api")
     app.include_router(modeling.router, prefix="/api")
+    app.include_router(science125.router, prefix="/api")
     return app
 
 

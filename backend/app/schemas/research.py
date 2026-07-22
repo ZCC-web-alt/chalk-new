@@ -13,6 +13,80 @@ ResearchProfile = Literal["general_science", "chemistry"]
 HypothesisVerdict = Literal["supports", "refutes", "insufficient_evidence"]
 NonEmptyString = Annotated[str, Field(min_length=1)]
 JsonPointer = Annotated[str, Field(min_length=1, pattern=r"^/(?:[^~]|~[01])*$")]
+Science125Domain = Literal[
+    "Mathematical Sciences",
+    "Chemistry",
+    "Medicine & Health",
+    "Biology",
+    "Astronomy",
+    "Physics",
+    "Engineering & Materials Science",
+    "Information Science",
+    "Neuroscience",
+    "Ecology",
+    "Energy Science",
+    "Artificial Intelligence",
+]
+Science125Method = Literal[
+    "proof",
+    "experimental",
+    "observational",
+    "clinical",
+    "engineering",
+    "computational",
+    "systems_policy",
+]
+Science125CrossDomainTag = Literal[
+    "mathematics",
+    "chemistry",
+    "physics",
+    "biology",
+    "medicine",
+    "astronomy",
+    "engineering",
+    "materials",
+    "information",
+    "ai",
+    "neuroscience",
+    "ecology",
+    "energy",
+    "earth_science",
+    "climate",
+    "space_systems",
+    "social_science",
+    "cognitive_science",
+    "psychology",
+    "evolution",
+    "genetics",
+    "immunology",
+    "pharmacology",
+    "public_health",
+    "nanomedicine",
+    "robotics",
+    "agriculture",
+    "geology",
+    "philosophy",
+    "economics",
+    "quantum",
+    "mathematical_sciences",
+    "medicine_health",
+    "engineering_materials",
+    "information_science",
+    "energy_science",
+    "artificial_intelligence",
+]
+Science125DomainCheck = Literal[
+    "source_traceability",
+    "negative_evidence",
+    "measurement_plan",
+    "operational_definition",
+    "uncertainty_budget",
+    "selection_effects",
+    "replication",
+    "safety_boundary",
+    "data_leakage",
+    "applicability_boundary",
+]
 
 
 class ResearchContractModel(BaseModel):
@@ -101,6 +175,38 @@ class ResearchQuality(ResearchContractModel):
     notes: list[NonEmptyString]
 
 
+class Science125MethodProfile(ResearchContractModel):
+    primary: Science125Method
+    secondary: list[Science125Method] = Field(default_factory=list, max_length=2)
+
+    @field_validator("secondary")
+    @classmethod
+    def require_unique_secondary(cls, values: list[Science125Method]) -> list[Science125Method]:
+        if len(set(values)) != len(values):
+            raise ValueError("Science 125 secondary methods must be unique.")
+        return values
+
+
+class Science125Extension(ResearchContractModel):
+    question_id: str = Field(alias="questionId", pattern=r"^S125-(?:0(?:0[1-9]|[1-9]\d)|1(?:[01]\d|2[0-5]))$")
+    routing_version: Literal["science125-routing-v1"] = Field(alias="routingVersion")
+    benchmark_domain: Science125Domain = Field(alias="benchmarkDomain")
+    primary_subdomain: NonEmptyString = Field(alias="primarySubdomain", max_length=120)
+    cross_domain_tags: list[Science125CrossDomainTag] = Field(alias="crossDomainTags", max_length=8)
+    method_profile: Science125MethodProfile = Field(alias="methodProfile")
+    prompt_profile: NonEmptyString = Field(alias="promptProfile", max_length=120)
+    retrieval_profile: NonEmptyString = Field(alias="retrievalProfile", max_length=120)
+    evidence_status: Literal["sufficient", "partial", "insufficient"] = Field(alias="evidenceStatus")
+    domain_checks: list[Science125DomainCheck] = Field(alias="domainChecks", min_length=1, max_length=16)
+
+    @field_validator("cross_domain_tags", "domain_checks")
+    @classmethod
+    def require_unique_items(cls, values: list[str]) -> list[str]:
+        if len(set(values)) != len(values):
+            raise ValueError("Science 125 extension lists must not contain duplicates.")
+        return values
+
+
 class ModelProvenance(ResearchContractModel):
     provider: NonEmptyString
     model: NonEmptyString
@@ -135,6 +241,7 @@ class ResearchOutput(ResearchContractModel):
     research_plan: ResearchPlan
     quality: ResearchQuality
     provenance: ModelProvenance
+    science125: Science125Extension | None = None
 
     @field_validator("hypotheses")
     @classmethod
@@ -156,6 +263,8 @@ class ResearchOutput(ResearchContractModel):
                 self.chemistry_subdomain is not None or self.chemistry is not None
         ):
             raise ValueError("Chemistry-specific fields are only valid for the chemistry profile.")
+        if self.science125 is not None and self.profile != "general_science":
+            raise ValueError("Science 125 output must use the general_science profile.")
 
         evidence_ids = [claim.id for claim in self.evidence_claims]
         if len(evidence_ids) != len(set(evidence_ids)):
@@ -264,4 +373,10 @@ __all__ = [
     "ResultFeedback",
     "RoundChange",
     "RoundChangeSet",
+    "Science125CrossDomainTag",
+    "Science125Domain",
+    "Science125DomainCheck",
+    "Science125Extension",
+    "Science125Method",
+    "Science125MethodProfile",
 ]

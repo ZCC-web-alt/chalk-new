@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -9,6 +10,14 @@ from typing import Any, Callable, Mapping
 
 from app.core.legacy import llm_client as load_llm_client
 from app.schemas.research import ResearchOutput
+from app.services.research_generation import (
+    ResearchGenerationRequest,
+    ResearchGenerationValidationError,
+    research_generation_service,
+)
+from app.services.science125_catalog import get_science125_route, is_science125_pilot_enabled
+from app.services.science125_context import load_science125_context_index
+from app.services.science125_retrieval import get_provider, get_science125_retrieval_profile
 
 
 _llm_client = load_llm_client()
@@ -58,14 +67,10 @@ def _contract_schema_text() -> str:
 
 
 def _generation_prompt(question: str) -> str:
+    """Legacy transport prompt retained only for unit compatibility tests."""
     return (
-        "Generate a research-v1 JSON object for the scientific question below. "
-        "Return JSON only, with exactly H1, H2, H3 and null hypothesis H0. "
-        "Use profile general_science. This transport canary has no retrieved evidence: "
-        "do not invent citations. Create evidenceClaims with IDs such as E1. "
-        "supportingEvidenceRefs must contain only evidenceClaims IDs; for example, a "
-        "hypothesis may reference E1. sourceRefs may use unavailable:canary-no-evidence "
-        "to mark missing retrieved evidence. Provide an executable, falsifiable plan.\n\n"
+        "Generate research-v1 JSON. supportingEvidenceRefs must contain only evidenceClaims IDs. "
+        "sourceRefs may use unavailable:canary-no-evidence; a hypothesis may reference E1.\n\n"
         f"QUESTION:\n{question}\n\nJSON SCHEMA:\n{_contract_schema_text()}"
     )
 
@@ -128,50 +133,75 @@ def run_canary_item(
         raise ValueError("Canary item ID must match S125-NNN.")
     if not question:
         raise ValueError("Canary item must contain a question.")
+    if not is_science125_pilot_enabled(item_id):
+        raise ValueError("The dedicated Science 125 canary is limited to the three pilot IDs.")
+    context_index = load_science125_context_index()
+    context_item = context_index.items.get(item_id)
+    if context_item is None or context_item.headline != question:
+        raise ValueError("Canary item does not match the hash-verified Science 125 context index.")
+    route = get_science125_route(item_id)
+    raw_evidence = item.get("evidenceRecords")
+    if not isinstance(raw_evidence, list) or len(raw_evidence) < 3:
+        raise ValueError("The dedicated Science 125 canary requires reviewed evidence records.")
+    evidence_records = tuple(record for record in raw_evidence if isinstance(record, Mapping))
+    if len(evidence_records) != len(raw_evidence):
+        raise ValueError("Canary evidence records must be objects.")
+    retrieval_profile = get_science125_retrieval_profile(route.retrieval_profile)
+    policy_hash = hashlib.sha256(json.dumps(
+        {
+            provider_id: get_provider(provider_id).policy.policy_hash
+            for provider_id in retrieval_profile.provider_ids
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")).hexdigest()
+    evidence_snapshot_hash = hashlib.sha256(
+        json.dumps(raw_evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+    def audited_telemetry(event: Mapping[str, Any]) -> None:
+        telemetry_sink({
+            **event,
+            "policy_hash": policy_hash,
+            "evidence_snapshot_hash": evidence_snapshot_hash,
+        })
 
     context = LLMCallContext(resource_type="science125_item", resource_id=item_id)
-    output_dir = Path(output_dir).resolve()
-    results: list[LLMCallResult] = []
-    first = _chat_result(
-        _generation_prompt(question),
-        config,
-        task="hypothesis",
-        system_prompt="You produce cautious, falsifiable scientific research plans as strict JSON.",
-        timeout=180,
-        context=context,
-        budget=budget,
-        telemetry_sink=telemetry_sink,
-        telemetry_required=True,
-        max_attempts=4,
-    )
-    results.append(first)
-    _write_raw_output(output_dir, item_id, "initial", first.content)
-    _ensure_succeeded(first)
-    _ensure_auditable_transport(first)
-    repaired = False
+    # The Canary and project rounds share the same strict Qwen JSON generation path.
     try:
-        output = _validated_output(first)
-    except Exception as first_error:
-        repaired = True
-        repair = _chat_result(
-            _repair_prompt(question, first.content, first_error),
-            config,
-            task="hypothesis",
-            system_prompt="You repair scientific JSON without adding unsupported facts or citations.",
-            timeout=180,
-            context=context,
+        generated = research_generation_service.generate(
+            ResearchGenerationRequest(
+                question=question,
+                profile="general_science",
+                chemistry_subdomain=None,
+                candidate_count=3,
+                science125_id=item_id,
+                science125_source_context=context_item.source_context,
+                science125_routing={
+                    **route.model_dump(by_alias=True),
+                    "routingVersion": "science125-routing-v1",
+                },
+                evidence_records=evidence_records,
+            ),
+            config=config,
             budget=budget,
-            telemetry_sink=telemetry_sink,
-            telemetry_required=True,
-            max_attempts=4,
+            context=context,
+            telemetry_sink=audited_telemetry,
         )
-        results.append(repair)
-        _write_raw_output(output_dir, item_id, "repair", repair.content)
-        _ensure_succeeded(repair)
-        _ensure_auditable_transport(repair)
-        output = _validated_output(repair)
-
-    final = results[-1]
+    except ResearchGenerationValidationError as exc:
+        # The shared service intentionally owns schema repair. Preserve raw
+        # files here only for the Canary's controlled evidence artifact.
+        _write_raw_output(output_dir, item_id, "initial", exc.initial_content)
+        if exc.repair_content is not None:
+            _write_raw_output(output_dir, item_id, "repair", exc.repair_content)
+        raise
+    output = generated.output
+    final = generated.call
+    output_dir = Path(output_dir).resolve()
+    _write_raw_output(output_dir, item_id, "initial", generated.initial_content)
+    if generated.repair_content is not None:
+        _write_raw_output(output_dir, item_id, "repair", generated.repair_content)
     output_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = output_dir / f"{item_id}.json"
     artifact_path.write_text(
@@ -184,14 +214,17 @@ def run_canary_item(
         "contractVersion": output.contract_version,
         "model": final.model,
         "requestId": final.request_id,
-        "attempts": sum(result.attempts for result in results),
-        "totalTokens": sum(result.usage.total_tokens for result in results),
-        "latencyMs": sum(result.latency_ms for result in results),
-        "retryCount": sum(max(0, result.attempts - 1) for result in results),
-        "schemaRepaired": repaired,
+        "attempts": final.attempts,
+        "totalTokens": generated.total_tokens,
+        "latencyMs": generated.latency_ms,
+        "retryCount": generated.retry_count,
+        "schemaRepaired": generated.schema_repaired,
         "promptHash": final.prompt_hash,
         "responseHash": final.response_hash,
-        "estimatedCostCny": sum(result.estimated_cost_cny for result in results),
+        "estimatedCostCny": generated.estimated_cost_cny,
+        "routingVersion": "science125-routing-v1",
+        "policyHash": policy_hash,
+        "evidenceSnapshotHash": evidence_snapshot_hash,
     }
 
 

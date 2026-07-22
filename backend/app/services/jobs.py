@@ -11,9 +11,10 @@ import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from threading import RLock
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from app.core.config import get_settings
 from app.core.legacy import (
@@ -51,6 +52,7 @@ from app.services.document_analysis import (
     parse_translation_result,
     segment_texts,
 )
+from app.services.document_excerpts import DocumentPageExcerptError, extract_document_page_excerpt
 from app.services.hitl import hitl_feedback_broker
 from app.services.hypothesis_store import HypothesisArtifactStore
 from app.services.hypotheses import (
@@ -61,7 +63,28 @@ from app.services.hypotheses import (
     secure_report_html,
 )
 from app.services.job_store import StoredJob, WebJobStore
+from app.services.model_call_ledger import ModelCallLedgerStore
+from app.services.research_generation import (
+    ResearchGenerationRequest,
+    ResearchGenerationService,
+    ResearchGenerationValidationError,
+)
+from app.services.science125_catalog import (
+    Science125RoutingError,
+    get_science125_route,
+    is_science125_pilot_enabled,
+)
 from app.services.science_workspace_store import ScienceWorkspaceStore
+from app.services.science125_context import Science125ContextError, load_science125_context_index
+from app.services.science125_retrieval import (
+    EvidenceRecord,
+    ProviderRateStateStore,
+    default_provider_adapters,
+    get_provider,
+    get_science125_retrieval_profile,
+    profile_readiness,
+    search_science125,
+)
 from app.services.modeling_generation import (
     MsGuideExtraction,
     VaspExtraction,
@@ -131,6 +154,8 @@ class JobService:
         self._store = store or WebJobStore(get_settings().web_db_path)
         self._analysis_store = DocumentAnalysisStore(self._store.path)
         self._hypothesis_store = HypothesisArtifactStore(self._store.path)
+        self._model_call_ledger = ModelCallLedgerStore(self._store.path)
+        self._science125_rate_store = ProviderRateStateStore(self._store.path)
         self._science_store: ScienceWorkspaceStore | None = None
         self._uploads_dir = self._store.path.parent / "uploads"
         self._uploads_dir.mkdir(parents=True, exist_ok=True)
@@ -182,6 +207,16 @@ class JobService:
             return self._hypothesis_store
 
     @property
+    def model_call_ledger(self) -> ModelCallLedgerStore:
+        with self._store_lock:
+            return self._model_call_ledger
+
+    @property
+    def science125_rate_store(self) -> ProviderRateStateStore:
+        with self._store_lock:
+            return self._science125_rate_store
+
+    @property
     def science_store(self) -> ScienceWorkspaceStore:
         with self._store_lock:
             if self._science_store is None:
@@ -226,10 +261,14 @@ class JobService:
             previous = self._store
             previous_analysis = self._analysis_store
             previous_hypothesis = self._hypothesis_store
+            previous_ledger = self._model_call_ledger
+            previous_rate_store = self._science125_rate_store
             previous_science = self._science_store
             self._store = WebJobStore(resolved)
             self._analysis_store = DocumentAnalysisStore(resolved)
             self._hypothesis_store = HypothesisArtifactStore(resolved)
+            self._model_call_ledger = ModelCallLedgerStore(resolved)
+            self._science125_rate_store = ProviderRateStateStore(resolved)
             self._science_store = None
             self._uploads_dir = resolved.parent / "uploads"
             self._uploads_dir.mkdir(parents=True, exist_ok=True)
@@ -246,8 +285,22 @@ class JobService:
             previous.dispose()
             previous_analysis.dispose()
             previous_hypothesis.dispose()
+            previous_ledger.dispose()
+            previous_rate_store.dispose()
             if previous_science is not None:
                 previous_science.dispose()
+
+    def dispose_stores(self) -> None:
+        """Release SQLite handles owned by the Web job service."""
+        with self._store_lock:
+            self._analysis_store.dispose()
+            self._hypothesis_store.dispose()
+            self._model_call_ledger.dispose()
+            self._science125_rate_store.dispose()
+            if self._science_store is not None:
+                self._science_store.dispose()
+                self._science_store = None
+            self._store.dispose()
 
     @staticmethod
     def _resource_for(job_type: str, payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -267,11 +320,18 @@ class JobService:
             }
         if job_type == "document_compare":
             return {"documentIds": sorted(payload.get("documentIds") or [])}
+        if job_type == "literature_search":
+            science125_id = str(payload.get("science125Id") or "").strip()
+            return {"science125Id": science125_id} if science125_id else None
         if job_type == "hypothesis_generate":
-            return {
+            resource = {
                 "sourceDocumentIds": list(payload.get("sourceDocIds") or []),
                 "domain": str(payload.get("domain") or ""),
             }
+            science125_id = str(payload.get("science125Id") or "").strip()
+            if science125_id:
+                resource["science125Id"] = science125_id
+            return resource
         if job_type == "hypothesis_report":
             return {
                 "hypothesisId": payload.get("hypothesisId"),
@@ -358,7 +418,7 @@ class JobService:
         return self.store.fail_interrupted_jobs()
 
     def interrupt_for_shutdown(self) -> int:
-        affected = self.store.fail_interrupted_jobs()
+        affected = self.fail_interrupted_jobs()
         hitl_feedback_broker.cancel_all()
         return affected
 
@@ -819,6 +879,135 @@ class JobService:
                 f"The document exceeds the {self._max_analysis_chars:,}-character analysis limit.",
             )
 
+    def _science125_authoritative_input(self, job: StoredJob) -> tuple[str, str, dict[str, Any]] | None:
+        science125_id = str(job.payload.get("science125Id") or "").strip()
+        if not science125_id:
+            return None
+        try:
+            index = load_science125_context_index()
+            item = index.items[science125_id]
+        except (Science125ContextError, KeyError) as exc:
+            raise SafeJobError(
+                "SCIENCE125_CONTEXT_UNAVAILABLE",
+                "The authoritative Science 125 source context is unavailable.",
+            ) from exc
+        expected_hash = str(job.payload.get("_science125ContextSha256") or "").strip()
+        if expected_hash and expected_hash != item.context_sha256:
+            raise SafeJobError(
+                "SCIENCE125_CONTEXT_CHANGED",
+                "The authoritative Science 125 source context changed before generation.",
+            )
+        expected_extraction = str(job.payload.get("_science125ExtractionVersion") or "").strip()
+        if expected_extraction and expected_extraction != index.extraction_version:
+            raise SafeJobError(
+                "SCIENCE125_CONTEXT_CHANGED",
+                "The Science 125 extraction version changed before generation.",
+            )
+        context = (
+            f"【Science 125 题册原文上下文 | item={item.id} | sha256={item.context_sha256}】\n"
+            f"{item.source_context}"
+        )
+        snapshot = {
+            "id": item.id,
+            "contextSha256": item.context_sha256,
+            "extractionVersion": index.extraction_version,
+            "pdfPage": item.pdf_page,
+            "bookletPage": item.booklet_page,
+        }
+        return item.headline, context, snapshot
+
+    def _source_page_input(
+        self,
+        job: StoredJob,
+        *,
+        include_excerpt_text: bool = False,
+    ) -> tuple[str, list[dict[str, Any]]]:
+        raw_selections = job.payload.get("sourcePageSelections") or []
+        if not raw_selections:
+            return "", []
+        if len(raw_selections) > 10:
+            raise SafeJobError("VALIDATION_ERROR", "Select at most 10 PDF page excerpts.")
+        allowed_root = (self.uploads_dir / str(job.user_id)).resolve()
+        snapshots: list[dict[str, Any]] = []
+        lines = ["【人工审核的自备 PDF 页摘录】"]
+        seen_documents: set[int] = set()
+        for index, selection in enumerate(raw_selections, start=1):
+            try:
+                document_id = int(selection["documentId"])
+                pages = [int(page) for page in selection["pages"]]
+                max_chars = int(selection["maxChars"])
+                expected_pdf_hash = str(selection["pdfSha256"])
+                expected_text_hash = str(selection["textSha256"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise SafeJobError("VALIDATION_ERROR", "A PDF page selection is invalid.") from exc
+            if document_id in seen_documents:
+                raise SafeJobError("VALIDATION_ERROR", "Each source document may have only one page selection.")
+            seen_documents.add(document_id)
+            document = self._load_owned_document(job.user_id, document_id)
+            if document.get("sourceType") != "pdf":
+                raise SafeJobError("EXCERPT_SOURCE_UNAVAILABLE", "A selected document has no available PDF source.")
+            try:
+                excerpt = extract_document_page_excerpt(
+                    str(document.get("sourcePath") or ""),
+                    pages=pages,
+                    max_chars=max_chars,
+                    allowed_root=allowed_root,
+                )
+            except DocumentPageExcerptError as exc:
+                raise SafeJobError(exc.code, exc.message) from exc
+            if excerpt.pdf_sha256 != expected_pdf_hash or excerpt.text_sha256 != expected_text_hash:
+                raise SafeJobError(
+                    "SOURCE_PAGE_SNAPSHOT_CHANGED",
+                    "A selected PDF page changed; review the pages again before generating.",
+                )
+            page_label = ", ".join(str(page) for page in excerpt.pages)
+            lines.extend([
+                (
+                    f"[P{index}] {document['title']} | documentId={document_id} | PDF pages={page_label} | "
+                    f"pdfSha256={excerpt.pdf_sha256} | textSha256={excerpt.text_sha256}"
+                ),
+                excerpt.text,
+            ])
+            snapshot = {
+                "documentId": document_id,
+                "title": document["title"],
+                "pages": excerpt.pages,
+                "pdfSha256": excerpt.pdf_sha256,
+                "textSha256": excerpt.text_sha256,
+                "maxChars": excerpt.max_chars,
+                "originalCharCount": excerpt.original_char_count,
+                "returnedCharCount": len(excerpt.text),
+                "truncated": excerpt.truncated,
+            }
+            if include_excerpt_text:
+                snapshot["excerptText"] = excerpt.text
+            snapshots.append(snapshot)
+        return "\n".join(lines), snapshots
+
+    def _prepare_science125_generation_input(self, job: StoredJob) -> dict[str, Any]:
+        authoritative_input = self._science125_authoritative_input(job)
+        if authoritative_input is None:
+            raise SafeJobError("SCIENCE125_ID_REQUIRED", "A Science 125 item ID is required.")
+        research_question, authoritative_context, source_context_snapshot = authoritative_input
+        reviewed_literature = str(
+            job.payload.get("supplementalContext") or job.payload.get("literatureText") or ""
+        ).strip()
+        page_context, source_page_snapshots = self._source_page_input(job)
+        sections = [authoritative_context]
+        if reviewed_literature:
+            sections.append(
+                "【人工审核的检索材料与补充证据；不属于权威题册原文】\n"
+                + reviewed_literature
+            )
+        if page_context:
+            sections.append(page_context)
+        return {
+            "researchQuestion": research_question,
+            "literatureText": "\n\n".join(sections),
+            "science125SourceContext": source_context_snapshot,
+            "sourcePageSelections": source_page_snapshots,
+        }
+
     def _summarize_texts(
         self,
         job: StoredJob,
@@ -1269,6 +1458,8 @@ class JobService:
         query_text = str(job.payload.get("queryText") or "").strip()
         if not query_text:
             raise SafeJobError("QUERY_REQUIRED", "A search query is required.")
+        if job.payload.get("science125Id"):
+            return self._run_science125_literature_search(job, query_text)
         requested = set(job.payload.get("platforms") or [])
         platform_keys = {
             "Crossref": "crossref",
@@ -1330,6 +1521,108 @@ class JobService:
                 "maxResults": query.max_results,
                 "yearFrom": query.year_from,
                 "yearTo": query.year_to,
+            },
+        }
+
+    @staticmethod
+    def _science125_evidence_is_full_text(record: Mapping[str, Any]) -> bool:
+        return str(record.get("accessStatus") or record.get("access_status") or "").strip().lower() not in {
+            "", "metadata", "metadata_only", "needs_verification",
+        }
+
+    @staticmethod
+    def _science125_provider_family(provider_id: str) -> str:
+        if provider_id == "user_pdf":
+            return "user_pdf"
+        try:
+            return get_provider(provider_id).family
+        except KeyError:
+            return provider_id
+
+    def _run_science125_literature_search(self, job: StoredJob, query_text: str) -> dict[str, Any]:
+        science125_id = str(job.payload.get("science125Id") or "").strip()
+        try:
+            route = get_science125_route(science125_id)
+            retrieval_profile = get_science125_retrieval_profile(route.retrieval_profile)
+            readiness = profile_readiness(route.retrieval_profile)
+        except (KeyError, Science125RoutingError) as exc:
+            raise SafeJobError(
+                "SCIENCE125_ROUTING_UNAVAILABLE",
+                "The Science 125 domain routing profile is unavailable.",
+            ) from exc
+        if not readiness.ready:
+            codes = ", ".join(readiness.missing_configuration_codes) or "provider configuration"
+            raise SafeJobError(
+                "SCIENCE125_PROVIDER_NOT_READY",
+                f"The required Science 125 literature providers are not ready: {codes}.",
+            )
+
+        self._update_progress(job, progress=10, message="Searching Science 125 official literature APIs.")
+        result = search_science125(
+            route.retrieval_profile,
+            query_text,
+            adapters=default_provider_adapters(),
+            store=self.science125_rate_store,
+            parameters={"science125Id": science125_id},
+            window=f"daily:{datetime.now(UTC).date().isoformat()}",
+            user_scope=str(job.user_id),
+        )
+        self._raise_if_cancelled(job)
+
+        rows: list[dict[str, Any]] = []
+        for record in result.evidence:
+            access_status = record.access_status or "metadata"
+            rows.append({
+                "id": record.stable_id,
+                "title": record.title,
+                "authors": ", ".join(record.authors),
+                "journal": "",
+                "year": "",
+                "doi": record.doi or "",
+                "abstract": record.abstract,
+                "sourcePlatform": record.provider,
+                "providerFamily": self._science125_provider_family(record.provider),
+                "url": record.full_text_url or (f"https://doi.org/{record.doi}" if record.doi else ""),
+                "isOpenAccess": access_status in {"open_full_text", "open_access", "study_registry"},
+                "relevanceScore": 0.0,
+                "accessStatus": access_status,
+                "needsFulltext": not self._science125_evidence_is_full_text(record.to_dict()),
+                "warning": record.warning or "",
+            })
+        diagnostics = {item.provider: item.to_dict() for item in result.diagnostics}
+        full_text_records = [row for row in rows if self._science125_evidence_is_full_text(row)]
+        families = {
+            self._science125_provider_family(str(row["sourcePlatform"]))
+            for row in full_text_records
+        }
+        evidence_status = (
+            "ready_for_review"
+            if len(full_text_records) >= retrieval_profile.min_accepted_evidence
+            and len(families) >= retrieval_profile.min_provider_families
+            else "evidence_insufficient"
+        )
+        warnings = [
+            item.message
+            for item in result.diagnostics
+            if item.message and item.status != "succeeded"
+        ]
+        return {
+            "results": rows,
+            "platformStatus": diagnostics,
+            "providerDiagnostics": [item.to_dict() for item in result.diagnostics],
+            "warnings": warnings,
+            "evidenceStatus": evidence_status,
+            "query": {
+                "queryText": query_text,
+                "science125Id": science125_id,
+                "retrievalProfile": route.retrieval_profile,
+                "queryHash": result.query_hash,
+                "cacheKey": result.cache_key,
+                "maxProviders": retrieval_profile.max_providers,
+            },
+            "policyHashes": {
+                provider_id: get_provider(provider_id).policy.policy_hash
+                for provider_id in retrieval_profile.provider_ids
             },
         }
 
@@ -1880,7 +2173,209 @@ class JobService:
             item["path"] = str(candidate)
         return cloned
 
+    @staticmethod
+    def _science125_snapshot_hash(payload: Mapping[str, Any]) -> str:
+        return hashlib.sha256(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+
+    def _required_science125_llm_config(self):
+        api_key = str(os.getenv("DASHSCOPE_API_KEY") or "").strip()
+        if not api_key:
+            raise SafeJobError(
+                "DASHSCOPE_API_KEY_REQUIRED",
+                "Science 125 generation requires the server DASHSCOPE_API_KEY.",
+            )
+        try:
+            input_cost = float(str(os.getenv("QWEN_INPUT_COST_PER_MILLION_CNY") or ""))
+            output_cost = float(str(os.getenv("QWEN_OUTPUT_COST_PER_MILLION_CNY") or ""))
+        except ValueError as exc:
+            raise SafeJobError(
+                "SCIENCE125_MODEL_PRICING_REQUIRED",
+                "Science 125 generation requires valid Qwen input and output token prices.",
+            ) from exc
+        if input_cost <= 0 or output_cost <= 0:
+            raise SafeJobError(
+                "SCIENCE125_MODEL_PRICING_REQUIRED",
+                "Science 125 generation requires positive Qwen input and output token prices.",
+            )
+        return llm_client().LLMConfig(
+            api_key=api_key,
+            model="qwen3.7-max",
+            input_cost_per_million_cny=input_cost,
+            output_cost_per_million_cny=output_cost,
+        )
+
+    def _science125_reviewed_evidence(self, job: StoredJob) -> tuple[list[dict[str, Any]], dict[str, Any], str, str]:
+        science125_id = str(job.payload.get("science125Id") or "").strip()
+        search_job_id = str(job.payload.get("literatureSearchJobId") or "").strip()
+        search_job = self.store.get_for_user(job.user_id, search_job_id)
+        if not search_job or search_job.type != "literature_search":
+            raise SafeJobError("SCIENCE125_SEARCH_NOT_FOUND", "The reviewed literature search was not found.")
+        if search_job.status != "SUCCEEDED":
+            raise SafeJobError("SCIENCE125_SEARCH_NOT_READY", "The reviewed literature search has not completed.")
+        if str(search_job.payload.get("science125Id") or "") != science125_id:
+            raise SafeJobError("SCIENCE125_SEARCH_MISMATCH", "The reviewed literature search belongs to another item.")
+        search_result = search_job.result if isinstance(search_job.result, dict) else {}
+        result_rows = search_result.get("results") if isinstance(search_result.get("results"), list) else []
+        by_id = {
+            str(row.get("id") or "").strip(): row
+            for row in result_rows
+            if isinstance(row, dict) and str(row.get("id") or "").strip()
+        }
+        reviewed_ids = [str(value).strip() for value in job.payload.get("reviewedEvidenceIds") or []]
+        if not reviewed_ids or any(value not in by_id for value in reviewed_ids):
+            raise SafeJobError(
+                "SCIENCE125_EVIDENCE_SNAPSHOT_INVALID",
+                "One or more reviewed evidence records are unavailable in the completed search snapshot.",
+            )
+        records: list[dict[str, Any]] = []
+        for evidence_id in reviewed_ids:
+            row = by_id[evidence_id]
+            records.append({
+                "provider": str(row.get("sourcePlatform") or "").strip(),
+                "providerFamily": str(row.get("providerFamily") or "").strip()
+                or self._science125_provider_family(str(row.get("sourcePlatform") or "")),
+                "stableId": evidence_id,
+                "title": str(row.get("title") or "").strip(),
+                "abstract": str(row.get("abstract") or "").strip(),
+                "doi": str(row.get("doi") or "").strip() or None,
+                "fullTextUrl": str(row.get("url") or "").strip() or None,
+                "accessStatus": str(row.get("accessStatus") or "metadata").strip() or "metadata",
+                "warning": str(row.get("warning") or "").strip() or None,
+            })
+
+        _page_context, page_snapshots = self._source_page_input(job, include_excerpt_text=True)
+        for snapshot in page_snapshots:
+            excerpt_text = str(snapshot.pop("excerptText", "")).strip()
+            text_hash = str(snapshot.get("textSha256") or "")
+            document_id = int(snapshot.get("documentId") or 0)
+            if not excerpt_text or not text_hash or document_id < 1:
+                raise SafeJobError("SOURCE_PAGE_SNAPSHOT_CHANGED", "A reviewed PDF page excerpt is unavailable.")
+            records.append({
+                "provider": "user_pdf",
+                "providerFamily": "user_pdf",
+                "stableId": f"user_pdf:{document_id}:{text_hash}",
+                "title": str(snapshot.get("title") or "Reviewed PDF page excerpt"),
+                "abstract": excerpt_text,
+                "accessStatus": "reviewed_full_text_excerpt",
+                "warning": "User-reviewed PDF page excerpt; validate its publication provenance before relying on it.",
+            })
+
+        full_text_records = [record for record in records if self._science125_evidence_is_full_text(record)]
+        families = {
+            str(record.get("providerFamily") or "").strip()
+            or self._science125_provider_family(str(record.get("provider") or ""))
+            for record in full_text_records
+        }
+        if len(full_text_records) < 3 or len(families) < 2:
+            raise SafeJobError(
+                "EVIDENCE_INSUFFICIENT",
+                "Science 125 generation requires at least three reviewed full-text evidence records from two provider families.",
+            )
+        search_query = search_result.get("query") if isinstance(search_result.get("query"), dict) else {}
+        snapshot = {
+            "searchJobId": search_job.id,
+            "queryHash": str(search_query.get("queryHash") or ""),
+            "reviewedEvidence": [
+                {
+                    "stableId": record["stableId"],
+                    "provider": record["provider"],
+                    "accessStatus": record["accessStatus"],
+                    "contentHash": hashlib.sha256(str(record.get("abstract") or "").encode("utf-8")).hexdigest(),
+                }
+                for record in records
+            ],
+            "pageSelections": page_snapshots,
+        }
+        policy_hashes = search_result.get("policyHashes") if isinstance(search_result.get("policyHashes"), dict) else {}
+        return records, snapshot, self._science125_snapshot_hash(snapshot), self._science125_snapshot_hash(policy_hashes)
+
+    def _run_science125_hypothesis_generate(self, job: StoredJob) -> dict[str, Any]:
+        if not is_science125_pilot_enabled(str(job.payload.get("science125Id") or "")):
+            raise SafeJobError(
+                "SCIENCE125_PILOT_NOT_ENABLED",
+                "Science 125 generation is currently limited to the three audited pilot items.",
+            )
+        authoritative_input = self._science125_authoritative_input(job)
+        if authoritative_input is None:
+            raise SafeJobError("SCIENCE125_ID_REQUIRED", "A Science 125 item ID is required.")
+        question, source_context, source_context_snapshot = authoritative_input
+        try:
+            route = get_science125_route(str(job.payload.get("science125Id") or ""))
+        except Science125RoutingError as exc:
+            raise SafeJobError("SCIENCE125_ROUTING_UNAVAILABLE", "The Science 125 routing profile is unavailable.") from exc
+        records, evidence_snapshot, evidence_snapshot_hash, policy_hash = self._science125_reviewed_evidence(job)
+        self._raise_if_cancelled(job)
+        config = self._required_science125_llm_config()
+        budget = llm_client().LLMBudget(max_total_tokens=20_000, max_estimated_cost_cny=3.0)
+        request = ResearchGenerationRequest(
+            question=question,
+            profile="general_science",
+            chemistry_subdomain=None,
+            candidate_count=3,
+            science125_id=str(job.payload["science125Id"]),
+            science125_source_context=source_context,
+            science125_routing={
+                **route.model_dump(by_alias=True),
+                "routingVersion": "science125-routing-v1",
+            },
+            evidence_records=tuple(records),
+        )
+
+        def telemetry_sink(event: Mapping[str, Any]) -> None:
+            enriched = dict(event)
+            enriched["policy_hash"] = policy_hash
+            enriched["evidence_snapshot_hash"] = evidence_snapshot_hash
+            self.model_call_ledger.record(enriched)
+
+        self._update_progress(job, progress=45, message="Generating a dedicated Science 125 research-v1 result with Qwen.")
+        try:
+            generated = ResearchGenerationService.from_environment().generate(
+                request,
+                config=config,
+                budget=budget,
+                context=llm_client().LLMCallContext(resource_type="science125_item", resource_id=job.id),
+                telemetry_sink=telemetry_sink,
+            )
+        except ResearchGenerationValidationError as exc:
+            raise SafeJobError(
+                "SCIENCE125_SCHEMA_INVALID",
+                "Qwen returned a Science 125 result that could not satisfy the research-v1 contract.",
+            ) from exc
+        except ValueError as exc:
+            raise SafeJobError("SCIENCE125_GENERATION_INVALID", "Science 125 generation input is invalid.") from exc
+        except RuntimeError as exc:
+            raise SafeJobError("SCIENCE125_QWEN_FAILED", "DashScope Qwen could not generate the Science 125 result.") from exc
+        self._raise_if_cancelled(job)
+        output = generated.output.model_dump(by_alias=True, mode="json")
+        return {
+            "researchOutput": output,
+            "audit": {
+                "contractVersion": output["contractVersion"],
+                "provider": generated.call.provider,
+                "model": generated.call.model,
+                "requestId": generated.call.request_id,
+                "totalTokens": generated.total_tokens,
+                "latencyMs": generated.latency_ms,
+                "retryCount": generated.retry_count,
+                "estimatedCostCny": generated.estimated_cost_cny,
+                "schemaRepaired": generated.schema_repaired,
+                "policyHash": policy_hash,
+                "evidenceSnapshotHash": evidence_snapshot_hash,
+                "sourceContext": source_context_snapshot,
+                "evidenceCount": len(records),
+                "providerFamilies": sorted({
+                    str(record.get("providerFamily") or "").strip()
+                    or self._science125_provider_family(str(record["provider"]))
+                    for record in records
+                }),
+            },
+        }
+
     def _run_hypothesis_generate(self, job: StoredJob) -> dict[str, Any]:
+        if job.payload.get("science125Id"):
+            return self._run_science125_hypothesis_generate(job)
         research_question = str(job.payload.get("researchQuestion") or "").strip()
         supplemental_context = str(
             job.payload.get("supplementalContext") or job.payload.get("literatureText") or ""

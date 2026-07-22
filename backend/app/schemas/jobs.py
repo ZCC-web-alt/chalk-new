@@ -102,6 +102,11 @@ class LiteratureSearchPayload(BaseModel):
     max_results: int = Field(default=20, alias="maxResults", ge=1, le=100)
     year_from: str = Field(default="", alias="yearFrom", max_length=4)
     year_to: str = Field(default="", alias="yearTo", max_length=4)
+    science125_id: str | None = Field(
+        default=None,
+        alias="science125Id",
+        pattern=r"^S125-(?:0(?:0[1-9]|[1-9]\d)|1(?:[01]\d|2[0-5]))$",
+    )
 
     model_config = {"populate_by_name": True, "extra": "forbid"}
 
@@ -131,6 +136,26 @@ class PromptPolishPayload(BaseModel):
         return value.strip()
 
 
+class HypothesisSourcePageSelection(BaseModel):
+    document_id: int = Field(alias="documentId", ge=1)
+    pages: list[int] = Field(min_length=1, max_length=20)
+    pdf_sha256: str = Field(alias="pdfSha256", pattern=r"^[0-9a-f]{64}$")
+    text_sha256: str = Field(alias="textSha256", pattern=r"^[0-9a-f]{64}$")
+    max_chars: int = Field(default=12_000, alias="maxChars", ge=1, le=50_000)
+
+    model_config = {"populate_by_name": True, "extra": "forbid"}
+
+    @field_validator("pages")
+    @classmethod
+    def normalize_pages(cls, values: list[int]) -> list[int]:
+        if any(value < 1 for value in values):
+            raise ValueError("Page numbers must be positive.")
+        normalized = sorted(set(values))
+        if len(normalized) != len(values):
+            raise ValueError("Page numbers must be unique.")
+        return normalized
+
+
 class HypothesisGeneratePayload(BaseModel):
     research_question: str = Field(default="", alias="researchQuestion", max_length=12000)
     supplemental_context: str = Field(
@@ -144,7 +169,28 @@ class HypothesisGeneratePayload(BaseModel):
     auto_verify: bool = Field(default=True, alias="autoVerify")
     domain: HypothesisDomain = ""
     source_doc_ids: list[int] = Field(default_factory=list, alias="sourceDocIds", max_length=20)
+    source_page_selections: list[HypothesisSourcePageSelection] = Field(
+        default_factory=list,
+        alias="sourcePageSelections",
+        max_length=10,
+    )
     multimodal_run_ids: list[str] = Field(default_factory=list, alias="multimodalRunIds", max_length=20)
+    science125_id: str | None = Field(
+        default=None,
+        alias="science125Id",
+        pattern=r"^S125-(?:0(?:0[1-9]|[1-9]\d)|1(?:[01]\d|2[0-5]))$",
+    )
+    literature_search_job_id: str | None = Field(
+        default=None,
+        alias="literatureSearchJobId",
+        min_length=1,
+        max_length=64,
+    )
+    reviewed_evidence_ids: list[str] = Field(
+        default_factory=list,
+        alias="reviewedEvidenceIds",
+        max_length=100,
+    )
 
     model_config = {"populate_by_name": True, "extra": "forbid"}
 
@@ -173,10 +219,40 @@ class HypothesisGeneratePayload(BaseModel):
             raise ValueError("Multimodal run IDs must be unique.")
         return normalized
 
+    @field_validator("reviewed_evidence_ids")
+    @classmethod
+    def normalize_reviewed_evidence_ids(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values]
+        if any(not value or len(value) > 300 for value in normalized):
+            raise ValueError("Reviewed evidence IDs are invalid.")
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("Reviewed evidence IDs must be unique.")
+        return normalized
+
     @model_validator(mode="after")
     def require_hypothesis_input(self):
-        if not self.research_question and not self.supplemental_context and not self.source_doc_ids:
+        if self.source_page_selections and not self.science125_id:
+            raise ValueError("Page-level evidence is only available for Science 125 inputs.")
+        document_ids = [selection.document_id for selection in self.source_page_selections]
+        if len(document_ids) != len(set(document_ids)):
+            raise ValueError("Each source document may have only one page selection.")
+        if (
+            not self.research_question
+            and not self.supplemental_context
+            and not self.source_doc_ids
+            and not self.source_page_selections
+            and not self.reviewed_evidence_ids
+        ):
             raise ValueError("Provide a research question, source document, or supplemental context.")
+        if self.science125_id:
+            if self.research_question or self.supplemental_context or self.source_doc_ids or self.multimodal_run_ids or self.domain:
+                raise ValueError(
+                    "Science 125 generation accepts only its authoritative item ID and reviewed evidence/page selections."
+                )
+            if not self.literature_search_job_id:
+                raise ValueError("Science 125 generation requires the completed literature search job ID.")
+            if not self.reviewed_evidence_ids:
+                raise ValueError("Science 125 generation requires reviewed evidence IDs.")
         return self
 
 

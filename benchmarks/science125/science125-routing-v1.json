@@ -1,0 +1,2151 @@
+{
+  "routingVersion": "science125-routing-v1",
+  "baseManifestVersion": "science125-v1",
+  "baseManifestContentSha256": "de0a173974a4ac1863186ff11c68d6946975228d53a552442aec8f8d951226d3",
+  "routingContentSha256": "7a40d805b7d8a6b1a0c1f01d429cebd4be29bc749b1da837b2838c4692911f0b",
+  "questions": [
+    {
+      "questionId": "S125-001",
+      "benchmarkDomain": "Mathematical Sciences",
+      "primarySubdomain": "math.number_theory",
+      "crossDomainTags": [],
+      "methodProfile": {
+        "primary": "proof",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.mathematics.v1",
+      "retrievalProfile": "retrieval.mathematics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-002",
+      "benchmarkDomain": "Mathematical Sciences",
+      "primarySubdomain": "math.analytic_number_theory",
+      "crossDomainTags": [],
+      "methodProfile": {
+        "primary": "proof",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.mathematics.v1",
+      "retrievalProfile": "retrieval.mathematics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-003",
+      "benchmarkDomain": "Mathematical Sciences",
+      "primarySubdomain": "math.fluid_dynamics_pde",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "proof",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.mathematics.v1",
+      "retrievalProfile": "retrieval.mathematics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-004",
+      "benchmarkDomain": "Chemistry",
+      "primarySubdomain": "chem.colorant_materials",
+      "crossDomainTags": [
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.chemistry.v1",
+      "retrievalProfile": "retrieval.chemistry.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-005",
+      "benchmarkDomain": "Chemistry",
+      "primarySubdomain": "chem.superheavy_elements",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.chemistry.v1",
+      "retrievalProfile": "retrieval.chemistry.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-006",
+      "benchmarkDomain": "Chemistry",
+      "primarySubdomain": "chem.interface",
+      "crossDomainTags": [
+        "physics",
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.chemistry.v1",
+      "retrievalProfile": "retrieval.chem.interface.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-007",
+      "benchmarkDomain": "Chemistry",
+      "primarySubdomain": "chem.energy_storage",
+      "crossDomainTags": [
+        "energy_science",
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.chemistry.v1",
+      "retrievalProfile": "retrieval.chemistry.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-008",
+      "benchmarkDomain": "Chemistry",
+      "primarySubdomain": "chem.chirality",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.chemistry.v1",
+      "retrievalProfile": "retrieval.chemistry.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-009",
+      "benchmarkDomain": "Chemistry",
+      "primarySubdomain": "chem.polymer_circularity",
+      "crossDomainTags": [
+        "ecology",
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "systems_policy"
+        ]
+      },
+      "promptProfile": "s125.chemistry.v1",
+      "retrievalProfile": "retrieval.chemistry.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-010",
+      "benchmarkDomain": "Chemistry",
+      "primarySubdomain": "chem.ai_for_chemistry",
+      "crossDomainTags": [
+        "artificial_intelligence"
+      ],
+      "methodProfile": {
+        "primary": "computational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.chemistry.v1",
+      "retrievalProfile": "retrieval.chemistry.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-011",
+      "benchmarkDomain": "Chemistry",
+      "primarySubdomain": "chem.living_materials",
+      "crossDomainTags": [
+        "biology",
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.chemistry.v1",
+      "retrievalProfile": "retrieval.chemistry.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-012",
+      "benchmarkDomain": "Chemistry",
+      "primarySubdomain": "chem.origins_of_reproduction",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.chemistry.v1",
+      "retrievalProfile": "retrieval.chemistry.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-013",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.pandemic_forecasting",
+      "crossDomainTags": [
+        "biology",
+        "ecology"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-014",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.respiratory_virology",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-015",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.precision_medicine",
+      "crossDomainTags": [
+        "information_science"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "engineering"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-016",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.regenerative_medicine",
+      "crossDomainTags": [
+        "biology",
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "clinical"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-017",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.immune_homeostasis",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-018",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.integrative_medicine_evidence",
+      "crossDomainTags": [
+        "neuroscience"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-019",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.vaccine_platforms",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "clinical"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-020",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.autism_etiology",
+      "crossDomainTags": [
+        "neuroscience"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "clinical"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-021",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.antimicrobial_resistance",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "clinical"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-022",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.human_microbiome",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-023",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.xenotransplantation",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-024",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.marine_conservation",
+      "crossDomainTags": [
+        "ecology"
+      ],
+      "methodProfile": {
+        "primary": "systems_policy",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-025",
+      "benchmarkDomain": "Medicine & Health",
+      "primarySubdomain": "med.geroscience",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.medicine.v1",
+      "retrievalProfile": "retrieval.medicine.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-026",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.cell_plasticity",
+      "crossDomainTags": [
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-027",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.genome_evolution",
+      "crossDomainTags": [],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-028",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.cancer_biology",
+      "crossDomainTags": [
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-029",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.human_evolutionary_genomics",
+      "crossDomainTags": [],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-030",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.animal_migration",
+      "crossDomainTags": [
+        "neuroscience",
+        "ecology"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-031",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.evolutionary_allometry",
+      "crossDomainTags": [
+        "earth_science"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-032",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.biodiversity_estimation",
+      "crossDomainTags": [
+        "ecology"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-033",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.evolutionary_processes",
+      "crossDomainTags": [],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-034",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.de_extinction",
+      "crossDomainTags": [
+        "ecology"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-035",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.paleoanthropology",
+      "crossDomainTags": [
+        "earth_science"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-036",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.human_animal_bond",
+      "crossDomainTags": [
+        "neuroscience",
+        "social_science"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-037",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.affective_neuroscience",
+      "crossDomainTags": [
+        "neuroscience"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-038",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.population_dynamics",
+      "crossDomainTags": [
+        "ecology",
+        "social_science"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-039",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.growth_regulation",
+      "crossDomainTags": [
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-040",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.torpor_physiology",
+      "crossDomainTags": [
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "clinical"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-041",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.human_future_evolution",
+      "crossDomainTags": [
+        "social_science"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-042",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.macroevolution_extinction",
+      "crossDomainTags": [
+        "earth_science",
+        "ecology"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-043",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.genome_editing",
+      "crossDomainTags": [
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.bio.genome_editing.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-044",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.synthetic_cell",
+      "crossDomainTags": [
+        "chemistry"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "engineering"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-045",
+      "benchmarkDomain": "Biology",
+      "primarySubdomain": "bio.cellular_organization",
+      "crossDomainTags": [
+        "chemistry"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.biology.v1",
+      "retrievalProfile": "retrieval.biology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-046",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.extra_dimensions",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-047",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.cosmic_topology",
+      "crossDomainTags": [
+        "physics",
+        "mathematical_sciences"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-048",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.early_universe",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-049",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.orbital_dynamics",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "computational",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-050",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.cosmic_fate",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-051",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.planetary_habitability",
+      "crossDomainTags": [
+        "engineering_materials",
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-052",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.black_hole_formation",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-053",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.cosmic_composition",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-054",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.cosmic_rays",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astro.high_energy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-055",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.astrobiology",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-056",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.mass_origin",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-057",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.galactic_evolution",
+      "crossDomainTags": [],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-058",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.quantum_spacetime",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-059",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.tests_of_relativity",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-060",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.astrobiology_water",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-061",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.pulsar_formation",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-062",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.deep_space_exploration",
+      "crossDomainTags": [
+        "engineering_materials",
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-063",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.deep_biosphere",
+      "crossDomainTags": [
+        "biology",
+        "earth_science"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-064",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.space_settlement",
+      "crossDomainTags": [
+        "engineering_materials",
+        "social_science"
+      ],
+      "methodProfile": {
+        "primary": "systems_policy",
+        "secondary": [
+          "engineering"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-065",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.compact_star_matter",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-066",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.cosmic_neutrinos",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-067",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.gravity",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-068",
+      "benchmarkDomain": "Astronomy",
+      "primarySubdomain": "astro.nucleosynthesis",
+      "crossDomainTags": [
+        "physics",
+        "chemistry"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.astronomy.v1",
+      "retrievalProfile": "retrieval.astronomy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-069",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.imaging_resolution",
+      "crossDomainTags": [
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "engineering"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-070",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.high_temperature_superconductivity",
+      "crossDomainTags": [
+        "chemistry",
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-071",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.heat_transfer_limits",
+      "crossDomainTags": [
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-072",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.collective_motion",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-073",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.relativistic_travel",
+      "crossDomainTags": [
+        "astronomy"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-074",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.quantum_foundations",
+      "crossDomainTags": [
+        "mathematical_sciences"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-075",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.fundamental_particles",
+      "crossDomainTags": [
+        "astronomy"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-076",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.arrow_of_time",
+      "crossDomainTags": [
+        "astronomy"
+      ],
+      "methodProfile": {
+        "primary": "proof",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-077",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.photon_counterparts",
+      "crossDomainTags": [],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-078",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.bose_einstein_condensates",
+      "crossDomainTags": [
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-079",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.particle_acceleration",
+      "crossDomainTags": [
+        "astronomy"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "engineering"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-080",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.multiscale_simulation",
+      "crossDomainTags": [
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "computational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-081",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.incoherent_high_power_lasers",
+      "crossDomainTags": [
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-082",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.quantum_entanglement_fields",
+      "crossDomainTags": [
+        "information_science"
+      ],
+      "methodProfile": {
+        "primary": "proof",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-083",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.transformation_optics",
+      "crossDomainTags": [
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-084",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.unification",
+      "crossDomainTags": [
+        "astronomy"
+      ],
+      "methodProfile": {
+        "primary": "proof",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-085",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.dark_matter",
+      "crossDomainTags": [
+        "astronomy"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-086",
+      "benchmarkDomain": "Physics",
+      "primarySubdomain": "phys.quantum_computing_hardware",
+      "crossDomainTags": [
+        "information_science"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.physics.v1",
+      "retrievalProfile": "retrieval.physics.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-087",
+      "benchmarkDomain": "Engineering & Materials Science",
+      "primarySubdomain": "eng.turbulence_statistics",
+      "crossDomainTags": [
+        "physics",
+        "mathematical_sciences"
+      ],
+      "methodProfile": {
+        "primary": "computational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.engineering_materials.v1",
+      "retrievalProfile": "retrieval.engineering_materials.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-088",
+      "benchmarkDomain": "Engineering & Materials Science",
+      "primarySubdomain": "eng.mars_manufacturing",
+      "crossDomainTags": [
+        "astronomy"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.engineering_materials.v1",
+      "retrievalProfile": "retrieval.engineering_materials.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-089",
+      "benchmarkDomain": "Engineering & Materials Science",
+      "primarySubdomain": "eng.energy_conversion",
+      "crossDomainTags": [
+        "energy_science",
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.engineering_materials.v1",
+      "retrievalProfile": "retrieval.engineering_materials.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-090",
+      "benchmarkDomain": "Engineering & Materials Science",
+      "primarySubdomain": "eng.autonomous_mobility",
+      "crossDomainTags": [
+        "artificial_intelligence",
+        "information_science"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "systems_policy"
+        ]
+      },
+      "promptProfile": "s125.engineering_materials.v1",
+      "retrievalProfile": "retrieval.engineering_materials.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-091",
+      "benchmarkDomain": "Information Science",
+      "primarySubdomain": "info.computing_limits",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.information_science.v1",
+      "retrievalProfile": "retrieval.information_science.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-092",
+      "benchmarkDomain": "Information Science",
+      "primarySubdomain": "info.dna_storage",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.information_science.v1",
+      "retrievalProfile": "retrieval.information_science.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-093",
+      "benchmarkDomain": "Information Science",
+      "primarySubdomain": "info.clinical_ai",
+      "crossDomainTags": [
+        "artificial_intelligence",
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.information_science.v1",
+      "retrievalProfile": "retrieval.information_science.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-094",
+      "benchmarkDomain": "Information Science",
+      "primarySubdomain": "info.topological_quantum_computing",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.information_science.v1",
+      "retrievalProfile": "retrieval.information_science.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-095",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.consciousness",
+      "crossDomainTags": [
+        "artificial_intelligence"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-096",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.neural_coding",
+      "crossDomainTags": [
+        "information_science"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-097",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.memory_neurotechnology",
+      "crossDomainTags": [
+        "information_science",
+        "artificial_intelligence"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-098",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.sleep",
+      "crossDomainTags": [
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-099",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.addiction",
+      "crossDomainTags": [
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-100",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.attachment",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-101",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.neurodegeneration",
+      "crossDomainTags": [
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-102",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.lateralization",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-103",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.predictive_processing",
+      "crossDomainTags": [
+        "artificial_intelligence"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-104",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.language_evolution",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-105",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.comparative_cognition",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-106",
+      "benchmarkDomain": "Neuroscience",
+      "primarySubdomain": "neuro.mental_health",
+      "crossDomainTags": [
+        "medicine_health"
+      ],
+      "methodProfile": {
+        "primary": "clinical",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.neuroscience.v1",
+      "retrievalProfile": "retrieval.neuroscience.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-107",
+      "benchmarkDomain": "Ecology",
+      "primarySubdomain": "eco.climate_mitigation",
+      "crossDomainTags": [
+        "earth_science",
+        "energy_science"
+      ],
+      "methodProfile": {
+        "primary": "systems_policy",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.ecology.v1",
+      "retrievalProfile": "retrieval.ecology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-108",
+      "benchmarkDomain": "Ecology",
+      "primarySubdomain": "eco.carbon_management",
+      "crossDomainTags": [
+        "chemistry",
+        "energy_science"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "systems_policy"
+        ]
+      },
+      "promptProfile": "s125.ecology.v1",
+      "retrievalProfile": "retrieval.ecology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-109",
+      "benchmarkDomain": "Ecology",
+      "primarySubdomain": "eco.geomagnetism",
+      "crossDomainTags": [
+        "earth_science",
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.ecology.v1",
+      "retrievalProfile": "retrieval.ecology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-110",
+      "benchmarkDomain": "Ecology",
+      "primarySubdomain": "eco.hazard_prediction",
+      "crossDomainTags": [
+        "earth_science"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.ecology.v1",
+      "retrievalProfile": "retrieval.ecology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-111",
+      "benchmarkDomain": "Ecology",
+      "primarySubdomain": "eco.cryosphere_sea_level",
+      "crossDomainTags": [
+        "earth_science"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.ecology.v1",
+      "retrievalProfile": "retrieval.ecology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-112",
+      "benchmarkDomain": "Ecology",
+      "primarySubdomain": "eco.sustainable_polymers",
+      "crossDomainTags": [
+        "chemistry",
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.ecology.v1",
+      "retrievalProfile": "retrieval.ecology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-113",
+      "benchmarkDomain": "Ecology",
+      "primarySubdomain": "eco.circular_materials",
+      "crossDomainTags": [
+        "engineering_materials",
+        "chemistry"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "systems_policy"
+        ]
+      },
+      "promptProfile": "s125.ecology.v1",
+      "retrievalProfile": "retrieval.ecology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-114",
+      "benchmarkDomain": "Ecology",
+      "primarySubdomain": "eco.agroecosystem_diversity",
+      "crossDomainTags": [
+        "biology"
+      ],
+      "methodProfile": {
+        "primary": "systems_policy",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.ecology.v1",
+      "retrievalProfile": "retrieval.ecology.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-115",
+      "benchmarkDomain": "Energy Science",
+      "primarySubdomain": "energy.transition",
+      "crossDomainTags": [
+        "ecology"
+      ],
+      "methodProfile": {
+        "primary": "systems_policy",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.energy.v1",
+      "retrievalProfile": "retrieval.energy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-116",
+      "benchmarkDomain": "Energy Science",
+      "primarySubdomain": "energy.hydrogen",
+      "crossDomainTags": [
+        "chemistry"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.energy.v1",
+      "retrievalProfile": "retrieval.energy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-117",
+      "benchmarkDomain": "Energy Science",
+      "primarySubdomain": "energy.low_energy_nuclear",
+      "crossDomainTags": [
+        "physics"
+      ],
+      "methodProfile": {
+        "primary": "experimental",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.energy.v1",
+      "retrievalProfile": "retrieval.energy.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-118",
+      "benchmarkDomain": "Artificial Intelligence",
+      "primarySubdomain": "ai.medical_nanorobotics",
+      "crossDomainTags": [
+        "medicine_health",
+        "engineering_materials"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "clinical"
+        ]
+      },
+      "promptProfile": "s125.ai.v1",
+      "retrievalProfile": "retrieval.ai.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-119",
+      "benchmarkDomain": "Artificial Intelligence",
+      "primarySubdomain": "ai.human_intelligence_limits",
+      "crossDomainTags": [
+        "neuroscience"
+      ],
+      "methodProfile": {
+        "primary": "observational",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.ai.v1",
+      "retrievalProfile": "retrieval.ai.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-120",
+      "benchmarkDomain": "Artificial Intelligence",
+      "primarySubdomain": "ai.machine_sentience",
+      "crossDomainTags": [
+        "neuroscience"
+      ],
+      "methodProfile": {
+        "primary": "computational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.ai.v1",
+      "retrievalProfile": "retrieval.ai.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-121",
+      "benchmarkDomain": "Artificial Intelligence",
+      "primarySubdomain": "ai.labor_automation",
+      "crossDomainTags": [
+        "information_science",
+        "social_science"
+      ],
+      "methodProfile": {
+        "primary": "systems_policy",
+        "secondary": [
+          "computational"
+        ]
+      },
+      "promptProfile": "s125.ai.v1",
+      "retrievalProfile": "retrieval.ai.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-122",
+      "benchmarkDomain": "Artificial Intelligence",
+      "primarySubdomain": "ai.brain_computer_integration",
+      "crossDomainTags": [
+        "neuroscience",
+        "information_science"
+      ],
+      "methodProfile": {
+        "primary": "engineering",
+        "secondary": [
+          "clinical"
+        ]
+      },
+      "promptProfile": "s125.ai.v1",
+      "retrievalProfile": "retrieval.ai.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-123",
+      "benchmarkDomain": "Artificial Intelligence",
+      "primarySubdomain": "ai.collective_intelligence",
+      "crossDomainTags": [
+        "neuroscience",
+        "social_science"
+      ],
+      "methodProfile": {
+        "primary": "computational",
+        "secondary": [
+          "observational"
+        ]
+      },
+      "promptProfile": "s125.ai.v1",
+      "retrievalProfile": "retrieval.ai.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-124",
+      "benchmarkDomain": "Artificial Intelligence",
+      "primarySubdomain": "ai.computational_creativity",
+      "crossDomainTags": [
+        "neuroscience"
+      ],
+      "methodProfile": {
+        "primary": "computational",
+        "secondary": [
+          "experimental"
+        ]
+      },
+      "promptProfile": "s125.ai.v1",
+      "retrievalProfile": "retrieval.ai.v1",
+      "classificationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-125",
+      "benchmarkDomain": "Artificial Intelligence",
+      "primarySubdomain": "ai.quantum_neuromorphic",
+      "crossDomainTags": [
+        "physics",
+        "neuroscience"
+      ],
+      "methodProfile": {
+        "primary": "computational",
+        "secondary": [
+          "engineering"
+        ]
+      },
+      "promptProfile": "s125.ai.v1",
+      "retrievalProfile": "retrieval.ai.v1",
+      "classificationReviewStatus": "reviewed"
+    }
+  ]
+}

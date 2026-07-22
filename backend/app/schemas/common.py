@@ -23,10 +23,12 @@ class Page(BaseModel, Generic[T]):
     pagination: Pagination
 
 
-def paginate(items: list[T], page: int, page_size: int) -> tuple[list[T], Pagination]:
+def paginate(
+    items: list[T], page: int, page_size: int, *, total: int | None = None
+) -> tuple[list[T], Pagination]:
     page = max(1, page)
     page_size = max(1, min(100, page_size))
-    total = len(items)
+    total = len(items) if total is None else total
     start = (page - 1) * page_size
     return items[start : start + page_size], Pagination(
         page=page,
@@ -34,4 +36,3 @@ def paginate(items: list[T], page: int, page_size: int) -> tuple[list[T], Pagina
         totalItems=total,
         totalPages=max(1, ceil(total / page_size)) if total else 0,
     )
-

@@ -858,6 +858,191 @@
       ],
       "title": "RoundChangeSet",
       "type": "object"
+    },
+    "Science125Extension": {
+      "additionalProperties": false,
+      "properties": {
+        "benchmarkDomain": {
+          "enum": [
+            "Mathematical Sciences",
+            "Chemistry",
+            "Medicine & Health",
+            "Biology",
+            "Astronomy",
+            "Physics",
+            "Engineering & Materials Science",
+            "Information Science",
+            "Neuroscience",
+            "Ecology",
+            "Energy Science",
+            "Artificial Intelligence"
+          ],
+          "title": "Benchmarkdomain",
+          "type": "string"
+        },
+        "crossDomainTags": {
+          "items": {
+            "enum": [
+              "mathematics",
+              "chemistry",
+              "physics",
+              "biology",
+              "medicine",
+              "astronomy",
+              "engineering",
+              "materials",
+              "information",
+              "ai",
+              "neuroscience",
+              "ecology",
+              "energy",
+              "earth_science",
+              "climate",
+              "space_systems",
+              "social_science",
+              "cognitive_science",
+              "psychology",
+              "evolution",
+              "genetics",
+              "immunology",
+              "pharmacology",
+              "public_health",
+              "nanomedicine",
+              "robotics",
+              "agriculture",
+              "geology",
+              "philosophy",
+              "economics",
+              "quantum",
+              "mathematical_sciences",
+              "medicine_health",
+              "engineering_materials",
+              "information_science",
+              "energy_science",
+              "artificial_intelligence"
+            ],
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Crossdomaintags",
+          "type": "array"
+        },
+        "domainChecks": {
+          "items": {
+            "enum": [
+              "source_traceability",
+              "negative_evidence",
+              "measurement_plan",
+              "operational_definition",
+              "uncertainty_budget",
+              "selection_effects",
+              "replication",
+              "safety_boundary",
+              "data_leakage",
+              "applicability_boundary"
+            ],
+            "type": "string"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "Domainchecks",
+          "type": "array"
+        },
+        "evidenceStatus": {
+          "enum": [
+            "sufficient",
+            "partial",
+            "insufficient"
+          ],
+          "title": "Evidencestatus",
+          "type": "string"
+        },
+        "methodProfile": {
+          "$ref": "#/$defs/Science125MethodProfile"
+        },
+        "primarySubdomain": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Primarysubdomain",
+          "type": "string"
+        },
+        "promptProfile": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Promptprofile",
+          "type": "string"
+        },
+        "questionId": {
+          "pattern": "^S125-(?:0(?:0[1-9]|[1-9]\\d)|1(?:[01]\\d|2[0-5]))$",
+          "title": "Questionid",
+          "type": "string"
+        },
+        "retrievalProfile": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Retrievalprofile",
+          "type": "string"
+        },
+        "routingVersion": {
+          "const": "science125-routing-v1",
+          "title": "Routingversion",
+          "type": "string"
+        }
+      },
+      "required": [
+        "questionId",
+        "routingVersion",
+        "benchmarkDomain",
+        "primarySubdomain",
+        "crossDomainTags",
+        "methodProfile",
+        "promptProfile",
+        "retrievalProfile",
+        "evidenceStatus",
+        "domainChecks"
+      ],
+      "title": "Science125Extension",
+      "type": "object"
+    },
+    "Science125MethodProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "enum": [
+            "proof",
+            "experimental",
+            "observational",
+            "clinical",
+            "engineering",
+            "computational",
+            "systems_policy"
+          ],
+          "title": "Primary",
+          "type": "string"
+        },
+        "secondary": {
+          "items": {
+            "enum": [
+              "proof",
+              "experimental",
+              "observational",
+              "clinical",
+              "engineering",
+              "computational",
+              "systems_policy"
+            ],
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Secondary",
+          "type": "array"
+        }
+      },
+      "required": [
+        "primary"
+      ],
+      "title": "Science125MethodProfile",
+      "type": "object"
     }
   },
   "$id": "https://chalk.local/contracts/research-v1.schema.json",
@@ -1041,6 +1226,17 @@
     },
     "researchPlan": {
       "$ref": "#/$defs/ResearchPlan"
+    },
+    "science125": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Science125Extension"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     }
   },
   "required": [

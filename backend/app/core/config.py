@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     def modeling_assets_dir(self) -> Path:
         return self.data_dir / "modeling-assets"
 
+    @property
+    def science125_context_index_path(self) -> Path:
+        return self.data_dir / "science125" / "science125-context-v1.json"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

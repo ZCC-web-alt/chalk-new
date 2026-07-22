@@ -68,6 +68,8 @@ class JobHandlerTestCase(unittest.TestCase):
         self.service._executor.shutdown(wait=True, cancel_futures=True)
         if hasattr(self.service, "_hypothesis_executor"):
             self.service._hypothesis_executor.shutdown(wait=True, cancel_futures=True)
+        self.service.model_call_ledger.dispose()
+        self.service.science125_rate_store.dispose()
         self.service.analysis_store.dispose()
         if hasattr(self.service, "hypothesis_store"):
             self.service.hypothesis_store.dispose()
@@ -838,6 +840,85 @@ class JobHandlerTestCase(unittest.TestCase):
         self.assertEqual(captured["orchestratorOptions"]["quantitative_report"]["scalingRelations"][0]["equation"], "y = x")
         extra = json.loads(hypotheses[0].extra_json)
         self.assertEqual(extra["multimodal_run_snapshots"][0]["revision"], 1)
+
+    def test_science125_input_assembler_uses_authoritative_context_and_hash_bound_pdf_pages(self) -> None:
+        from app.services.document_excerpts import extract_document_page_excerpt
+
+        user_uploads = self.service.uploads_dir / "1"
+        user_uploads.mkdir(parents=True, exist_ok=True)
+        pdf_path = user_uploads / "reviewed-source.pdf"
+        document = fitz.open()
+        page = document.new_page()
+        page.insert_text((72, 72), "Reviewed page evidence: nanoscale spectroscopy resolves interface transport.")
+        document.save(pdf_path)
+        document.close()
+        document_id = self.create_document_with_chunks([], title="Reviewed source", source_path=str(pdf_path))
+        excerpt = extract_document_page_excerpt(
+            str(pdf_path),
+            pages=[1],
+            max_chars=12_000,
+            allowed_root=user_uploads,
+        )
+        context_item = SimpleNamespace(
+            id="S125-006",
+            headline="How can we measure interface phenomena on the microscopic level?",
+            source_context="Authoritative booklet explanation about microscopic interface measurements.",
+            context_sha256="a" * 64,
+            pdf_page=12,
+            booklet_page=10,
+        )
+        context_index = SimpleNamespace(
+            extraction_version="pymupdf-block-anchor-v1",
+            items={"S125-006": context_item},
+        )
+        job = self.store.create(1, "hypothesis_generate", {
+            "science125Id": "S125-006",
+            "researchQuestion": "tampered client question",
+            "supplementalContext": "tampered client context",
+            "_science125ContextSha256": context_item.context_sha256,
+            "_science125ExtractionVersion": context_index.extraction_version,
+            "sourcePageSelections": [{
+                "documentId": document_id,
+                "pages": [1],
+                "pdfSha256": excerpt.pdf_sha256,
+                "textSha256": excerpt.text_sha256,
+                "maxChars": excerpt.max_chars,
+            }],
+            "sourceDocIds": [],
+            "multimodalRunIds": [],
+            "maxIterations": 1,
+            "hitlEnabled": False,
+            "autoVerify": True,
+            "domain": "",
+        })
+        self.store.update(job.id, status="RUNNING")
+        running = self.store.get(job.id)
+
+        with patch("app.services.jobs.load_science125_context_index", return_value=context_index):
+            prepared = self.service._prepare_science125_generation_input(running)
+
+        self.assertEqual(prepared["researchQuestion"], context_item.headline)
+        self.assertIn(context_item.source_context, prepared["literatureText"])
+        self.assertIn("Reviewed page evidence", prepared["literatureText"])
+        self.assertLess(
+            prepared["literatureText"].index(context_item.source_context),
+            prepared["literatureText"].index("tampered client context"),
+        )
+        self.assertIn("不属于权威题册原文", prepared["literatureText"])
+        self.assertEqual(prepared["science125SourceContext"]["contextSha256"], context_item.context_sha256)
+        self.assertEqual(prepared["sourcePageSelections"][0]["textSha256"], excerpt.text_sha256)
+
+        from app.services.jobs import SafeJobError
+
+        with pdf_path.open("ab") as handle:
+            handle.write(b"\n")
+        with (
+            patch("app.services.jobs.load_science125_context_index", return_value=context_index),
+            self.assertRaises(SafeJobError) as changed_snapshot,
+        ):
+            self.service._prepare_science125_generation_input(running)
+        self.assertEqual(changed_snapshot.exception.code, "SOURCE_PAGE_SNAPSHOT_CHANGED")
+
 
     def test_hypothesis_hitl_waits_for_feedback_and_persists_interaction_history(self) -> None:
         document_id = self.create_document_with_chunks(["owned document"], title="Owned source")

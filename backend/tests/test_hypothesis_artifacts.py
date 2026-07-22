@@ -42,6 +42,8 @@ class HypothesisArtifactTestCase(unittest.TestCase):
     def tearDown(self) -> None:
         self.service._executor.shutdown(wait=True, cancel_futures=True)
         self.service._hypothesis_executor.shutdown(wait=True, cancel_futures=True)
+        self.service.model_call_ledger.dispose()
+        self.service.science125_rate_store.dispose()
         self.service.analysis_store.dispose()
         self.service.hypothesis_store.dispose()
         self.store.dispose()

@@ -58,11 +58,7 @@ class ApiTestCase(unittest.TestCase):
     def tearDown(self) -> None:
         from app.services.jobs import job_service
 
-        job_service.analysis_store.dispose()
-        job_service.hypothesis_store.dispose()
-        if hasattr(job_service, "science_store"):
-            job_service.science_store.dispose()
-        job_service.store.dispose()
+        job_service.dispose_stores()
         self.engine.dispose()
 
     def register(self, username: str = "alice", password: str = "secret-pass"):
@@ -89,6 +85,161 @@ class ApiTestCase(unittest.TestCase):
 
         login = self.client.post("/api/auth/login", json={"username": "alice", "password": "secret-pass"})
         self.assertEqual(login.status_code, 200, login.text)
+
+    def test_science125_questions_require_auth_and_expose_only_public_fields(self) -> None:
+        unauthenticated = self.client.get("/api/science-125/questions")
+        self.assertEqual(unauthenticated.status_code, 401, unauthenticated.text)
+        self.assertEqual(
+            unauthenticated.json()["error"]["code"],
+            "UNAUTHENTICATED",
+        )
+
+        self.register("alice")
+        response = self.client.get("/api/science-125/questions")
+
+        self.assertEqual(response.status_code, 200, response.text)
+        payload = response.json()
+        self.assertEqual(set(payload), {"manifestVersion", "routingVersion", "data"})
+        self.assertEqual(payload["manifestVersion"], "science125-v1")
+        self.assertEqual(payload["routingVersion"], "science125-routing-v1")
+        self.assertEqual(len(payload["data"]), 125)
+        expected_question_fields = {
+                "id",
+                "question",
+                "sourceDomain",
+                "benchmarkDomain",
+                "pdfPage",
+                "bookletPage",
+                "primarySubdomain",
+                "crossDomainTags",
+                "methodProfile",
+                "promptProfile",
+                "retrievalProfile",
+                "classificationReviewStatus",
+        }
+        self.assertTrue(
+            all(set(question) == expected_question_fields for question in payload["data"])
+        )
+        self.assertEqual(
+            payload["data"][0],
+            {
+                "id": "S125-001",
+                "question": "What makes prime numbers so special?",
+                "sourceDomain": "Mathematical Sciences",
+                "benchmarkDomain": "Mathematical Sciences",
+                "pdfPage": 7,
+                "bookletPage": 5,
+                "primarySubdomain": "math.number_theory",
+                "crossDomainTags": [],
+                "methodProfile": {"primary": "proof", "secondary": ["computational"]},
+                "promptProfile": "s125.mathematics.v1",
+                "retrievalProfile": "retrieval.mathematics.v1",
+                "classificationReviewStatus": "reviewed",
+            },
+        )
+        self.assertEqual(payload["data"][-1]["id"], "S125-125")
+        self.assertNotIn("Sha256", response.text)
+        self.assertNotIn("sourcePdf", response.text)
+        self.assertNotIn("sjtu-booklet.pdf", response.text)
+
+        self.client.post("/api/auth/logout")
+        self.register("bob")
+        bob_response = self.client.get("/api/science-125/questions")
+        self.assertEqual(bob_response.status_code, 200, bob_response.text)
+        self.assertEqual(bob_response.json(), payload)
+
+    def test_science125_question_profile_exposes_routing_and_safe_provider_readiness(self) -> None:
+        self.register("alice")
+
+        response = self.client.get("/api/science-125/questions/S125-006/profile")
+
+        self.assertEqual(response.status_code, 200, response.text)
+        payload = response.json()
+        self.assertEqual(payload["questionId"], "S125-006")
+        self.assertEqual(payload["routingVersion"], "science125-routing-v1")
+        self.assertEqual(payload["primarySubdomain"], "chem.interface")
+        self.assertEqual(payload["retrievalProfile"], "retrieval.chem.interface.v1")
+        self.assertFalse(payload["ready"])
+        self.assertTrue(payload["missingConfigurationCodes"])
+        self.assertTrue(payload["providers"])
+        self.assertTrue(payload["providerReadiness"])
+        self.assertTrue(any(item["providerId"] == "semantic_scholar" and item["isRequired"] for item in payload["providers"]))
+        self.assertNotIn("DASHSCOPE_API_KEY", response.text)
+        self.assertNotIn("SCIENCE125_", response.text)
+        self.assertNotIn("Authorization", response.text)
+        self.assertNotIn("api_keys.json", response.text)
+
+        unknown = self.client.get("/api/science-125/questions/S125-999/profile")
+        self.assertEqual(unknown.status_code, 404, unknown.text)
+
+    def test_science125_questions_are_read_only(self) -> None:
+        self.register()
+
+        response = self.client.post("/api/science-125/questions", json={})
+
+        self.assertEqual(response.status_code, 405, response.text)
+
+    def test_science125_catalog_failure_returns_safe_service_error(self) -> None:
+        from app.services.science125_catalog import Science125CatalogError
+
+        self.register()
+        private_path = str(self.tmp_path / "private" / "science125-v1.json")
+        with patch(
+            "app.api.routers.science125.get_science125_catalog",
+            side_effect=Science125CatalogError(),
+        ):
+            response = self.client.get("/api/science-125/questions")
+
+        self.assertEqual(response.status_code, 503, response.text)
+        self.assertEqual(
+            response.json()["error"]["code"],
+            "SCIENCE125_CATALOG_UNAVAILABLE",
+        )
+        self.assertNotIn(private_path, response.text)
+
+    def test_science125_jobs_are_bound_to_the_authoritative_question(self) -> None:
+        from app.services.jobs import job_service
+
+        self.register()
+        question = "How can we measure interface phenomena on the microscopic level?"
+        generic = job_service.store.create(1, "literature_search", {"queryText": "unrelated chemistry"})
+        matching = job_service.store.create(1, "literature_search", {
+            "queryText": question,
+            "science125Id": "S125-006",
+        })
+
+        filtered = self.client.get("/api/jobs?type=literature_search&science125Id=S125-006&pageSize=20")
+        self.assertEqual(filtered.status_code, 200, filtered.text)
+        self.assertEqual([job["id"] for job in filtered.json()["data"]], [matching.id])
+        self.assertEqual(filtered.json()["data"][0]["resource"]["science125Id"], "S125-006")
+
+        unbound = self.client.get("/api/jobs?type=literature_search&science125Scope=unbound&pageSize=20")
+        self.assertEqual(unbound.status_code, 200, unbound.text)
+        self.assertEqual([job["id"] for job in unbound.json()["data"]], [generic.id])
+
+        with patch.object(job_service, "create", return_value=matching) as create:
+            created = self.client.post("/api/jobs", json={
+                "type": "literature_search",
+                "payload": {"queryText": question, "science125Id": "S125-006"},
+            })
+        self.assertEqual(created.status_code, 202, created.text)
+        self.assertEqual(created.json()["resource"]["science125Id"], "S125-006")
+        self.assertEqual(create.call_args.args[2]["science125Id"], "S125-006")
+
+        mismatch = self.client.post("/api/jobs", json={
+            "type": "hypothesis_generate",
+            "payload": {"researchQuestion": "a different question", "science125Id": "S125-006"},
+        })
+        self.assertEqual(mismatch.status_code, 422, mismatch.text)
+        self.assertEqual(mismatch.json()["error"]["code"], "SCIENCE125_QUESTION_MISMATCH")
+
+        with patch.object(job_service, "create", side_effect=AssertionError("Unreviewed Science 125 input must not create a job")):
+            deferred = self.client.post("/api/jobs", json={
+                "type": "hypothesis_generate",
+                "payload": {"researchQuestion": question, "science125Id": "S125-006"},
+            })
+        self.assertEqual(deferred.status_code, 422, deferred.text)
+        self.assertEqual(deferred.json()["error"]["code"], "VALIDATION_ERROR")
 
     def test_session_store_remains_valid_under_concurrent_authentication(self) -> None:
         from app.core.security import SessionStore

@@ -166,6 +166,25 @@ class ModelCallLedgerStoreTestCase(unittest.TestCase):
         flattened_values = {str(value) for row in raw_rows for value in row}
         self.assertTrue(FORBIDDEN_VALUES.isdisjoint(flattened_values))
 
+    def test_science125_policy_and_evidence_snapshot_hashes_are_auditable(self) -> None:
+        store = self.make_store()
+        store.record({
+            **attempt_record(
+                1,
+                status_code=200,
+                status="succeeded",
+                request_id="request-auditable",
+                total_tokens=21,
+                latency_ms=71,
+            ),
+            "policy_hash": "c" * 64,
+            "evidence_snapshot_hash": "d" * 64,
+        })
+
+        row = store.list_for_context("science125_item", "S125-001")[0]
+        self.assertEqual(row.policy_hash, "c" * 64)
+        self.assertEqual(row.evidence_snapshot_hash, "d" * 64)
+
 
 if __name__ == "__main__":
     unittest.main()

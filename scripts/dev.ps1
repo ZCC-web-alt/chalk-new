@@ -9,6 +9,33 @@ $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $Backend = Join-Path $Root "backend"
 $Frontend = Join-Path $Root "frontend"
 $Source = Join-Path $Root "src"
+$ExpectedPnpmVersion = "11.11.0"
+
+if (-not (Get-Command corepack -ErrorAction SilentlyContinue)) {
+  Write-Host "Corepack is required to run Chalk Web." -ForegroundColor Red
+  exit 1
+}
+
+Push-Location $Frontend
+try {
+  $previousErrorActionPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  $pnpmVersionOutput = & corepack pnpm --version 2>&1
+  $pnpmVersionExitCode = $LASTEXITCODE
+}
+finally {
+  $ErrorActionPreference = $previousErrorActionPreference
+  Pop-Location
+}
+$pnpmVersion = ($pnpmVersionOutput | Out-String).Trim()
+if ($pnpmVersionExitCode -ne 0) {
+  Write-Host "Corepack could not resolve the project's pnpm version: $pnpmVersion" -ForegroundColor Red
+  exit 1
+}
+if ($pnpmVersion -ne $ExpectedPnpmVersion) {
+  Write-Host "Expected pnpm $ExpectedPnpmVersion, but Corepack resolved $pnpmVersion." -ForegroundColor Red
+  exit 1
+}
 
 function Test-PortInUse([int]$Port) {
   return $null -ne (Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue | Select-Object -First 1)
@@ -32,14 +59,16 @@ $backendJob = Start-Job -Name "chalk-web-backend" -ScriptBlock {
   $pythonPaths = @($Backend, $Source)
   if ($env:PYTHONPATH) { $pythonPaths += $env:PYTHONPATH }
   $env:PYTHONPATH = $pythonPaths -join [IO.Path]::PathSeparator
-  python -m uvicorn app.main:app --reload --host 127.0.0.1 --port $Port
+  cmd.exe /d /s /c "(python -m uvicorn app.main:app --reload --host 127.0.0.1 --port $Port) 2>&1"
 } -ArgumentList $Backend, $Source, $BackendPort
 
 $frontendJob = Start-Job -Name "chalk-web-frontend" -ScriptBlock {
   param($Frontend, $Port, $BackendPort)
   Set-Location $Frontend
   $env:NEXT_PUBLIC_CHALK_API_BASE = "http://127.0.0.1:$BackendPort/api"
-  corepack pnpm dev --hostname 127.0.0.1 --port $Port
+  # Next 16 Turbopack can panic on Windows with pnpm even when Next resolves correctly.
+  # Keep the package's Webpack dev fallback until https://github.com/vercel/next.js/issues/92534 is fixed.
+  cmd.exe /d /s /c "(corepack pnpm dev --hostname 127.0.0.1 --port $Port) 2>&1"
 } -ArgumentList $Frontend, $FrontendPort, $BackendPort
 
 try {

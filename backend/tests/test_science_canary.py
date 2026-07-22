@@ -4,12 +4,52 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from tests.test_research_contract import valid_contract
+from test_research_contract import valid_contract
 
 
 class ScienceCanaryTestCase(unittest.TestCase):
+    @staticmethod
+    def canary_contract(candidate_count: int) -> dict:
+        payload = valid_contract(candidate_count)
+        for claim in payload["evidenceClaims"]:
+            claim["sourceRefs"] = ["doi:10.1000/canary-1"]
+        return payload
+
+    @staticmethod
+    def canary_item() -> dict:
+        return {
+            "id": "S125-006",
+            "question": "How can we measure interface phenomena on the microscopic level?",
+            "evidenceRecords": [
+                {"stableId": "doi:10.1000/canary-1", "provider": "crossref", "providerFamily": "doi_registry", "title": "Reviewed one", "abstract": "Full text one", "accessStatus": "open_full_text"},
+                {"stableId": "openalex:canary-2", "provider": "openalex", "providerFamily": "scholarly_index", "title": "Reviewed two", "abstract": "Full text two", "accessStatus": "open_full_text"},
+                {"stableId": "pmid:canary-3", "provider": "europe_pmc", "providerFamily": "biomedical_index", "title": "Reviewed three", "abstract": "Full text three", "accessStatus": "open_full_text"},
+            ],
+        }
+
+    @staticmethod
+    def context_index():
+        return SimpleNamespace(items={"S125-006": SimpleNamespace(
+            headline="How can we measure interface phenomena on the microscopic level?",
+            source_context="The complete hash-verified Science 125 chemistry context.",
+        )})
+
+    @staticmethod
+    def route():
+        return SimpleNamespace(retrieval_profile="retrieval.chem.interface.v1", model_dump=lambda **_kwargs: {
+            "questionId": "S125-006",
+            "benchmarkDomain": "Chemistry",
+            "primarySubdomain": "chem.interface",
+            "crossDomainTags": ["physics", "materials"],
+            "methodProfile": {"primary": "experimental", "secondary": ["computational"]},
+            "promptProfile": "s125.chemistry.v1",
+            "retrievalProfile": "retrieval.chem.interface.v1",
+            "classificationReviewStatus": "reviewed",
+        })
+
     def result(self, content: str, request_id: str, *, tokens: int = 21):
         from chalk_app.core.llm_client import LLMCallResult, LLMUsage
 
@@ -46,20 +86,17 @@ class ScienceCanaryTestCase(unittest.TestCase):
         from app.services.science_canary import run_canary_item
         from chalk_app.core.llm_client import LLMBudget, LLMConfig
 
-        repaired = valid_contract(3)
+        repaired = self.canary_contract(3)
         events: list[dict[str, object]] = []
         with tempfile.TemporaryDirectory() as temp_dir, patch(
-            "app.services.science_canary._chat_result",
+            "app.services.research_generation._chat_result",
             side_effect=[
                 self.result("not-json", "request-first"),
                 self.result(json.dumps(repaired), "request-repair"),
             ],
-        ) as call:
+        ) as call, patch("app.services.science_canary.load_science125_context_index", return_value=self.context_index()), patch("app.services.science_canary.get_science125_route", return_value=self.route()):
             summary = run_canary_item(
-                {
-                    "id": "S125-006",
-                    "question": "How can we measure interface phenomena on the microscopic level?",
-                },
+                self.canary_item(),
                 config=LLMConfig(api_key="test-key", model="qwen-test"),
                 budget=LLMBudget(max_total_tokens=1000),
                 telemetry_sink=events.append,
@@ -88,19 +125,16 @@ class ScienceCanaryTestCase(unittest.TestCase):
         from chalk_app.core.llm_client import LLMBudget, LLMConfig
 
         with tempfile.TemporaryDirectory() as temp_dir, patch(
-            "app.services.science_canary._chat_result",
+            "app.services.research_generation._chat_result",
             side_effect=[
                 self.result("not-json", "request-first"),
                 self.result("still-not-json", "request-repair"),
             ],
-        ) as call:
+        ) as call, patch("app.services.science_canary.load_science125_context_index", return_value=self.context_index()), patch("app.services.science_canary.get_science125_route", return_value=self.route()):
             output_dir = Path(temp_dir)
             with self.assertRaisesRegex(ValueError, "did not contain a JSON object"):
                 run_canary_item(
-                    {
-                        "id": "S125-006",
-                        "question": "How can we measure interface phenomena on the microscopic level?",
-                    },
+                    self.canary_item(),
                     config=LLMConfig(api_key="test-key", model="qwen-test"),
                     budget=LLMBudget(max_total_tokens=1000),
                     telemetry_sink=lambda _: None,
@@ -122,19 +156,19 @@ class ScienceCanaryTestCase(unittest.TestCase):
         from app.services.science_canary import run_canary_item
         from chalk_app.core.llm_client import LLMBudget, LLMConfig
 
-        wrong_version = valid_contract(3)
+        wrong_version = self.canary_contract(3)
         wrong_version["contractVersion"] = "research-v0"
-        repaired = valid_contract(3)
+        repaired = self.canary_contract(3)
 
         with tempfile.TemporaryDirectory() as temp_dir, patch(
-            "app.services.science_canary._chat_result",
+            "app.services.research_generation._chat_result",
             side_effect=[
                 self.result(json.dumps(wrong_version), "request-wrong-version"),
                 self.result(json.dumps(repaired), "request-repair"),
             ],
-        ) as call:
+        ) as call, patch("app.services.science_canary.load_science125_context_index", return_value=self.context_index()), patch("app.services.science_canary.get_science125_route", return_value=self.route()):
             summary = run_canary_item(
-                {"id": "S125-006", "question": "How can interfaces be measured?"},
+                self.canary_item(),
                 config=LLMConfig(api_key="test-key", model="qwen-test"),
                 budget=LLMBudget(max_total_tokens=1000),
                 telemetry_sink=lambda _: None,
@@ -150,12 +184,12 @@ class ScienceCanaryTestCase(unittest.TestCase):
         from chalk_app.core.llm_client import LLMBudget, LLMConfig
 
         with tempfile.TemporaryDirectory() as temp_dir, patch(
-            "app.services.science_canary._chat_result",
-            return_value=self.result(json.dumps(valid_contract(3)), "", tokens=21),
-        ) as call:
+            "app.services.research_generation._chat_result",
+            return_value=self.result(json.dumps(self.canary_contract(3)), "", tokens=21),
+        ) as call, patch("app.services.science_canary.load_science125_context_index", return_value=self.context_index()), patch("app.services.science_canary.get_science125_route", return_value=self.route()):
             with self.assertRaisesRegex(ValueError, "request ID"):
                 run_canary_item(
-                    {"id": "S125-006", "question": "How can interfaces be measured?"},
+                    self.canary_item(),
                     config=LLMConfig(api_key="test-key", model="qwen-test"),
                     budget=LLMBudget(max_total_tokens=1000),
                     telemetry_sink=lambda _: None,

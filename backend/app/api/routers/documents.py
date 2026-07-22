@@ -13,8 +13,13 @@ from app.core.dependencies import current_user, get_db_session
 from app.core.errors import ApiError
 from app.core.legacy import db
 from app.schemas.common import Page, paginate
+from app.schemas.documents import DocumentPageExcerptInput, DocumentPageExcerptOut
 from app.schemas.jobs import JobOut
 from app.schemas.resources import DocumentOut
+from app.services.document_excerpts import (
+    DocumentPageExcerptError,
+    extract_document_page_excerpt,
+)
 from app.services.jobs import job_service
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -201,6 +206,59 @@ def get_document_content(
         raise ApiError("CONTENT_NOT_AVAILABLE", "The PDF source is not available.", status.HTTP_404_NOT_FOUND) from exc
     safe_name = Path(document.source_path).name
     return FileResponse(source, media_type="application/pdf", filename=safe_name, content_disposition_type="inline")
+
+
+@router.post("/{document_id}/page-excerpts", response_model=DocumentPageExcerptOut)
+def create_page_excerpt(
+    document_id: int,
+    payload: DocumentPageExcerptInput,
+    session: Session = Depends(get_db_session),
+    user=Depends(current_user),
+) -> DocumentPageExcerptOut:
+    document = session.query(db().Document).filter(
+        db().Document.id == document_id,
+        db().Document.user_id == user.id,
+    ).first()
+    if not document:
+        raise ApiError("NOT_FOUND", "Document not found.", status.HTTP_404_NOT_FOUND)
+    if document.source_type != "pdf":
+        raise ApiError(
+            "EXCERPT_SOURCE_UNAVAILABLE",
+            "The document does not have an available PDF source.",
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+        )
+
+    try:
+        excerpt = extract_document_page_excerpt(
+            document.source_path,
+            pages=payload.requested_pages(),
+            max_chars=payload.max_chars,
+            allowed_root=(get_settings().uploads_dir / str(user.id)).resolve(),
+        )
+    except DocumentPageExcerptError as exc:
+        raise ApiError(
+            exc.code,
+            exc.message,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+        ) from exc
+
+    return DocumentPageExcerptOut(
+        documentId=document.id,
+        title=document.title,
+        pages=excerpt.pages,
+        text=excerpt.text,
+        hash=excerpt.text_sha256,
+        provenance={
+            "sourceType": "pdf",
+            "pdfSha256": excerpt.pdf_sha256,
+            "extractor": "PyMuPDF",
+            "pageCount": excerpt.page_count,
+            "maxChars": excerpt.max_chars,
+            "originalCharCount": excerpt.original_char_count,
+            "returnedCharCount": len(excerpt.text),
+            "truncated": excerpt.truncated,
+        },
+    )
 
 
 @router.get("/{document_id}/multimodal-sources")
