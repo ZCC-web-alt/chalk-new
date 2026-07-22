@@ -16,8 +16,9 @@ class HypothesisPageSelectionSchemaTestCase(unittest.TestCase):
         from app.schemas.jobs import HypothesisGeneratePayload
 
         payload = HypothesisGeneratePayload.model_validate({
-            "researchQuestion": "How can we measure interface phenomena on the microscopic level?",
             "science125Id": "S125-006",
+            "literatureSearchJobId": "search-job-1",
+            "reviewedEvidenceIds": ["evidence-1"],
             "sourcePageSelections": [{
                 "documentId": 17,
                 "pages": [2, 4, 5],

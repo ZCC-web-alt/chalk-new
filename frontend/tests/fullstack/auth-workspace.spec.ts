@@ -130,6 +130,12 @@ test("does not allow a Science 125 URL to skip literature review", async ({ page
   await page.locator('input[autocomplete="username"]').fill(username)
   await page.locator('input[autocomplete="new-password"]').fill(password)
   await page.locator('form button[type="submit"]').click()
+  await expect(page.locator('[data-nav-key="research-general"]')).toBeVisible()
+
+  // This case verifies the unauthenticated deep-link guard. Make the auth
+  // state explicit because the suite intentionally reuses one browser context.
+  await page.locator("header button").click()
+  await expect(page.locator('input[autocomplete="username"]')).toBeVisible()
 
   await page.goto("/research/general/new?question=S125-006&stage=hypothesis")
   await expect(page.locator('input[autocomplete="username"]')).toBeVisible()
