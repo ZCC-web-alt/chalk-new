@@ -19,7 +19,7 @@ function job(overrides: Record<string, unknown> = {}) {
   }
 }
 
-function detail() {
+function detail(): Record<string, unknown> {
   return {
     id: 21,
     title: "Returned hypothesis",

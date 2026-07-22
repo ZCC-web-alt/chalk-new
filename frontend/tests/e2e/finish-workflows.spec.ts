@@ -42,7 +42,7 @@ test("moves selected search results into evidence and hypothesis input", async (
   await page.getByLabel("选择检索结果 Selected real result").check()
   await page.getByRole("button", { name: "加入证据库" }).click()
   await expect.poll(() => evidencePayload).not.toBeNull()
-  expect((evidencePayload as { references: Array<{ title: string }> }).references[0].title).toBe("Selected real result")
+  expect((evidencePayload as unknown as { references: Array<{ title: string }> }).references[0].title).toBe("Selected real result")
   await page.getByRole("button", { name: "加入假设输入" }).click()
   await expect(page.getByText("假设生成", { exact: true }).last()).toBeVisible()
   await expect(page.getByText("Selected real result")).toBeVisible()
@@ -86,7 +86,7 @@ test("saves a lab record before generating and displaying an AI suggestion", asy
   await page.getByRole("button", { name: "生成建议" }).click()
   await expect(page.getByText("Stop heating and verify the temperature probe.")).toBeVisible()
   await expect.poll(() => savedPayload).not.toBeNull()
-  expect((savedPayload as { relatedDocIds: string }).relatedDocIds).toBe("[7]")
+  expect((savedPayload as unknown as { relatedDocIds: string }).relatedDocIds).toBe("[7]")
 })
 
 test("renders the real evidence relationship graph and imports curated evidence", async ({ page }) => {

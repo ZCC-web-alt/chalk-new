@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { AuthProvider } from "@/components/chalk/auth-provider"
 
 export const metadata: Metadata = {
   title: 'Chalk · 化工文献智能分析',
@@ -41,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className="bg-background">
       <body className="antialiased">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

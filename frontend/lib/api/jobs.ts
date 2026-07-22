@@ -26,15 +26,31 @@ export async function submitHypothesisFeedback<T = unknown>(jobId: string, paylo
   })
 }
 
-export async function listJobs<T = unknown>(params: { type?: string; status?: string; pageSize?: number } = {}) {
-  return apiFetch<Page<Job<T>>>(`/jobs${toQuery({ pageSize: params.pageSize ?? 20, type: params.type, status: params.status })}`)
+export async function listJobs<T = unknown>(params: { type?: string; status?: string; pageSize?: number; science125Id?: string; science125Scope?: "all" | "unbound" } = {}) {
+  return apiFetch<Page<Job<T>>>(`/jobs${toQuery({ pageSize: params.pageSize ?? 20, type: params.type, status: params.status, science125Id: params.science125Id, science125Scope: params.science125Scope })}`)
 }
 
-export async function getLatestActiveJob<T = unknown>(type: string) {
-  const response = await listJobs<T>({ type, pageSize: 10 })
+export async function getLatestActiveJob<T = unknown>(type: string, options: { science125Id?: string } = {}) {
+  const response = await listJobs<T>({
+    type,
+    pageSize: 100,
+    science125Id: options.science125Id,
+    science125Scope: options.science125Id ? undefined : "unbound",
+  })
   return response.data.find((job) => (
     job.status === "QUEUED" || job.status === "RUNNING" || job.status === "WAITING_FOR_FEEDBACK"
   )) ?? null
+}
+
+export async function getLatestCompletedJob<T = unknown>(type: string, options: { science125Id?: string } = {}) {
+  const response = await listJobs<T>({
+    type,
+    status: "SUCCEEDED",
+    pageSize: 100,
+    science125Id: options.science125Id,
+    science125Scope: options.science125Id ? undefined : "unbound",
+  })
+  return response.data[0] ?? null
 }
 
 export async function getActiveJobForResource<T = unknown>(type: string, resource: JobResource) {
@@ -60,6 +76,7 @@ function resourcesMatch(left: JobResource | null, right: JobResource) {
     && left.hypothesisId === right.hypothesisId
     && left.artifactKind === right.artifactKind
     && left.domain === right.domain
+    && left.science125Id === right.science125Id
   )
 }
 

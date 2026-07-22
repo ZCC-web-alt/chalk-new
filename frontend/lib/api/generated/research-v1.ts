@@ -135,6 +135,24 @@ export type RoundChangeSet = {
   readonly changes: ReadonlyArray<RoundChange>
 }
 
+export type Science125Extension = {
+  readonly questionId: string
+  readonly routingVersion: "science125-routing-v1"
+  readonly benchmarkDomain: "Mathematical Sciences" | "Chemistry" | "Medicine & Health" | "Biology" | "Astronomy" | "Physics" | "Engineering & Materials Science" | "Information Science" | "Neuroscience" | "Ecology" | "Energy Science" | "Artificial Intelligence"
+  readonly primarySubdomain: string
+  readonly crossDomainTags: ReadonlyArray<"mathematics" | "chemistry" | "physics" | "biology" | "medicine" | "astronomy" | "engineering" | "materials" | "information" | "ai" | "neuroscience" | "ecology" | "energy" | "earth_science" | "climate" | "space_systems" | "social_science" | "cognitive_science" | "psychology" | "evolution" | "genetics" | "immunology" | "pharmacology" | "public_health" | "nanomedicine" | "robotics" | "agriculture" | "geology" | "philosophy" | "economics" | "quantum" | "mathematical_sciences" | "medicine_health" | "engineering_materials" | "information_science" | "energy_science" | "artificial_intelligence">
+  readonly methodProfile: Science125MethodProfile
+  readonly promptProfile: string
+  readonly retrievalProfile: string
+  readonly evidenceStatus: "sufficient" | "partial" | "insufficient"
+  readonly domainChecks: ReadonlyArray<"source_traceability" | "negative_evidence" | "measurement_plan" | "operational_definition" | "uncertainty_budget" | "selection_effects" | "replication" | "safety_boundary" | "data_leakage" | "applicability_boundary">
+}
+
+export type Science125MethodProfile = {
+  readonly primary: "proof" | "experimental" | "observational" | "clinical" | "engineering" | "computational" | "systems_policy"
+  readonly secondary?: ReadonlyArray<"proof" | "experimental" | "observational" | "clinical" | "engineering" | "computational" | "systems_policy">
+}
+
 export type ResearchOutputBase = {
   readonly contractVersion: "research-v1"
   readonly profile: "general_science" | "chemistry"
@@ -147,6 +165,7 @@ export type ResearchOutputBase = {
   readonly researchPlan: ResearchPlan
   readonly quality: ResearchQuality
   readonly provenance: ModelProvenance
+  readonly science125?: Science125Extension | null
 }
 
 export type CandidateHypothesisAt<Id extends CandidateHypothesis["id"]> =

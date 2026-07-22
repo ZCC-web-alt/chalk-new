@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import {
   Beaker,
   ChevronLeft,
@@ -49,9 +50,14 @@ const NAV: NavItem[] = [
   { key: "api", label: "API 设置", icon: Settings },
 ]
 
+const DISCOVERY_NAV: Array<NavItem & { href: string }> = [
+  { key: "research-general", label: "跨学科假设工作台", icon: Lightbulb, href: "/research/general/new" },
+]
+
 const HYPOTHESIS_KEYS = new Set(["hypothesis", "hyplib"])
 
 export function AppShell({ user, onLogout }: { user: User; onLogout: () => void | Promise<void> }) {
+  const router = useRouter()
   const [active, setActive] = useState("literature")
   const [collapsed, setCollapsed] = useState(false)
   const [apiHealthy, setApiHealthy] = useState<boolean | null>(null)
@@ -114,6 +120,23 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           )}
         >
           <div className="flex-1 overflow-y-auto py-2">
+            {!collapsed && <div className="px-4 pb-1 pt-1 text-[10px] font-semibold text-muted-foreground md:block">科学发现</div>}
+            {DISCOVERY_NAV.map((item) => (
+              <button
+                key={item.key}
+                data-nav-key={item.key}
+                onClick={() => router.push(item.href)}
+                className={cn(
+                  "relative flex w-full items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-hover hover:text-foreground",
+                  collapsed ? "justify-center px-0" : "justify-center px-0 md:justify-start md:px-4",
+                )}
+                title={item.label}
+              >
+                <item.icon className="size-4 shrink-0 text-primary" />
+                {!collapsed && <span className="hidden md:inline">{item.label}</span>}
+              </button>
+            ))}
+            {!collapsed && <div className="px-4 pb-1 pt-3 text-[10px] font-semibold text-muted-foreground md:block">科研工具</div>}
             {NAV.map((item) => {
               const isActive = active === item.key
               const isHyp = HYPOTHESIS_KEYS.has(item.key)

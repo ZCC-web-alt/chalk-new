@@ -20,6 +20,15 @@ jobs:
         run: python -m pip install -r requirements.txt
       - run: python scripts/generate_research_contract.py --check
       - run: python scripts/validate_science125_manifest.py benchmarks/science125/science125-v1.json
+      - name: Materialize protected canary inputs
+        env:
+          SCIENCE125_CANARY_CONTEXT_INDEX_GZIP_B64_PART1: ${{ secrets.SCIENCE125_CANARY_CONTEXT_INDEX_GZIP_B64_PART1 }}
+          SCIENCE125_CANARY_CONTEXT_INDEX_GZIP_B64_PART2: ${{ secrets.SCIENCE125_CANARY_CONTEXT_INDEX_GZIP_B64_PART2 }}
+          SCIENCE125_CANARY_REVIEWED_EVIDENCE_B64: ${{ secrets.SCIENCE125_CANARY_REVIEWED_EVIDENCE_B64 }}
+        run: >-
+          python scripts/materialize_science125_canary_inputs.py
+          --context-output data/science125/science125-context-v1.json
+          --evidence-output data/canary-reviewed-evidence.json
       - env:
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
           QWEN_MAX_ESTIMATED_COST_CNY: ${{ vars.QWEN_MAX_ESTIMATED_COST_CNY }}
@@ -28,6 +37,7 @@ jobs:
         run: >-
           python scripts/run_science_canary.py
           --manifest benchmarks/science125/science125-v1.json
+          --evidence data/canary-reviewed-evidence.json
           --output-dir data/canary
           --summary-path canary-summary.json
           --ledger-path data/canary-ledger.db

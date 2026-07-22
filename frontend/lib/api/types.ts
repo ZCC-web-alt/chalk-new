@@ -1,3 +1,5 @@
+import type { ResearchOutput } from "./generated/research-v1"
+
 export type User = {
   id: number
   username: string
@@ -78,15 +80,31 @@ export type HypothesisDetail = HypothesisSummary & {
 }
 
 export type HypothesisGenerationResult = {
-  hypothesisId: number
-  summary: {
+  hypothesisId?: number
+  summary?: {
     title: string
     confidence: number
     feasibility: string
     status: string
   }
-  warnings: string[]
-  artifacts: HypothesisArtifact[]
+  warnings?: string[]
+  artifacts?: HypothesisArtifact[]
+  researchOutput?: ResearchOutput
+  audit?: {
+    contractVersion: "research-v1"
+    provider: string
+    model: string
+    requestId: string
+    totalTokens: number
+    latencyMs: number
+    retryCount: number
+    estimatedCostCny: number
+    schemaRepaired: boolean
+    policyHash: string
+    evidenceSnapshotHash: string
+    evidenceCount: number
+    providerFamilies: string[]
+  }
 }
 
 export type HypothesisFeedbackPrompt = {
@@ -146,6 +164,7 @@ export type JobResource = {
   sourceType?: string
   workspaceId?: string
   requestHash?: string
+  science125Id?: string
 }
 
 export type Job<T = unknown> = {
@@ -188,6 +207,7 @@ export type LiteratureSearchResult = {
   doi: string
   abstract: string
   sourcePlatform: string
+  providerFamily?: string
   url: string
   isOpenAccess: boolean
   relevanceScore: number
@@ -200,6 +220,9 @@ export type LiteratureSearchJobResult = {
   results: LiteratureSearchResult[]
   platformStatus: Record<string, Record<string, unknown>>
   warnings: string[]
+  evidenceStatus?: "ready_for_review" | "evidence_insufficient"
+  providerDiagnostics?: Array<Record<string, unknown>>
+  policyHashes?: Record<string, string>
   query: Record<string, unknown>
 }
 

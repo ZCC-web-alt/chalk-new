@@ -30,6 +30,8 @@ import type {
   Job,
   MultimodalRun,
 } from "@/lib/api/types"
+import type { DocumentPageSelection } from "@/lib/api/documents"
+import type { ResearchOutput } from "@/lib/api/generated/research-v1"
 import { cn } from "@/lib/utils"
 import { ErrorState, LoadingState, NoDataState } from "../api-state"
 import { Btn, Checkbox, FieldLabel, Input, Panel, Select, Stepper, Textarea, Toggle } from "../ui"
@@ -60,11 +62,26 @@ const DOMAINS = [
   ["green_chemical_engineering", "绿色化工"],
 ] as const
 
+export type HypothesisSeed = {
+  id: number
+  text?: string
+  question?: string
+  questionLocked?: boolean
+  domainLabel?: string
+  science125Id?: string
+  literatureSearchJobId?: string
+  reviewedEvidenceIds?: string[]
+  reviewedEvidenceCount?: number
+  sourcePageSelections?: DocumentPageSelection[]
+  generationDisabled?: boolean
+  generationBlockedReason?: string
+}
+
 function isActive(job: Job | null) {
   return Boolean(job && ["QUEUED", "RUNNING", "WAITING_FOR_FEEDBACK"].includes(job.status))
 }
 
-export function HypothesisPage({ seed }: { seed?: { id: number; text: string } | null }) {
+export function HypothesisPage({ seed }: { seed?: HypothesisSeed | null }) {
   const [documents, setDocuments] = useState<DocumentRecord[]>([])
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [multimodalRuns, setMultimodalRuns] = useState<MultimodalRun[]>([])
@@ -80,14 +97,28 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
   const [error, setError] = useState<string | null>(null)
   const [job, setJob] = useState<Job<HypothesisGenerationResult> | null>(null)
   const [detail, setDetail] = useState<HypothesisDetail | null>(null)
+  const [science125Output, setScience125Output] = useState<ResearchOutput | null>(null)
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
   const [feedbackError, setFeedbackError] = useState<string | null>(null)
   const [polishing, setPolishing] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  const appliedSeedRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!seed?.text) return
-    setSupplementalContext((current) => [current.trim(), seed.text.trim()].filter(Boolean).join("\n\n").slice(0, 40000))
+    if (!seed) return
+    const seedSignature = [seed.id, seed.question || "", seed.text || "", seed.questionLocked ? "locked" : "editable"].join("\u0000")
+    if (appliedSeedRef.current === seedSignature) return
+    appliedSeedRef.current = seedSignature
+    if (seed.question) setQuestion(seed.question)
+    if (seed.questionLocked) setDomain("")
+    const seedText = seed.text?.trim()
+    if (seed.questionLocked) {
+      setSupplementalContext(seedText || "")
+      return
+    }
+    if (seedText) {
+      setSupplementalContext((current) => [current.trim(), seedText].filter(Boolean).join("\n\n").slice(0, 40000))
+    }
   }, [seed])
 
   const loadDocuments = useCallback(async () => {
@@ -111,8 +142,13 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
         intervalMs: 700,
         onUpdate: setJob,
       })
-      if (completed.status === "SUCCEEDED" && completed.result?.hypothesisId) {
+      if (completed.status === "SUCCEEDED" && completed.result?.researchOutput) {
+        setScience125Output(completed.result.researchOutput)
+        setDetail(null)
+        setError(null)
+      } else if (completed.status === "SUCCEEDED" && completed.result?.hypothesisId) {
         await loadDetail(completed.result.hypothesisId)
+        setScience125Output(null)
         setError(null)
       } else if (completed.status === "FAILED") {
         setError(completed.error?.message || "假设生成失败")
@@ -132,7 +168,7 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
     Promise.all([
       loadDocuments(),
       listMultimodalRuns().catch(() => ({ data: [], pagination: { page: 1, pageSize: 100, totalItems: 0, totalPages: 0 } })),
-      getLatestActiveJob<HypothesisGenerationResult>("hypothesis_generate"),
+      getLatestActiveJob<HypothesisGenerationResult>("hypothesis_generate", { science125Id: seed?.science125Id }),
     ])
       .then(([, runPage, activeJob]) => {
         if (active) setMultimodalRuns(runPage.data)
@@ -146,7 +182,7 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
       active = false
       abortRef.current?.abort()
     }
-  }, [loadDocuments, monitorJob])
+  }, [loadDocuments, monitorJob, seed?.science125Id])
 
   const filteredDocuments = useMemo(() => {
     const query = documentQuery.trim().toLocaleLowerCase()
@@ -154,7 +190,11 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
     return documents.filter((document) => document.title.toLocaleLowerCase().includes(query))
   }, [documentQuery, documents])
 
-  const canStart = Boolean(question.trim() || supplementalContext.trim() || selected.size > 0) && !isActive(job)
+  const science125Generation = Boolean(seed?.science125Id)
+  const canStart = science125Generation
+    ? Boolean(!seed?.generationDisabled && seed?.literatureSearchJobId && (seed.reviewedEvidenceCount || 0) >= 3)
+    : Boolean(question.trim() || supplementalContext.trim() || selected.size > 0 || seed?.sourcePageSelections?.length)
+  const canSubmit = canStart && !isActive(job)
 
   function toggleDocument(documentId: number) {
     setSelected((current) => {
@@ -173,11 +213,17 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
   }
 
   async function startGeneration() {
-    if (!canStart) return
+    if (!canSubmit) return
     setError(null)
     setDetail(null)
+    setScience125Output(null)
     try {
-      const created = await createJob<HypothesisGenerationResult>("hypothesis_generate", {
+      const created = await createJob<HypothesisGenerationResult>("hypothesis_generate", science125Generation ? {
+        science125Id: seed?.science125Id,
+        literatureSearchJobId: seed?.literatureSearchJobId,
+        reviewedEvidenceIds: seed?.reviewedEvidenceIds || [],
+        ...(seed?.sourcePageSelections?.length ? { sourcePageSelections: seed.sourcePageSelections } : {}),
+      } : {
         researchQuestion: question.trim(),
         sourceDocIds: [...selected].sort((a, b) => a - b),
         supplementalContext: supplementalContext.trim(),
@@ -194,7 +240,11 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
         if (details?.existingJobId) {
           try {
             const existing = await getJob<HypothesisGenerationResult>(details.existingJobId)
-            void monitorJob(existing)
+            if (seed?.science125Id && existing.resource?.science125Id !== seed.science125Id) {
+              setError("另一个假设任务正在运行；当前 Science 125 题目未关联该任务。")
+            } else {
+              void monitorJob(existing)
+            }
           } catch (recoveryError) {
             setError(recoveryError instanceof Error ? recoveryError.message : "活动任务恢复失败")
           }
@@ -258,52 +308,63 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
         <Panel title="生成输入" icon={Lightbulb} className="shrink-0">
           <div className="space-y-3">
             <div>
-              <FieldLabel>研究问题</FieldLabel>
+              <FieldLabel>{seed?.questionLocked ? "Science 125 题目" : "研究问题"}</FieldLabel>
               <Textarea
                 data-testid="hypothesis-question"
                 rows={3}
                 maxLength={12000}
-                placeholder="输入需要验证的科学问题"
+                placeholder={seed?.questionLocked ? "从 Science 125 选择题目" : "输入需要验证的科学问题"}
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
+                disabled={seed?.questionLocked}
               />
-              <div className="mt-1 flex justify-end">
+              {!seed?.questionLocked && <div className="mt-1 flex justify-end">
                 <Btn size="xs" variant="ghost" icon={WandSparkles} disabled={!question.trim() || polishing || running} onClick={() => void polishQuestion()}>
                   {polishing ? "润色中" : "润色问题"}
                 </Btn>
-              </div>
+              </div>}
             </div>
-            <div>
-              <FieldLabel>补充背景</FieldLabel>
+            {!science125Generation && <div>
+              <FieldLabel>{seed?.questionLocked ? "已审核上下文" : "补充背景"}</FieldLabel>
               <Textarea
                 rows={3}
                 maxLength={40000}
                 placeholder="可补充实验背景、约束条件或已有观察"
                 value={supplementalContext}
                 onChange={(event) => setSupplementalContext(event.target.value)}
+                disabled={seed?.questionLocked}
               />
               <div className="mt-1 text-right text-[11px] tabular-nums text-muted-foreground">{supplementalContext.length.toLocaleString()} / 40,000</div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
+            </div>}
+            <div className={`grid gap-3 ${seed?.questionLocked ? "grid-cols-1" : "grid-cols-2"}`}>
+              {seed?.questionLocked ? <div>
+                <FieldLabel>Science 125 领域</FieldLabel>
+                <p className="flex h-9 items-center rounded-md border border-input bg-secondary px-3 text-sm text-foreground">{seed.domainLabel || "自动识别"}</p>
+              </div> : <div>
                 <FieldLabel>研究领域</FieldLabel>
                 <Select className="w-full" value={domain} onChange={(event) => setDomain(event.target.value)}>
                   {DOMAINS.map(([value, label]) => <option key={value || "auto"} value={value}>{label}</option>)}
                 </Select>
-              </div>
-              <div><FieldLabel>迭代轮数</FieldLabel><Stepper value={iterations} onChange={setIterations} min={1} max={5} /></div>
+              </div>}
+              {!science125Generation && <div><FieldLabel>迭代轮数</FieldLabel><Stepper value={iterations} onChange={setIterations} min={1} max={5} /></div>}
             </div>
-            <div className="grid grid-cols-2 gap-3 border-y border-border py-2">
+            {!science125Generation && <div className="grid grid-cols-2 gap-3 border-y border-border py-2">
               <label className="flex items-center justify-between gap-2 text-xs text-foreground">人工审核<Toggle checked={hitlEnabled} onChange={setHitlEnabled} /></label>
               <label className="flex items-center justify-between gap-2 text-xs text-foreground">自动验证<Toggle checked={autoVerify} onChange={setAutoVerify} /></label>
-            </div>
-            <Btn data-testid="start-hypothesis" variant="purple" icon={running ? LoaderCircle : Play} className="w-full" disabled={!canStart} onClick={() => void startGeneration()}>
+            </div>}
+            {science125Generation && !canStart ? (
+              <p data-testid="hypothesis-generation-blocked" role="status" className="border border-warning/40 bg-warning-soft px-3 py-2 text-xs leading-5 text-[#ad6800]">
+                {seed?.generationDisabled
+                  ? seed.generationBlockedReason
+                  : "至少需要 3 条已人工审核的全文证据，且来源覆盖至少两个 provider family，才能调用专用 Science 125 Qwen 提示词。"}
+              </p>
+            ) : <Btn data-testid="start-hypothesis" variant="purple" icon={running ? LoaderCircle : Play} className="w-full" disabled={!canSubmit} onClick={() => void startGeneration()}>
               {running ? "任务进行中" : "开始生成"}
-            </Btn>
+            </Btn>}
           </div>
         </Panel>
 
-        <Panel
+        {!seed?.questionLocked && <Panel
           title="来源文献"
           icon={FileText}
           className="min-h-64 shrink-0 xl:max-h-72"
@@ -326,9 +387,9 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
               </div>
             )}
           </div>
-        </Panel>
+        </Panel>}
 
-        <Panel
+        {!science125Generation && <Panel
           title="多模态证据"
           icon={Network}
           className="max-h-52 shrink-0"
@@ -358,7 +419,7 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
               ))}
             </div>
           )}
-        </Panel>
+        </Panel>}
       </div>
 
       <div className="flex flex-col gap-3 xl:min-h-0">
@@ -396,8 +457,10 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
             {job.result.warnings.join("；")}
           </div>
         )}
-        <Panel title={detail?.title || "假设结果"} icon={Lightbulb} className="min-h-96 xl:min-h-0 xl:flex-1" noPadding bodyClassName="flex min-h-0 flex-col">
-          {detail ? (
+        <Panel title={science125Output ? "Science 125 结构化结果" : detail?.title || "假设结果"} icon={Lightbulb} className="min-h-96 xl:min-h-0 xl:flex-1" noPadding bodyClassName="flex min-h-0 flex-col">
+          {science125Output ? (
+            <Science125ResultView output={science125Output} />
+          ) : detail ? (
             <HypothesisDetailView detail={detail} onRefresh={() => loadDetail(detail.id)} />
           ) : running ? (
             <div className="flex h-full min-h-72 items-center justify-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="size-4 animate-spin" />正在生成假设</div>
@@ -420,4 +483,39 @@ export function HypothesisPage({ seed }: { seed?: { id: number; text: string } |
       )}
     </div>
   )
+}
+
+function Science125ResultView({ output }: { output: ResearchOutput }) {
+  return <div data-testid="science125-research-output" className="min-h-0 space-y-5 overflow-auto p-4 text-sm">
+    <section>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-semibold text-foreground">研究简报</h3>
+        <span className="text-xs text-muted-foreground">质量分 {Math.round(output.quality.overall * 100)}%</span>
+      </div>
+      <p className="mt-2 leading-6 text-foreground">{output.brief.researchQuestion}</p>
+      <p className="mt-2 leading-6 text-muted-foreground">{output.brief.background}</p>
+    </section>
+    <section className="border-t border-border pt-4">
+      <h3 className="font-semibold text-foreground">候选假设</h3>
+      <div className="mt-3 space-y-3">
+        {[...output.hypotheses, output.nullHypothesis].map((hypothesis) => <article key={hypothesis.id} className="border-l-2 border-primary/50 pl-3">
+          <div className="flex items-start justify-between gap-3"><h4 className="font-medium text-foreground">{hypothesis.id} · {hypothesis.title}</h4><span className="text-xs text-muted-foreground">置信度 {Math.round(hypothesis.confidence * 100)}%</span></div>
+          <p className="mt-1 leading-6 text-muted-foreground">{hypothesis.statement}</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">机制：{hypothesis.mechanism}</p>
+        </article>)}</div>
+    </section>
+    <section className="border-t border-border pt-4">
+      <h3 className="font-semibold text-foreground">研究计划</h3>
+      <dl className="mt-2 grid gap-2 text-xs leading-5 md:grid-cols-2">
+        <div><dt className="text-muted-foreground">自变量</dt><dd>{output.researchPlan.independentVariables.join("；")}</dd></div>
+        <div><dt className="text-muted-foreground">因变量</dt><dd>{output.researchPlan.dependentVariables.join("；")}</dd></div>
+        <div><dt className="text-muted-foreground">控制变量</dt><dd>{output.researchPlan.controlVariables.join("；")}</dd></div>
+        <div><dt className="text-muted-foreground">停止条件</dt><dd>{output.researchPlan.stopConditions.join("；")}</dd></div>
+      </dl>
+    </section>
+    <section className="border-t border-border pt-4 text-xs text-muted-foreground">
+      <p>证据状态：{output.science125?.evidenceStatus || "unknown"} · {output.science125?.benchmarkDomain || "Science 125"}</p>
+      <p className="mt-1">模型：{output.provenance.model} · requestId：{output.provenance.requestId}</p>
+    </section>
+  </div>
 }
