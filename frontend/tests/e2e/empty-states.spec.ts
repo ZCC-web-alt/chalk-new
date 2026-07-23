@@ -33,3 +33,29 @@ test("hypothesis generation starts with an honest empty state", async ({ page })
   await expect(page.getByTestId("hypothesis-empty")).toBeVisible()
   await expect(page.getByTestId("start-hypothesis")).toBeDisabled()
 })
+
+test("API settings shows NASA ADS as a server-managed credential", async ({ page }) => {
+  await mockAuthenticatedEmptyWorkspace(page)
+  await page.route("**/api/settings/api-keys", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      configured: {
+        dashscope: true,
+        semantic_scholar: true,
+        ncbi: true,
+        crossref_mailto: true,
+        nasa_ads: true,
+      },
+    }),
+  }))
+
+  await page.goto("/")
+  await page.locator('[data-nav-key="api"]').click()
+
+  const nasaAds = page.getByTestId("api-provider-nasa_ads")
+  await expect(nasaAds).toContainText("NASA ADS API Token")
+  await expect(nasaAds).toContainText("已配置")
+  await expect(nasaAds).toContainText("服务器环境变量管理")
+  await expect(page.getByLabel("NASA ADS API Token")).toHaveCount(0)
+})

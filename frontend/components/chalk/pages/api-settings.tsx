@@ -5,14 +5,31 @@ import { Check, Cpu, Eye, EyeOff, KeyRound, RefreshCw, Search } from "lucide-rea
 import { apiFetch } from "@/lib/api/client"
 import { Btn, FieldLabel, Input, Panel, StatusDot, Tag } from "../ui"
 
-type Provider = "dashscope" | "semantic_scholar" | "ncbi" | "crossref_mailto"
+type Provider = "dashscope" | "semantic_scholar" | "ncbi" | "crossref_mailto" | "nasa_ads"
 type KeyStatus = { configured: Record<Provider, boolean> }
 
-const PROVIDERS: Array<{ id: Provider; label: string; hint: string; placeholder: string }> = [
-  { id: "dashscope", label: "DashScope API Key", hint: "文献向量化、问答和模型分析", placeholder: "sk-..." },
-  { id: "semantic_scholar", label: "Semantic Scholar API Key", hint: "提高 Semantic Scholar 检索配额", placeholder: "可选" },
-  { id: "ncbi", label: "NCBI API Key", hint: "提高 PMC / Entrez 检索配额", placeholder: "可选" },
-  { id: "crossref_mailto", label: "Crossref 联系邮箱", hint: "进入 Crossref polite pool", placeholder: "researcher@example.com" },
+type ProviderConfig = {
+  id: Provider
+  label: string
+  hint: string
+  placeholder: string
+  managedBy: "user" | "server_env"
+  environmentVariable?: string
+}
+
+const PROVIDERS: ProviderConfig[] = [
+  { id: "dashscope", label: "DashScope API Key", hint: "文献向量化、问答和模型分析", placeholder: "sk-...", managedBy: "user" },
+  { id: "semantic_scholar", label: "Semantic Scholar API Key", hint: "提高 Semantic Scholar 检索配额", placeholder: "可选", managedBy: "user" },
+  { id: "ncbi", label: "NCBI API Key", hint: "提高 PMC / Entrez 检索配额", placeholder: "可选", managedBy: "user" },
+  { id: "crossref_mailto", label: "Crossref 联系邮箱", hint: "进入 Crossref polite pool", placeholder: "researcher@example.com", managedBy: "user" },
+  {
+    id: "nasa_ads",
+    label: "NASA ADS API Token",
+    hint: "用于天文学和高能天体物理文献检索",
+    placeholder: "",
+    managedBy: "server_env",
+    environmentVariable: "SCIENCE125_NASA_ADS_API_TOKEN",
+  },
 ]
 
 const EMPTY_STATUS: Record<Provider, boolean> = {
@@ -20,6 +37,7 @@ const EMPTY_STATUS: Record<Provider, boolean> = {
   semantic_scholar: false,
   ncbi: false,
   crossref_mailto: false,
+  nasa_ads: false,
 }
 
 const EMPTY_VALUES: Record<Provider, string> = {
@@ -27,6 +45,7 @@ const EMPTY_VALUES: Record<Provider, string> = {
   semantic_scholar: "",
   ncbi: "",
   crossref_mailto: "",
+  nasa_ads: "",
 }
 
 export function ApiSettingsPage() {
@@ -85,7 +104,7 @@ export function ApiSettingsPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-medium text-foreground">{provider.label}</p>
-                <p className="text-[11px] text-muted-foreground">{provider.hint}</p>
+                <p className="text-[11px] text-muted-foreground">{provider.hint}{provider.managedBy === "server_env" ? " · 服务器环境变量管理" : ""}</p>
               </div>
               <Tag tone={configured[provider.id] ? "green" : "gray"}>{configured[provider.id] ? "已配置" : "未配置"}</Tag>
             </div>
@@ -99,7 +118,18 @@ export function ApiSettingsPage() {
 
       <Panel title="API 配置" icon={KeyRound}>
         <div className="space-y-3">
-          {PROVIDERS.map((provider) => (
+          {PROVIDERS.map((provider) => provider.managedBy === "server_env" ? (
+            <div key={provider.id} data-testid={`api-provider-${provider.id}`}>
+              <FieldLabel>{provider.label}</FieldLabel>
+              <div className="flex flex-wrap items-center justify-between gap-2 border border-border bg-secondary px-3 py-2">
+                <div className="min-w-0">
+                  <p className="font-mono text-xs text-foreground">{provider.environmentVariable}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">服务器环境变量管理；修改后需要重启后端服务。</p>
+                </div>
+                <Tag tone={configured[provider.id] ? "green" : "gray"}>{configured[provider.id] ? "已配置" : "未配置"}</Tag>
+              </div>
+            </div>
+          ) : (
             <div key={provider.id}>
               <FieldLabel>{provider.label}</FieldLabel>
               <div className="flex gap-2">

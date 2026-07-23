@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Literal
 
 from fastapi import APIRouter, Depends, status
@@ -20,9 +21,15 @@ class ApiKeyInput(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+def _configured_credentials(user_id: int) -> dict[str, bool]:
+    configured = api_key_store.configured(user_id)
+    configured["nasa_ads"] = bool(os.getenv("SCIENCE125_NASA_ADS_API_TOKEN", "").strip())
+    return configured
+
+
 @router.get("/api-keys")
 def get_api_key_status(user=Depends(current_user)) -> dict[str, dict[str, bool]]:
-    return {"configured": api_key_store.configured(user.id)}
+    return {"configured": _configured_credentials(user.id)}
 
 
 @router.put("/api-keys")
@@ -34,4 +41,4 @@ def set_api_key(payload: ApiKeyInput, user=Depends(current_user)) -> dict[str, d
             status.HTTP_403_FORBIDDEN,
         )
     api_key_store.set_key(user.id, payload.provider, payload.api_key.strip())
-    return {"configured": api_key_store.configured(user.id)}
+    return {"configured": _configured_credentials(user.id)}

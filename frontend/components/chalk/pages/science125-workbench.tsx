@@ -35,6 +35,20 @@ const DOMAIN_ORDER = [
   "Energy Science",
   "Artificial Intelligence",
 ] as const
+const DOMAIN_LABELS_ZH: Record<(typeof DOMAIN_ORDER)[number], string> = {
+  "Mathematical Sciences": "数学科学",
+  Chemistry: "化学",
+  "Medicine & Health": "医学与健康",
+  Biology: "生物学",
+  Astronomy: "天文学",
+  Physics: "物理学",
+  "Engineering & Materials Science": "工程与材料科学",
+  "Information Science": "信息科学",
+  Neuroscience: "神经科学",
+  Ecology: "生态学",
+  "Energy Science": "能源科学",
+  "Artificial Intelligence": "人工智能",
+}
 const EMPTY_REVIEW_STATE: LiteratureReviewState = {
   jobId: null,
   selectedResultIds: [],
@@ -46,6 +60,14 @@ const EMPTY_REVIEW_STATE: LiteratureReviewState = {
 
 function questionSeedId(question: Science125Question) {
   return Number.parseInt(question.id.slice(-3), 10)
+}
+
+function domainLabelZh(domain: string) {
+  return DOMAIN_LABELS_ZH[domain as keyof typeof DOMAIN_LABELS_ZH] || domain
+}
+
+function bilingualDomainLabel(domain: string) {
+  return `${domainLabelZh(domain)} / ${domain}`
 }
 
 export function Science125Workbench() {
@@ -109,6 +131,7 @@ export function Science125Workbench() {
         item.question,
         item.questionZh || "",
         item.benchmarkDomain,
+        domainLabelZh(item.benchmarkDomain),
         item.primarySubdomain,
         ...item.crossDomainTags,
       ].join(" ").toLocaleLowerCase().includes(needle))
@@ -243,7 +266,7 @@ export function Science125Workbench() {
       {selected && stage !== "select" && <section className={stage === "presearch" ? "space-y-4" : "hidden"} aria-hidden={stage !== "presearch"}>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
           <div>
-            <p className="text-xs text-muted-foreground">{selected.id} · {selected.benchmarkDomain} · {selected.primarySubdomain}</p>
+            <p className="text-xs text-muted-foreground">{selected.id} · {bilingualDomainLabel(selected.benchmarkDomain)} · {selected.primarySubdomain}</p>
             <h2 data-testid="science125-question-zh" className="text-base font-semibold">{selected.questionZh || selected.question}</h2>
             {selected.questionZh && <p data-testid="science125-question-en" className="mt-1 text-xs text-muted-foreground">权威英文原题：{selected.question}</p>}
           </div>
@@ -264,7 +287,7 @@ export function Science125Workbench() {
       </section>}
       {stage === "hypothesis" && selected && <section className="flex min-h-[calc(100vh-15rem)] flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
-          <div><p className="text-xs text-muted-foreground">{selected.id} · {selected.benchmarkDomain} · {selected.primarySubdomain}</p><h2 className="text-base font-semibold">已完成文献人工筛选，准备假设生成输入</h2></div>
+          <div><p className="text-xs text-muted-foreground">{selected.id} · {bilingualDomainLabel(selected.benchmarkDomain)} · {selected.primarySubdomain}</p><h2 className="text-base font-semibold">已完成文献人工筛选，准备假设生成输入</h2></div>
           <Btn size="xs" variant="ghost" icon={ArrowLeft} onClick={() => setWorkspaceRoute(selected.id, "presearch")}>返回文献预搜索</Btn>
         </div>
         <ReviewedInputSnapshot
@@ -279,7 +302,7 @@ export function Science125Workbench() {
             id: questionSeedId(selected),
             question: selected.questionZh || selected.question,
             questionLocked: true,
-            domainLabel: selected.benchmarkDomain,
+            domainLabel: bilingualDomainLabel(selected.benchmarkDomain),
             science125Id: selected.id,
             literatureSearchJobId: reviewState.jobId || undefined,
             reviewedEvidenceIds: reviewState.selectedResultIds,
@@ -331,14 +354,14 @@ function QuestionSelection({
           <button type="button" aria-pressed={!domain} onClick={() => onDomain("")} className={`flex w-full items-center justify-between border px-3 py-2 text-left text-sm ${!domain ? "border-primary/50 bg-primary-soft text-primary" : "border-transparent text-muted-foreground hover:bg-secondary"}`}>
             <span>全部领域</span><span className="tabular-nums">{questions.length}</span>
           </button>
-          {domains.map((item) => <button type="button" key={item} aria-pressed={domain === item} onClick={() => onDomain(item)} className={`flex w-full items-center justify-between border px-3 py-2 text-left text-xs ${domain === item ? "border-primary/50 bg-primary-soft text-primary" : "border-transparent text-muted-foreground hover:bg-secondary"}`}>
-            <span className="min-w-0 truncate">{item}</span><span className="ml-2 tabular-nums">{domainCounts[item] || 0}</span>
+          {domains.map((item) => <button type="button" key={item} aria-pressed={domain === item} onClick={() => onDomain(item)} className={`flex min-h-12 w-full items-center justify-between gap-2 border px-3 py-2 text-left text-xs ${domain === item ? "border-primary/50 bg-primary-soft text-primary" : "border-transparent text-muted-foreground hover:bg-secondary"}`}>
+            <span className="min-w-0"><span className="block text-sm text-foreground">{domainLabelZh(item)}</span><span className="block text-[10px] leading-4 text-muted-foreground">{item}</span></span><span className="tabular-nums">{domainCounts[item] || 0}</span>
           </button>)}
         </nav>
         <div className="min-w-0 space-y-3">
           <Select aria-label="Science 125 领域" className="md:hidden" value={domain} onChange={(event) => onDomain(event.target.value)}>
             <option value="">全部领域</option>
-            {domains.map((item) => <option key={item} value={item}>{item} ({domainCounts[item] || 0})</option>)}
+            {domains.map((item) => <option key={item} value={item}>{bilingualDomainLabel(item)} ({domainCounts[item] || 0})</option>)}
           </Select>
           <Input value={query} icon={Search} placeholder="按编号、题目、子领域或标签筛选" onChange={(event) => onQuery(event.target.value)} />
         </div>
@@ -349,14 +372,14 @@ function QuestionSelection({
           const active = item.id === selected?.id
           return <button type="button" data-testid={`science125-question-${item.id}`} aria-pressed={active} onClick={() => onSelect(item)} className={`flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-secondary ${active ? "bg-primary-soft" : ""}`} key={item.id}>
             <span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center border ${active ? "border-primary bg-primary text-white" : "border-border text-muted-foreground"}`}>{active && <CircleCheck className="size-3.5" />}</span>
-            <span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs text-primary">{item.id}</span><span className="text-xs text-muted-foreground">{item.benchmarkDomain}</span><span className="text-xs text-muted-foreground">{item.primarySubdomain}</span></span><span className="mt-1 block text-sm leading-6 text-foreground">{item.questionZh || item.question}</span>{item.questionZh && <span className="mt-1 block text-xs leading-5 text-muted-foreground">{item.question}</span>}<span className="mt-1 block text-[11px] text-muted-foreground">{item.crossDomainTags.length ? `跨域：${item.crossDomainTags.join(" · ")}` : "单一领域"}</span></span>
+            <span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs text-primary">{item.id}</span><span className="text-xs text-muted-foreground">{bilingualDomainLabel(item.benchmarkDomain)}</span><span className="text-xs text-muted-foreground">{item.primarySubdomain}</span></span><span className="mt-1 block text-sm leading-6 text-foreground">{item.questionZh || item.question}</span>{item.questionZh && <span className="mt-1 block text-xs leading-5 text-muted-foreground">{item.question}</span>}<span className="mt-1 block text-[11px] text-muted-foreground">{item.crossDomainTags.length ? `跨域：${item.crossDomainTags.join(" · ")}` : "单一领域"}</span></span>
           </button>
         })}
       </div>}
     </Panel>
     <aside>
       <Panel title="已选题目" icon={Lightbulb} className="sticky top-4">
-        {!selected ? <div data-testid="science125-empty-selection"><NoDataState title="请选择一个题目" hint="题目来自固定的 science125-v1 目录。" className="py-12" /></div> : <div className="space-y-4"><div><Tag tone="blue">{selected.id}</Tag><p data-testid="science125-question-zh" className="mt-3 text-sm font-medium leading-6">{selected.questionZh || selected.question}</p>{selected.questionZh && <p data-testid="science125-question-en" className="mt-1 text-xs leading-5 text-muted-foreground">权威英文原题：{selected.question}</p>}<p className="mt-2 text-xs text-muted-foreground">{selected.benchmarkDomain} · {selected.primarySubdomain} · 题册第 {selected.bookletPage} 页</p></div><RoutingSummary profile={questionProfile} loading={profileLoading} error={profileError} /><AuthoritativeQuestionContext context={questionContext} loading={contextLoading} error={contextError} compact /><Btn data-testid="begin-science125-presearch" variant="primary" className="w-full" icon={ArrowRight} disabled={!questionContext?.sourceContext.trim()} onClick={onContinue}>开始文献预搜索</Btn></div>}
+        {!selected ? <div data-testid="science125-empty-selection"><NoDataState title="请选择一个题目" hint="题目来自固定的 science125-v1 目录。" className="py-12" /></div> : <div className="space-y-4"><div><Tag tone="blue">{selected.id}</Tag><p data-testid="science125-question-zh" className="mt-3 text-sm font-medium leading-6">{selected.questionZh || selected.question}</p>{selected.questionZh && <p data-testid="science125-question-en" className="mt-1 text-xs leading-5 text-muted-foreground">权威英文原题：{selected.question}</p>}<p className="mt-2 text-xs text-muted-foreground">{bilingualDomainLabel(selected.benchmarkDomain)} · {selected.primarySubdomain} · 题册第 {selected.bookletPage} 页</p></div><RoutingSummary profile={questionProfile} loading={profileLoading} error={profileError} /><AuthoritativeQuestionContext context={questionContext} loading={contextLoading} error={contextError} compact /><Btn data-testid="begin-science125-presearch" variant="primary" className="w-full" icon={ArrowRight} disabled={!questionContext?.sourceContext.trim()} onClick={onContinue}>开始文献预搜索</Btn></div>}
       </Panel>
     </aside>
   </div>
@@ -426,7 +449,7 @@ function ReviewedInputSnapshot({
         <p className="text-xs font-semibold text-foreground">Science 125 题目</p>
         <p className="mt-1 text-sm leading-6 text-foreground">{question.questionZh || question.question}</p>
         {question.questionZh && <p className="mt-1 text-xs leading-5 text-muted-foreground">权威英文原题：{question.question}</p>}
-        <p className="mt-2 text-[11px] text-muted-foreground">{question.benchmarkDomain} · {question.primarySubdomain} · 方法 {profile?.methodProfile.primary || "读取中"}</p>
+        <p className="mt-2 text-[11px] text-muted-foreground">{bilingualDomainLabel(question.benchmarkDomain)} · {question.primarySubdomain} · 方法 {profile?.methodProfile.primary || "读取中"}</p>
       </section>
       <section data-testid="science125-input-source" data-source-type="booklet-context">
         <p className="text-xs font-semibold text-foreground">题册原文上下文</p>

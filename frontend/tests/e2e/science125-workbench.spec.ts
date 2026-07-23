@@ -297,7 +297,10 @@ test("groups questions by the reviewed domain route and shows automatic provider
     await page.getByRole("combobox", { name: "Science 125 领域" }).selectOption("Chemistry")
   } else {
     const domainNavigation = page.getByRole("navigation", { name: "Science 125 一级领域" })
-    await domainNavigation.getByRole("button", { name: /^Chemistry/ }).click()
+    const chemistryDomain = domainNavigation.getByRole("button", { name: /化学.*Chemistry/ })
+    await expect(chemistryDomain).toContainText("化学")
+    await expect(chemistryDomain).toContainText("Chemistry")
+    await chemistryDomain.click()
   }
   await expect(page.getByTestId("science125-question-S125-006")).toContainText("chem.interface")
   await page.getByTestId("science125-question-S125-006").click()

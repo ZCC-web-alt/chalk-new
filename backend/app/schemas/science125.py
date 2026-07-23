@@ -144,7 +144,7 @@ class Science125QuestionProfileOut(Science125RoutingFields):
     question_zh: str | None = Field(default=None, alias="questionZh", min_length=1, max_length=1000)
     search_intent_zh: str | None = Field(default=None, alias="searchIntentZh", min_length=1, max_length=4000)
     recommended_query: str | None = Field(default=None, alias="recommendedQuery", min_length=1, max_length=4000)
-    translation_review_status: Literal["reviewed"] | None = Field(
+    translation_review_status: Literal["reviewed", "translated_pending_review"] | None = Field(
         default=None,
         alias="translationReviewStatus",
     )

@@ -21,6 +21,9 @@ class Science125CatalogTestCase(unittest.TestCase):
         self.assertEqual(len(catalog.data), 125)
         self.assertEqual(catalog.data[0].id, "S125-001")
         self.assertEqual(catalog.data[-1].id, "S125-125")
+        self.assertTrue(all(item.question_zh for item in catalog.data))
+        self.assertEqual(catalog.data[0].question_zh, "素数为何如此特殊？")
+        self.assertEqual(catalog.data[-1].question_zh, "量子人工智能能模仿人脑吗？")
         pilot = next(item for item in catalog.data if item.id == "S125-006")
         self.assertEqual(pilot.question_zh, "我们如何在微观尺度上测量界面现象？")
         self.assertEqual(pilot.question, "How can we measure interface phenomena on the microscopic level?")
@@ -28,8 +31,18 @@ class Science125CatalogTestCase(unittest.TestCase):
         from app.services.science125_localization import load_science125_localizations
 
         localizations = load_science125_localizations()
-        self.assertEqual(set(localizations), {"S125-006", "S125-043", "S125-054"})
-        self.assertTrue(all(item.translation_review_status == "reviewed" for item in localizations.values()))
+        self.assertEqual(set(localizations), {f"S125-{index:03d}" for index in range(1, 126)})
+        self.assertTrue(all(item.search_intent_zh for item in localizations.values()))
+        reviewed_ids = {
+            question_id
+            for question_id, item in localizations.items()
+            if item.translation_review_status == "reviewed"
+        }
+        self.assertEqual(reviewed_ids, {"S125-006", "S125-043", "S125-054"})
+        self.assertEqual(
+            sum(item.translation_review_status == "translated_pending_review" for item in localizations.values()),
+            122,
+        )
 
     def test_loader_rejects_invalid_manifests_without_disclosing_the_path(self) -> None:
         from app.services.science125_catalog import (

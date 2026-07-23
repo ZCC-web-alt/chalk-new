@@ -400,7 +400,7 @@ def get_science125_question_profile(question_id: str) -> Science125QuestionProfi
         localizationVersion=localization.localization_version if localization else None,
         questionZh=localization.question_zh if localization else None,
         searchIntentZh=localization.search_intent_zh if localization else None,
-        recommendedQuery=localization.recommended_query if localization else None,
+        recommendedQuery=(localization.recommended_query or None) if localization else None,
         translationReviewStatus=localization.translation_review_status if localization else None,
         ready=readiness.ready and not profile_missing_codes,
         missingConfigurationCodes=profile_missing_codes,

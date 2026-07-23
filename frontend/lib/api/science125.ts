@@ -44,7 +44,7 @@ export type Science125QuestionProfile = {
   questionZh?: string | null
   searchIntentZh?: string | null
   recommendedQuery?: string | null
-  translationReviewStatus?: "reviewed" | null
+  translationReviewStatus?: "reviewed" | "translated_pending_review" | null
   benchmarkDomain: string
   primarySubdomain: string
   crossDomainTags: string[]

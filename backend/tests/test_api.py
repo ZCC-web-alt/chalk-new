@@ -126,7 +126,7 @@ class ApiTestCase(unittest.TestCase):
             {
                 "id": "S125-001",
                 "question": "What makes prime numbers so special?",
-                "questionZh": None,
+                "questionZh": "素数为何如此特殊？",
                 "sourceDomain": "Mathematical Sciences",
                 "benchmarkDomain": "Mathematical Sciences",
                 "pdfPage": 7,
@@ -140,6 +140,8 @@ class ApiTestCase(unittest.TestCase):
             },
         )
         self.assertEqual(payload["data"][-1]["id"], "S125-125")
+        self.assertEqual(payload["data"][-1]["questionZh"], "量子人工智能能模仿人脑吗？")
+        self.assertTrue(all(item["questionZh"] for item in payload["data"]))
         self.assertNotIn("Sha256", response.text)
         self.assertNotIn("sourcePdf", response.text)
         self.assertNotIn("sjtu-booklet.pdf", response.text)
@@ -177,6 +179,13 @@ class ApiTestCase(unittest.TestCase):
 
         unknown = self.client.get("/api/science-125/questions/S125-999/profile")
         self.assertEqual(unknown.status_code, 404, unknown.text)
+
+        translated = self.client.get("/api/science-125/questions/S125-001/profile")
+        self.assertEqual(translated.status_code, 200, translated.text)
+        translated_payload = translated.json()
+        self.assertEqual(translated_payload["questionZh"], "素数为何如此特殊？")
+        self.assertEqual(translated_payload["translationReviewStatus"], "translated_pending_review")
+        self.assertIn("素数为何如此特殊", translated_payload["searchIntentZh"])
 
     def test_science125_questions_are_read_only(self) -> None:
         self.register()
@@ -296,7 +305,8 @@ class ApiTestCase(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 200, response.text)
 
-        status_response = self.client.get("/api/settings/api-keys")
+        with patch.dict("os.environ", {"SCIENCE125_NASA_ADS_API_TOKEN": "ads-test-token"}):
+            status_response = self.client.get("/api/settings/api-keys")
         self.assertEqual(status_response.status_code, 200, status_response.text)
         configured = status_response.json()["configured"]
         self.assertEqual(configured, {
@@ -304,9 +314,26 @@ class ApiTestCase(unittest.TestCase):
             "semantic_scholar": True,
             "ncbi": True,
             "crossref_mailto": True,
+            "nasa_ads": True,
         })
         self.assertNotIn("sk-test", status_response.text)
         self.assertNotIn("semantic-test", status_response.text)
+        self.assertNotIn("ads-test-token", status_response.text)
+
+        with patch.dict("os.environ", {"SCIENCE125_NASA_ADS_API_TOKEN": "ads-test-token"}):
+            updated_status = self.client.put(
+                "/api/settings/api-keys",
+                json={"provider": "semantic_scholar", "apiKey": "semantic-updated"},
+            )
+        self.assertEqual(updated_status.status_code, 200, updated_status.text)
+        self.assertTrue(updated_status.json()["configured"]["nasa_ads"])
+        self.assertNotIn("ads-test-token", updated_status.text)
+
+        server_only = self.client.put(
+            "/api/settings/api-keys",
+            json={"provider": "nasa_ads", "apiKey": "must-not-be-stored"},
+        )
+        self.assertEqual(server_only.status_code, 422, server_only.text)
 
         invalid = self.client.put(
             "/api/settings/api-keys",
