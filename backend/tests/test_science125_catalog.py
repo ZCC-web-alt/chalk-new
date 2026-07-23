@@ -21,6 +21,15 @@ class Science125CatalogTestCase(unittest.TestCase):
         self.assertEqual(len(catalog.data), 125)
         self.assertEqual(catalog.data[0].id, "S125-001")
         self.assertEqual(catalog.data[-1].id, "S125-125")
+        pilot = next(item for item in catalog.data if item.id == "S125-006")
+        self.assertEqual(pilot.question_zh, "我们如何在微观尺度上测量界面现象？")
+        self.assertEqual(pilot.question, "How can we measure interface phenomena on the microscopic level?")
+
+        from app.services.science125_localization import load_science125_localizations
+
+        localizations = load_science125_localizations()
+        self.assertEqual(set(localizations), {"S125-006", "S125-043", "S125-054"})
+        self.assertTrue(all(item.translation_review_status == "reviewed" for item in localizations.values()))
 
     def test_loader_rejects_invalid_manifests_without_disclosing_the_path(self) -> None:
         from app.services.science125_catalog import (

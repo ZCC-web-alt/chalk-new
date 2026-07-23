@@ -26,6 +26,12 @@ from app.services.science125_retrieval import (
     get_science125_retrieval_profile,
     profile_readiness,
 )
+from app.services.science125_localization import (
+    Science125Localization,
+    Science125LocalizationError,
+    get_science125_localization,
+    load_science125_localizations,
+)
 
 
 MANIFEST_PATH = PROJECT_ROOT / "benchmarks" / "science125" / "science125-v1.json"
@@ -124,7 +130,11 @@ def _parse_manifest_questions(raw: dict[str, Any]) -> list[dict[str, Any]]:
     return parsed
 
 
-def _parse_manifest(raw: dict[str, Any], routing: Science125RoutingManifest) -> Science125QuestionListOut:
+def _parse_manifest(
+    raw: dict[str, Any],
+    routing: Science125RoutingManifest,
+    localizations: dict[str, Science125Localization],
+) -> Science125QuestionListOut:
     manifest_questions = _parse_manifest_questions(raw)
     routes = {item.question_id: item for item in routing.questions}
     if set(routes) != {item["id"] for item in manifest_questions}:
@@ -140,6 +150,7 @@ def _parse_manifest(raw: dict[str, Any], routing: Science125RoutingManifest) -> 
         values = {
             **item,
             **route_values,
+            "questionZh": localizations[item["id"]].question_zh if item["id"] in localizations else None,
         }
         parsed.append(Science125QuestionOut.model_validate(values))
 
@@ -222,7 +233,8 @@ def load_science125_catalog(
     try:
         manifest = _load_authoritative_manifest(path)
         routing = load_science125_routing(routing_path, path)
-        return _parse_manifest(manifest, routing)
+        localizations = load_science125_localizations()
+        return _parse_manifest(manifest, routing, localizations)
     except (
         OSError,
         UnicodeError,
@@ -232,6 +244,7 @@ def load_science125_catalog(
         KeyError,
         ValidationError,
         Science125RoutingError,
+        Science125LocalizationError,
     ):
         raise Science125CatalogError() from None
 
@@ -291,6 +304,7 @@ def _public_configuration_code(code: str) -> str:
 
 def get_science125_question_profile(question_id: str) -> Science125QuestionProfileOut:
     route = get_science125_route(question_id)
+    localization = get_science125_localization(question_id)
     try:
         retrieval_profile = get_science125_retrieval_profile(route.retrieval_profile)
         readiness = profile_readiness(route.retrieval_profile)
@@ -383,6 +397,11 @@ def get_science125_question_profile(question_id: str) -> Science125QuestionProfi
     return Science125QuestionProfileOut(
         questionId=route.question_id,
         routingVersion=ROUTING_VERSION,
+        localizationVersion=localization.localization_version if localization else None,
+        questionZh=localization.question_zh if localization else None,
+        searchIntentZh=localization.search_intent_zh if localization else None,
+        recommendedQuery=localization.recommended_query if localization else None,
+        translationReviewStatus=localization.translation_review_status if localization else None,
         ready=readiness.ready and not profile_missing_codes,
         missingConfigurationCodes=profile_missing_codes,
         benchmarkDomain=route.benchmark_domain,

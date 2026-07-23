@@ -90,6 +90,7 @@ class Science125RoutingManifest(Science125ContractModel):
 class Science125QuestionOut(Science125RoutingFields):
     id: str = Field(pattern=r"^S125-\d{3}$")
     question: str = Field(min_length=1, max_length=1000)
+    question_zh: str | None = Field(default=None, alias="questionZh", min_length=1, max_length=1000)
     source_domain: str = Field(alias="sourceDomain", min_length=1, max_length=100)
     pdf_page: int = Field(alias="pdfPage", ge=1)
     booklet_page: int = Field(alias="bookletPage", ge=1)
@@ -104,6 +105,7 @@ class Science125QuestionListOut(Science125ContractModel):
 class Science125QuestionDetailOut(Science125ContractModel):
     id: str = Field(pattern=r"^S125-\d{3}$")
     headline: str = Field(min_length=1, max_length=1000)
+    headline_zh: str | None = Field(default=None, alias="headlineZh", min_length=1, max_length=1000)
     source_context: str = Field(alias="sourceContext", min_length=1, max_length=100_000)
     context_sha256: str = Field(alias="contextSha256", pattern=r"^[0-9a-f]{64}$")
     pdf_page: int = Field(alias="pdfPage", ge=1)
@@ -135,6 +137,17 @@ class Science125ProviderReadinessOut(Science125ContractModel):
 class Science125QuestionProfileOut(Science125RoutingFields):
     question_id: str = Field(alias="questionId", pattern=r"^S125-\d{3}$")
     routing_version: Literal["science125-routing-v1"] = Field(alias="routingVersion")
+    localization_version: Literal["science125-zh-CN-v1"] | None = Field(
+        default=None,
+        alias="localizationVersion",
+    )
+    question_zh: str | None = Field(default=None, alias="questionZh", min_length=1, max_length=1000)
+    search_intent_zh: str | None = Field(default=None, alias="searchIntentZh", min_length=1, max_length=4000)
+    recommended_query: str | None = Field(default=None, alias="recommendedQuery", min_length=1, max_length=4000)
+    translation_review_status: Literal["reviewed"] | None = Field(
+        default=None,
+        alias="translationReviewStatus",
+    )
     ready: bool
     pilot_enabled: bool = Field(alias="pilotEnabled")
     missing_configuration_codes: tuple[str, ...] = Field(

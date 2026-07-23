@@ -78,7 +78,8 @@ def get_question_detail(
             "The Science 125 question catalog is temporarily unavailable.",
             status.HTTP_503_SERVICE_UNAVAILABLE,
         ) from exc
-    if not any(item.id == question_id for item in catalog.data):
+    catalog_item = next((item for item in catalog.data if item.id == question_id), None)
+    if catalog_item is None:
         raise ApiError(
             "NOT_FOUND",
             "Science 125 question not found.",
@@ -96,6 +97,7 @@ def get_question_detail(
     return Science125QuestionDetailOut(
         id=item.id,
         headline=item.headline,
+        headlineZh=catalog_item.question_zh,
         sourceContext=item.source_context,
         contextSha256=item.context_sha256,
         pdfPage=item.pdf_page,

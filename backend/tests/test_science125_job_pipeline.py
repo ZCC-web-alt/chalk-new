@@ -125,7 +125,9 @@ class Science125JobPipelineTestCase(unittest.TestCase):
             evidence=(EvidenceRecord(
                 provider="crossref",
                 stable_id="doi:10.1000/interface",
-                title="Interface study",
+                title="Microscopic interface measurement study",
+                abstract="Spectroscopy resolves nanoscale interfacial dynamics.",
+                doi="10.1000/interface",
                 access_status="open_full_text",
                 full_text_url="https://example.test/interface",
             ),),
@@ -142,6 +144,13 @@ class Science125JobPipelineTestCase(unittest.TestCase):
         self.assertEqual(output["query"]["retrievalProfile"], "retrieval.chem.interface.v1")
         self.assertEqual(output["results"][0]["id"], "doi:10.1000/interface")
         self.assertEqual(output["results"][0]["sourcePlatform"], "crossref")
+        self.assertGreater(output["results"][0]["relevanceScore"], 0.0)
+        self.assertIn(output["results"][0]["relevanceLabel"], {"low", "medium", "high"})
+        self.assertEqual(
+            output["results"][0]["relevanceBreakdown"]["scoringVersion"],
+            "science125-relevance-v1",
+        )
+        self.assertEqual(output["relevanceScoringVersion"], "science125-relevance-v1")
         self.assertEqual(output["evidenceStatus"], "evidence_insufficient")
         self.assertEqual(adapters.call_count, 1)
         self.assertEqual(search.call_args.args[0], "retrieval.chem.interface.v1")

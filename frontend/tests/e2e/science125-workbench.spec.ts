@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test"
 const question = {
   id: "S125-006",
   question: "How can we measure interface phenomena on the microscopic level?",
+  questionZh: "我们如何在微观尺度上测量界面现象？",
   sourceContext: "Interfacial chemistry studies molecular gas-liquid and liquid-solid interfaces. Optical interference and nanoscale film-thickness measurement can reveal microscopic transport phenomena.",
   sourceContextSha256: "context-hash-s125-006",
   extractionVersion: "science125-context-v1",
@@ -42,6 +43,16 @@ const completedSearch = {
       url: "https://example.test/interface",
       isOpenAccess: true,
       relevanceScore: 0.9,
+      relevanceLabel: "high",
+      relevanceBreakdown: {
+        scoringVersion: "science125-relevance-v1",
+        titleCoverage: 0.9,
+        abstractCoverage: 0.8,
+        conceptCoverage: 1,
+        phraseMatch: 0.7,
+        evidenceCompleteness: 1,
+        matchedConcepts: ["界面", "微观尺度", "测量方法"],
+      },
       accessStatus: "open_access",
       needsFulltext: false,
       warning: "",
@@ -119,6 +130,7 @@ async function mockScience125Workspace(
     body: JSON.stringify({
       id: question.id,
       headline: question.question,
+      headlineZh: question.questionZh,
       sourceContext: question.sourceContext,
       contextSha256: question.sourceContextSha256,
       pdfPage: question.pdfPage,
@@ -133,6 +145,11 @@ async function mockScience125Workspace(
     body: JSON.stringify({
       questionId: question.id,
       routingVersion: "science125-routing-v1",
+      localizationVersion: "science125-zh-CN-v1",
+      questionZh: question.questionZh,
+      searchIntentZh: "微观尺度界面现象的原位测量、界面光谱、显微成像与计算交叉验证",
+      recommendedQuery: "interfacial chemistry microscopic interface phenomena measurement spectroscopy microscopy nanoscale dynamics",
+      translationReviewStatus: "reviewed",
       benchmarkDomain: question.benchmarkDomain,
       primarySubdomain: question.primarySubdomain,
       crossDomainTags: question.crossDomainTags,
@@ -240,6 +257,8 @@ test("shows the authoritative booklet context separately from the headline", asy
   })
 
   await page.goto("/research/general/new?question=S125-006")
+  await expect(page.getByTestId("science125-question-zh")).toContainText(question.questionZh)
+  await expect(page.getByTestId("science125-question-en")).toContainText(question.question)
   await expect(page.getByTestId("science125-booklet-context")).toContainText(question.sourceContext)
 })
 
@@ -252,11 +271,16 @@ test("prefills an editable literature query from the booklet context", async ({ 
 
   await page.goto("/research/general/new?question=S125-006&stage=presearch")
   const query = page.getByTestId("science125-literature-query")
+  await expect(page.getByTestId("science125-search-intent-zh")).toContainText("界面光谱")
   await expect(query).toBeEnabled()
   await expect(query).toHaveValue(/microscopic/i)
   await expect(query).toHaveValue(/interface/i)
   await expect(query).toHaveValue(/interfacial/i)
   await expect(query).toHaveValue(/chemistry/i)
+  const relevance = page.getByTestId("science125-relevance-result-current")
+  await expect(relevance).toContainText("90%")
+  await expect(relevance).toContainText("高")
+  await expect(relevance).toHaveAttribute("title", /核心概念/)
   await query.fill("custom interface spectroscopy query")
   await expect(query).toHaveValue("custom interface spectroscopy query")
 })

@@ -211,6 +211,16 @@ export type LiteratureSearchResult = {
   url: string
   isOpenAccess: boolean
   relevanceScore: number
+  relevanceLabel?: "high" | "medium" | "low" | "very_low"
+  relevanceBreakdown?: {
+    scoringVersion: "science125-relevance-v1"
+    titleCoverage: number
+    abstractCoverage: number
+    conceptCoverage: number
+    phraseMatch: number
+    evidenceCompleteness: number
+    matchedConcepts: string[]
+  }
   accessStatus: string
   needsFulltext: boolean
   warning: string
@@ -218,6 +228,7 @@ export type LiteratureSearchResult = {
 
 export type LiteratureSearchJobResult = {
   results: LiteratureSearchResult[]
+  relevanceScoringVersion?: "science125-relevance-v1"
   platformStatus: Record<string, Record<string, unknown>>
   warnings: string[]
   evidenceStatus?: "ready_for_review" | "evidence_insufficient"

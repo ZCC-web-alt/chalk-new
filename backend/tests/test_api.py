@@ -106,6 +106,7 @@ class ApiTestCase(unittest.TestCase):
         expected_question_fields = {
                 "id",
                 "question",
+                "questionZh",
                 "sourceDomain",
                 "benchmarkDomain",
                 "pdfPage",
@@ -125,6 +126,7 @@ class ApiTestCase(unittest.TestCase):
             {
                 "id": "S125-001",
                 "question": "What makes prime numbers so special?",
+                "questionZh": None,
                 "sourceDomain": "Mathematical Sciences",
                 "benchmarkDomain": "Mathematical Sciences",
                 "pdfPage": 7,
@@ -157,6 +159,10 @@ class ApiTestCase(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["questionId"], "S125-006")
         self.assertEqual(payload["routingVersion"], "science125-routing-v1")
+        self.assertEqual(payload["localizationVersion"], "science125-zh-CN-v1")
+        self.assertEqual(payload["questionZh"], "我们如何在微观尺度上测量界面现象？")
+        self.assertIn("界面", payload["searchIntentZh"])
+        self.assertIn("interfacial", payload["recommendedQuery"])
         self.assertEqual(payload["primarySubdomain"], "chem.interface")
         self.assertEqual(payload["retrievalProfile"], "retrieval.chem.interface.v1")
         self.assertFalse(payload["ready"])

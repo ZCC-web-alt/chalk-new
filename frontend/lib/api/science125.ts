@@ -3,6 +3,7 @@ import { apiFetch } from "./client"
 export type Science125Question = {
   id: string
   question: string
+  questionZh?: string | null
   sourceDomain: string
   benchmarkDomain: string
   pdfPage: number
@@ -39,6 +40,11 @@ export type Science125ProviderReadiness = {
 export type Science125QuestionProfile = {
   questionId: string
   routingVersion: "science125-routing-v1"
+  localizationVersion?: "science125-zh-CN-v1" | null
+  questionZh?: string | null
+  searchIntentZh?: string | null
+  recommendedQuery?: string | null
+  translationReviewStatus?: "reviewed" | null
   benchmarkDomain: string
   primarySubdomain: string
   crossDomainTags: string[]
@@ -56,6 +62,7 @@ export type Science125QuestionProfile = {
 export type Science125QuestionContext = {
   id: string
   headline: string
+  headlineZh?: string | null
   sourceContext: string
   contextSha256: string
   pdfPage: number

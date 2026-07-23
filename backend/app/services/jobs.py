@@ -85,6 +85,7 @@ from app.services.science125_retrieval import (
     profile_readiness,
     search_science125,
 )
+from app.services.science125_relevance import SCORING_VERSION, assess_science125_relevance
 from app.services.modeling_generation import (
     MsGuideExtraction,
     VaspExtraction,
@@ -1572,6 +1573,7 @@ class JobService:
         rows: list[dict[str, Any]] = []
         for record in result.evidence:
             access_status = record.access_status or "metadata"
+            relevance = assess_science125_relevance(science125_id, query_text, record)
             rows.append({
                 "id": record.stable_id,
                 "title": record.title,
@@ -1584,11 +1586,20 @@ class JobService:
                 "providerFamily": self._science125_provider_family(record.provider),
                 "url": record.full_text_url or (f"https://doi.org/{record.doi}" if record.doi else ""),
                 "isOpenAccess": access_status in {"open_full_text", "open_access", "study_registry"},
-                "relevanceScore": 0.0,
+                "relevanceScore": relevance.score,
+                "relevanceLabel": relevance.label,
+                "relevanceBreakdown": relevance.to_dict(),
                 "accessStatus": access_status,
                 "needsFulltext": not self._science125_evidence_is_full_text(record.to_dict()),
                 "warning": record.warning or "",
             })
+        rows.sort(
+            key=lambda row: (
+                -float(row["relevanceScore"]),
+                str(row["sourcePlatform"]),
+                str(row["title"]).casefold(),
+            )
+        )
         diagnostics = {item.provider: item.to_dict() for item in result.diagnostics}
         full_text_records = [row for row in rows if self._science125_evidence_is_full_text(row)]
         families = {
@@ -1608,6 +1619,7 @@ class JobService:
         ]
         return {
             "results": rows,
+            "relevanceScoringVersion": SCORING_VERSION,
             "platformStatus": diagnostics,
             "providerDiagnostics": [item.to_dict() for item in result.diagnostics],
             "warnings": warnings,

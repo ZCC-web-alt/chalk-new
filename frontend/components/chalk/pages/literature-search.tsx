@@ -34,6 +34,7 @@ export function SearchPage({
   onSelectionChange,
   onReviewStateChange,
   initialQuery,
+  initialQueryZh,
   science125Id,
   science125Profile,
   selectionStorageKey,
@@ -42,6 +43,7 @@ export function SearchPage({
   onSelectionChange?: (context: string) => void
   onReviewStateChange?: (review: LiteratureReviewState) => void
   initialQuery?: string
+  initialQueryZh?: string
   science125Id?: string
   science125Profile?: Science125QuestionProfile | null
   selectionStorageKey?: string
@@ -340,7 +342,11 @@ export function SearchPage({
       <Panel title="检索条件" icon={Database}>
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px]">
           <div>
-            <FieldLabel>{science125Id ? "文献检索式 / DOI / 关键词" : "检索式 / DOI / 研究问题"}</FieldLabel>
+            {science125Id && initialQueryZh && <div data-testid="science125-search-intent-zh" className="mb-3">
+              <FieldLabel>中文检索条件</FieldLabel>
+              <p className="border border-border bg-secondary px-3 py-2 text-xs leading-5 text-foreground">{initialQueryZh}</p>
+            </div>}
+            <FieldLabel>{science125Id ? "实际英文检索式 / DOI / 关键词" : "检索式 / DOI / 研究问题"}</FieldLabel>
             <Textarea data-testid={science125Id ? "science125-literature-query" : undefined} rows={2} value={queryText} onChange={(event) => setQueryText(event.target.value)} />
           </div>
           {!science125Id && <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
@@ -482,6 +488,22 @@ function formatHypothesisContext(results: LiteratureSearchResult[]) {
 function SearchResultRow({ result, checked, onToggle }: { result: LiteratureSearchResult; checked: boolean; onToggle: () => void }) {
   const url = safeExternalUrl(result.url || (result.doi ? `https://doi.org/${result.doi}` : ""))
   const relevance = Math.max(0, Math.min(100, Math.round(result.relevanceScore * 100)))
+  const hasAuditableAssessment = Boolean(result.relevanceBreakdown || result.relevanceLabel)
+  const relevanceLabel = result.relevanceLabel || (relevance >= 75 ? "high" : relevance >= 50 ? "medium" : relevance >= 30 ? "low" : "very_low")
+  const relevanceLabelZh = { high: "高", medium: "中", low: "低", very_low: "很低" }[relevanceLabel]
+  const relevanceTone = { high: "green", medium: "blue", low: "orange", very_low: "gray" }[relevanceLabel] as "green" | "blue" | "orange" | "gray"
+  const breakdown = result.relevanceBreakdown
+  const relevanceTitle = breakdown
+    ? [
+        `评分版本：${breakdown.scoringVersion}`,
+        `标题匹配 ${Math.round(breakdown.titleCoverage * 100)}%`,
+        `摘要匹配 ${Math.round(breakdown.abstractCoverage * 100)}%`,
+        `核心概念 ${Math.round(breakdown.conceptCoverage * 100)}%`,
+        `短语命中 ${Math.round(breakdown.phraseMatch * 100)}%`,
+        `证据完整性 ${Math.round(breakdown.evidenceCompleteness * 100)}%`,
+        `命中概念：${breakdown.matchedConcepts.join("、") || "无"}`,
+      ].join(" · ")
+    : "旧检索结果未包含分项评分；重新检索后可查看。"
   return (
     <tr className="transition-colors hover:bg-secondary">
       <td className="px-2 py-2"><input type="checkbox" checked={checked} onChange={onToggle} aria-label={`选择检索结果 ${result.title}`} className="size-4 accent-primary" /></td>
@@ -494,7 +516,14 @@ function SearchResultRow({ result, checked, onToggle }: { result: LiteratureSear
       </td>
       <td className="px-2 py-2"><Tag tone="gray">{result.sourcePlatform || "未知"}</Tag></td>
       <td className="px-2 py-2"><Tag tone={result.isOpenAccess ? "green" : "orange"}>{result.accessStatus || (result.isOpenAccess ? "open_access" : "needs_verification")}</Tag></td>
-      <td className="px-2 py-2"><span className="tabular-nums text-xs font-semibold">{relevance}%</span></td>
+      <td className="px-2 py-2">
+        <div data-testid={`science125-relevance-${result.id}`} title={relevanceTitle} className="flex min-w-20 items-center gap-1.5">
+          {hasAuditableAssessment ? <>
+            <span className="tabular-nums text-xs font-semibold">{relevance}%</span>
+            <Tag tone={relevanceTone}>{relevanceLabelZh}</Tag>
+          </> : <Tag tone="gray">待重算</Tag>}
+        </div>
+      </td>
     </tr>
   )
 }

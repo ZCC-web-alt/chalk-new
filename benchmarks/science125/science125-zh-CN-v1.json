@@ -1,0 +1,50 @@
+{
+  "localizationVersion": "science125-zh-CN-v1",
+  "locale": "zh-CN",
+  "baseManifestVersion": "science125-v1",
+  "baseManifestContentSha256": "de0a173974a4ac1863186ff11c68d6946975228d53a552442aec8f8d951226d3",
+  "localizationContentSha256": "8815abe726f001554e44342b177d15e9efa939238174aa1cac8a9e4f45bc913c",
+  "items": [
+    {
+      "questionId": "S125-006",
+      "questionZh": "我们如何在微观尺度上测量界面现象？",
+      "searchIntentZh": "检索能够在微观或分子尺度测量界面现象的方法，重点关注原位或操作条件光谱、显微成像、纳米尺度计量、界面动力学，以及实验与计算交叉验证。",
+      "recommendedQuery": "interfacial chemistry microscopic interface phenomena measurement spectroscopy microscopy nanoscale dynamics",
+      "relevanceConcepts": [
+        {"labelZh": "界面", "terms": ["interface", "interfacial", "surface", "boundary"]},
+        {"labelZh": "微观尺度", "terms": ["microscopic", "molecular scale", "nanoscale", "nanoscopic", "atomic scale"]},
+        {"labelZh": "测量方法", "terms": ["measure", "measurement", "spectroscopy", "microscopy", "imaging", "metrology", "characterization"]},
+        {"labelZh": "动态与传输", "terms": ["dynamics", "transport", "kinetics", "diffusion", "evolution"]}
+      ],
+      "translationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-043",
+      "questionZh": "如何利用基因编辑治疗疾病？",
+      "searchIntentZh": "检索基因编辑用于疾病治疗的机制与证据，重点关注 CRISPR 编辑策略、体内或体外递送、脱靶效应、长期安全性、疗效终点和临床转化边界。",
+      "recommendedQuery": "genome editing disease therapy CRISPR delivery off-target safety efficacy clinical",
+      "relevanceConcepts": [
+        {"labelZh": "基因编辑", "terms": ["genome editing", "gene editing", "CRISPR", "base editing", "prime editing"]},
+        {"labelZh": "疾病治疗", "terms": ["disease", "therapy", "therapeutic", "treatment", "cure"]},
+        {"labelZh": "递送", "terms": ["delivery", "vector", "in vivo", "ex vivo"]},
+        {"labelZh": "安全性", "terms": ["off-target", "safety", "toxicity", "adverse event", "immunogenicity"]},
+        {"labelZh": "临床证据", "terms": ["clinical trial", "patient", "efficacy", "endpoint", "follow-up"]}
+      ],
+      "translationReviewStatus": "reviewed"
+    },
+    {
+      "questionId": "S125-054",
+      "questionZh": "宇宙射线的起源是什么？",
+      "searchIntentZh": "检索宇宙射线的候选源、粒子加速与传播机制，重点关注能谱、成分、各向异性，以及伽马射线、中微子等多信使观测约束。",
+      "recommendedQuery": "cosmic ray origin sources acceleration propagation composition anisotropy gamma neutrino multi-messenger",
+      "relevanceConcepts": [
+        {"labelZh": "宇宙射线", "terms": ["cosmic ray", "cosmic rays", "ultra-high-energy cosmic ray", "UHECR"]},
+        {"labelZh": "源与起源", "terms": ["origin", "source", "supernova remnant", "active galactic nucleus", "pulsar"]},
+        {"labelZh": "粒子加速", "terms": ["acceleration", "shock acceleration", "particle acceleration", "maximum energy"]},
+        {"labelZh": "传播与成分", "terms": ["propagation", "composition", "anisotropy", "magnetic field", "energy spectrum"]},
+        {"labelZh": "多信使约束", "terms": ["multi-messenger", "gamma ray", "neutrino", "secondary emission"]}
+      ],
+      "translationReviewStatus": "reviewed"
+    }
+  ]
+}

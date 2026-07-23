@@ -107,6 +107,7 @@ export function Science125Workbench() {
       && (!needle || [
         item.id,
         item.question,
+        item.questionZh || "",
         item.benchmarkDomain,
         item.primarySubdomain,
         ...item.crossDomainTags,
@@ -241,13 +242,18 @@ export function Science125Workbench() {
       />}
       {selected && stage !== "select" && <section className={stage === "presearch" ? "space-y-4" : "hidden"} aria-hidden={stage !== "presearch"}>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
-          <div><p className="text-xs text-muted-foreground">{selected.id} · {selected.benchmarkDomain} · {selected.primarySubdomain}</p><h2 className="text-base font-semibold">{selected.question}</h2></div>
+          <div>
+            <p className="text-xs text-muted-foreground">{selected.id} · {selected.benchmarkDomain} · {selected.primarySubdomain}</p>
+            <h2 data-testid="science125-question-zh" className="text-base font-semibold">{selected.questionZh || selected.question}</h2>
+            {selected.questionZh && <p data-testid="science125-question-en" className="mt-1 text-xs text-muted-foreground">权威英文原题：{selected.question}</p>}
+          </div>
           <Btn size="xs" variant="ghost" icon={ArrowLeft} onClick={returnToSelection}>重新选择题目</Btn>
         </div>
         <AuthoritativeQuestionContext context={questionContext} loading={contextLoading} error={contextError} />
         {questionContext && <SearchPage
           key={selected.id}
-          initialQuery={buildScience125SearchQuery(selected.question, questionContext?.sourceContext || "")}
+          initialQuery={questionProfile?.recommendedQuery || buildScience125SearchQuery(selected.question, questionContext?.sourceContext || "")}
+          initialQueryZh={questionProfile?.searchIntentZh || undefined}
           science125Id={selected.id}
           science125Profile={questionProfile}
           selectionStorageKey={selectionStorageKey}
@@ -271,7 +277,7 @@ export function Science125Workbench() {
         <div className="min-h-0 flex-1">
           <HypothesisPage seed={{
             id: questionSeedId(selected),
-            question: selected.question,
+            question: selected.questionZh || selected.question,
             questionLocked: true,
             domainLabel: selected.benchmarkDomain,
             science125Id: selected.id,
@@ -343,14 +349,14 @@ function QuestionSelection({
           const active = item.id === selected?.id
           return <button type="button" data-testid={`science125-question-${item.id}`} aria-pressed={active} onClick={() => onSelect(item)} className={`flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-secondary ${active ? "bg-primary-soft" : ""}`} key={item.id}>
             <span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center border ${active ? "border-primary bg-primary text-white" : "border-border text-muted-foreground"}`}>{active && <CircleCheck className="size-3.5" />}</span>
-            <span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs text-primary">{item.id}</span><span className="text-xs text-muted-foreground">{item.benchmarkDomain}</span><span className="text-xs text-muted-foreground">{item.primarySubdomain}</span></span><span className="mt-1 block text-sm leading-6 text-foreground">{item.question}</span><span className="mt-1 block text-[11px] text-muted-foreground">{item.crossDomainTags.length ? `跨域：${item.crossDomainTags.join(" · ")}` : "单一领域"}</span></span>
+            <span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="font-mono text-xs text-primary">{item.id}</span><span className="text-xs text-muted-foreground">{item.benchmarkDomain}</span><span className="text-xs text-muted-foreground">{item.primarySubdomain}</span></span><span className="mt-1 block text-sm leading-6 text-foreground">{item.questionZh || item.question}</span>{item.questionZh && <span className="mt-1 block text-xs leading-5 text-muted-foreground">{item.question}</span>}<span className="mt-1 block text-[11px] text-muted-foreground">{item.crossDomainTags.length ? `跨域：${item.crossDomainTags.join(" · ")}` : "单一领域"}</span></span>
           </button>
         })}
       </div>}
     </Panel>
     <aside>
       <Panel title="已选题目" icon={Lightbulb} className="sticky top-4">
-        {!selected ? <div data-testid="science125-empty-selection"><NoDataState title="请选择一个题目" hint="题目来自固定的 science125-v1 目录。" className="py-12" /></div> : <div className="space-y-4"><div><Tag tone="blue">{selected.id}</Tag><p className="mt-3 text-sm font-medium leading-6">{selected.question}</p><p className="mt-2 text-xs text-muted-foreground">{selected.benchmarkDomain} · {selected.primarySubdomain} · 题册第 {selected.bookletPage} 页</p></div><RoutingSummary profile={questionProfile} loading={profileLoading} error={profileError} /><AuthoritativeQuestionContext context={questionContext} loading={contextLoading} error={contextError} compact /><Btn data-testid="begin-science125-presearch" variant="primary" className="w-full" icon={ArrowRight} disabled={!questionContext?.sourceContext.trim()} onClick={onContinue}>开始文献预搜索</Btn></div>}
+        {!selected ? <div data-testid="science125-empty-selection"><NoDataState title="请选择一个题目" hint="题目来自固定的 science125-v1 目录。" className="py-12" /></div> : <div className="space-y-4"><div><Tag tone="blue">{selected.id}</Tag><p data-testid="science125-question-zh" className="mt-3 text-sm font-medium leading-6">{selected.questionZh || selected.question}</p>{selected.questionZh && <p data-testid="science125-question-en" className="mt-1 text-xs leading-5 text-muted-foreground">权威英文原题：{selected.question}</p>}<p className="mt-2 text-xs text-muted-foreground">{selected.benchmarkDomain} · {selected.primarySubdomain} · 题册第 {selected.bookletPage} 页</p></div><RoutingSummary profile={questionProfile} loading={profileLoading} error={profileError} /><AuthoritativeQuestionContext context={questionContext} loading={contextLoading} error={contextError} compact /><Btn data-testid="begin-science125-presearch" variant="primary" className="w-full" icon={ArrowRight} disabled={!questionContext?.sourceContext.trim()} onClick={onContinue}>开始文献预搜索</Btn></div>}
       </Panel>
     </aside>
   </div>
@@ -394,7 +400,7 @@ function AuthoritativeQuestionContext({
   if (error || !context) return <div data-testid="science125-booklet-context"><ErrorState message={error || "题册完整上下文不可用。"} /></div>
   return <section data-testid="science125-booklet-context" className={compact ? "space-y-2 border-t border-border pt-3" : "border border-border bg-card px-4 py-3"}>
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="flex items-center gap-2"><BookOpenCheck className="size-4 text-primary" /><h3 className="text-sm font-semibold">题册完整问题</h3></div>
+      <div className="flex items-center gap-2"><BookOpenCheck className="size-4 text-primary" /><h3 className="text-sm font-semibold">权威英文题册上下文</h3></div>
       <span className="text-[11px] text-muted-foreground">PDF 第 {context.pdfPage} 页 · 校验 {context.contextSha256.slice(0, 12)}</span>
     </div>
     <p className={`${compact ? "max-h-40" : "max-h-52"} overflow-y-auto whitespace-pre-wrap text-xs leading-5 text-muted-foreground`}>{context.sourceContext}</p>
@@ -418,7 +424,8 @@ function ReviewedInputSnapshot({
     <div className="grid gap-4 lg:grid-cols-2">
       <section>
         <p className="text-xs font-semibold text-foreground">Science 125 题目</p>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">{question.question}</p>
+        <p className="mt-1 text-sm leading-6 text-foreground">{question.questionZh || question.question}</p>
+        {question.questionZh && <p className="mt-1 text-xs leading-5 text-muted-foreground">权威英文原题：{question.question}</p>}
         <p className="mt-2 text-[11px] text-muted-foreground">{question.benchmarkDomain} · {question.primarySubdomain} · 方法 {profile?.methodProfile.primary || "读取中"}</p>
       </section>
       <section data-testid="science125-input-source" data-source-type="booklet-context">
