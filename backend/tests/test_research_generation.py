@@ -65,7 +65,7 @@ class DeterministicResearchTransportTestCase(unittest.TestCase):
                     self.request(),
                     config=LLMConfig(
                         api_key="unused-test-key",
-                        model="qwen3.7-max",
+                        model="qwen3.8-max",
                         input_cost_per_million_cny=2.0,
                         output_cost_per_million_cny=12.0,
                     ),
@@ -83,11 +83,11 @@ class DeterministicResearchTransportTestCase(unittest.TestCase):
         self.assertEqual([item.id for item in result.output.hypotheses], ["H1", "H2", "H3"])
         self.assertEqual(result.output.null_hypothesis.id, "H0")
         self.assertEqual(result.call.provider, "DashScope")
-        self.assertEqual(result.call.model, "qwen3.7-max")
+        self.assertEqual(result.call.model, "qwen3.8-max")
         self.assertTrue(result.call.request_id.startswith("test-dashscope-"))
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].provider, "DashScope")
-        self.assertEqual(rows[0].model, "qwen3.7-max")
+        self.assertEqual(rows[0].model, "qwen3.8-max")
         self.assertEqual(rows[0].request_id, result.call.request_id)
         self.assertEqual(rows[0].status, "succeeded")
         self.assertGreater(rows[0].total_tokens, 0)
@@ -108,7 +108,7 @@ class DeterministicResearchTransportTestCase(unittest.TestCase):
             service = ResearchGenerationService.from_environment()
             result = service.generate(
                 self.request(profile="chemistry", candidate_count=5),
-                config=LLMConfig(api_key="unused-test-key", model="qwen3.7-max"),
+                config=LLMConfig(api_key="unused-test-key", model="qwen3.8-max"),
                 budget=LLMBudget(max_total_tokens=20_000),
                 context=LLMCallContext(resource_type="science125_item", resource_id="S125-052"),
                 telemetry_sink=lambda _: None,
@@ -133,19 +133,45 @@ class DeterministicResearchTransportTestCase(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "forced one failure"):
                 service.generate(
                     request,
-                    config=LLMConfig(api_key="unused", model="qwen3.7-max"),
+                    config=LLMConfig(api_key="unused", model="qwen3.8-max"),
                     budget=LLMBudget(max_total_tokens=20_000),
                     context=LLMCallContext(resource_type="science125_item", resource_id="S125-101"),
                     telemetry_sink=lambda _: None,
                 )
             recovered = service.generate(
                 request,
-                config=LLMConfig(api_key="unused", model="qwen3.7-max"),
+                config=LLMConfig(api_key="unused", model="qwen3.8-max"),
                 budget=LLMBudget(max_total_tokens=20_000),
                 context=LLMCallContext(resource_type="science125_item", resource_id="S125-101"),
                 telemetry_sink=lambda _: None,
             )
         self.assertEqual(recovered.output.contract_version, "research-v1")
+
+    def test_failed_dashscope_call_preserves_only_safe_diagnostics(self) -> None:
+        from app.services.research_generation import ResearchGenerationCallError
+        from chalk_app.core.llm_client import LLMCallResult, LLMUsage
+
+        result = LLMCallResult(
+            content="__CHALK_LLM_ERROR__: HTTP 401 secret response",
+            provider="DashScope",
+            model="qwen3.8-max",
+            request_id="req-safe",
+            status_code=401,
+            attempts=4,
+            prompt_hash="a" * 64,
+            response_hash=None,
+            usage=LLMUsage(),
+            latency_ms=123,
+            estimated_cost_cny=0.0,
+            status="failed",
+            error_type="api",
+        )
+
+        error = ResearchGenerationCallError(result)
+        self.assertIn("status=401", str(error))
+        self.assertIn("attempts=4", str(error))
+        self.assertIn("requestId=req-safe", str(error))
+        self.assertNotIn("secret response", str(error))
 
     def test_evidence_claims_cannot_reference_sources_outside_the_snapshot(self) -> None:
         import json
@@ -163,7 +189,7 @@ class DeterministicResearchTransportTestCase(unittest.TestCase):
                 request=request,
                 prompt="test prompt",
                 system_prompt="test system prompt",
-                config=LLMConfig(api_key="unused", model="qwen3.7-max"),
+                config=LLMConfig(api_key="unused", model="qwen3.8-max"),
                 budget=LLMBudget(max_total_tokens=20_000),
                 context=LLMCallContext(resource_type="science125_item", resource_id="S125-082"),
                 telemetry_sink=lambda _: None,
@@ -217,7 +243,7 @@ class DeterministicResearchTransportTestCase(unittest.TestCase):
         with patch.dict(os.environ, {"CHALK_WEB_ENV": "test"}, clear=False):
             result = ResearchGenerationService(transport=DeterministicQwenTestTransport()).generate(
                 request,
-                config=LLMConfig(api_key="unused", model="qwen3.7-max"),
+                config=LLMConfig(api_key="unused", model="qwen3.8-max"),
                 budget=LLMBudget(max_total_tokens=20_000),
                 context=LLMCallContext(resource_type="science125_item", resource_id="S125-054"),
                 telemetry_sink=lambda _: None,

@@ -22,6 +22,15 @@ import requests
 # 模型路由表：每个功能对应最适合的 Qwen 模型
 # ─────────────────────────────────────────────────────────────
 
+REASONING_MODEL = "qwen3.8-max"
+# qwen3.8-max official limits and current non-cache pricing, verified 2026-08-06.
+QWEN38_MAX_INPUT_TOKENS = 991_000
+QWEN38_MAX_OUTPUT_TOKENS = 131_000
+QWEN38_CONTEXT_WINDOW_TOKENS = 1_000_000
+QWEN38_TOKENS_PER_MINUTE = 5_000_000
+QWEN38_INPUT_COST_PER_MILLION_CNY = 12.0
+QWEN38_OUTPUT_COST_PER_MILLION_CNY = 36.0
+
 MODEL_MAP = {
     # 均衡型 (3.7-plus) — 轻量/日常通用任务
     "summarize":          "qwen3.7-plus",    # 文献摘要
@@ -32,16 +41,16 @@ MODEL_MAP = {
     "qa":                 "qwen3.7-plus",    # 智能问答 (RAG)
     "lab_suggest":        "qwen3.7-plus",    # 实验记录 AI 建议
 
-    # 推理型 (3.7-max) — 复杂结构化输出 + 多步推理 + Agent
-    "sop":                "qwen3.7-max",     # SOP 结构化提取
-    "reactions":          "qwen3.7-max",     # 反应信息提取
-    "compare":            "qwen3.7-max",     # 多文献对比分析
-    "vasp_extract":       "qwen3.7-max",     # VASP 计算参数提取
-    "ms_guide":           "qwen3.7-max",     # Materials Studio 建模指南
-    "hypothesis":         "qwen3.7-max",     # 科学假设生成
-    "critique":           "qwen3.7-max",     # 假设思辨评审
-    "validation":         "qwen3.7-max",     # 可验证性评估
-    "excel_interpret":    "qwen3.7-max",     # Excel 数据解读（纯文本推理）
+    # 推理型 (3.8-max) — 复杂结构化输出 + 多步推理 + Agent
+    "sop":                REASONING_MODEL,   # SOP 结构化提取
+    "reactions":          REASONING_MODEL,   # 反应信息提取
+    "compare":            REASONING_MODEL,   # 多文献对比分析
+    "vasp_extract":       REASONING_MODEL,   # VASP 计算参数提取
+    "ms_guide":           REASONING_MODEL,   # Materials Studio 建模指南
+    "hypothesis":         REASONING_MODEL,   # 科学假设生成
+    "critique":           REASONING_MODEL,   # 假设思辨评审
+    "validation":         REASONING_MODEL,   # 可验证性评估
+    "excel_interpret":    REASONING_MODEL,   # Excel 数据解读（纯文本推理）
 
     # 多模态 (VL) — 图片理解 + 表格 OCR
     "image_understand":   "qwen-vl-max",     # 学术图表理解
@@ -49,7 +58,7 @@ MODEL_MAP = {
     "chart_analysis":     "qwen-vl-max",     # 数据图表分析
 
     # 专用型 — 翻译
-    "translate":          "qwen3.7-max",     # 文献翻译 + 术语提取
+    "translate":          REASONING_MODEL,   # 文献翻译 + 术语提取
 }
 
 # 默认模型（兜底）
@@ -331,9 +340,12 @@ def _failed_result(
 
 
 def _prompt_token_reserve(prompt: str, system_prompt: str) -> int:
-    # A UTF-8 byte is a conservative upper bound for one model token. The
-    # framing reserve covers message roles and provider-side chat wrappers.
-    return len(prompt.encode("utf-8")) + len(system_prompt.encode("utf-8")) + 128
+    # DashScope tokenization is not exposed locally. Three UTF-8 bytes per
+    # token is a conservative mixed Chinese/Latin estimate while avoiding the
+    # previous one-byte estimate, which rejected valid Science 125 prompts
+    # before they reached DashScope. The framing reserve covers chat wrappers.
+    payload_bytes = len(prompt.encode("utf-8")) + len(system_prompt.encode("utf-8"))
+    return (payload_bytes + 2) // 3 + 128
 
 
 def _chat_result(
@@ -365,6 +377,7 @@ def _chat_result(
                 remaining_tokens = budget.max_total_tokens - budget.consumed_tokens
                 completion_cap = min(
                     MAX_BUDGETED_COMPLETION_TOKENS,
+                    QWEN38_MAX_OUTPUT_TOKENS if model == REASONING_MODEL else MAX_BUDGETED_COMPLETION_TOKENS,
                     remaining_tokens - prompt_reserve,
                 )
             if budget.max_estimated_cost_cny is not None:
@@ -388,6 +401,7 @@ def _chat_result(
                         MAX_BUDGETED_COMPLETION_TOKENS
                         if completion_cap is None
                         else completion_cap,
+                        QWEN38_MAX_OUTPUT_TOKENS if model == REASONING_MODEL else MAX_BUDGETED_COMPLETION_TOKENS,
                         cost_completion_cap,
                     )
             if completion_cap is not None and completion_cap < 1:
@@ -778,7 +792,7 @@ def extract_sop(
 ) -> str:
     """
     提取标准操作程序（SOP），返回 JSON。
-    自动使用 qwen3.7-max（需要严格 JSON 结构化输出）。
+    自动使用 qwen3.8-max（需要严格 JSON 结构化输出）。
     """
     if not full_text.strip():
         return "{}"
@@ -815,7 +829,7 @@ def multi_doc_compare(
 ) -> str:
     """
     多文献横向对比分析。
-    自动使用 qwen3.7-max（多文档综合推理）。
+    自动使用 qwen3.8-max（多文档综合推理）。
     """
     if not docs:
         return "没有提供文献内容。"
@@ -845,7 +859,7 @@ def translate_with_glossary(
 ) -> str:
     """
     专业术语翻译 + 术语库注入。
-    自动使用 qwen3.7-max。
+    自动使用 qwen3.8-max。
     """
     if not text.strip():
         return '{"translation": "", "glossary": []}'
@@ -912,7 +926,7 @@ def extract_reactions(
 ) -> str:
     """
     从化学文献中提取反应信息，返回 JSON。
-    自动使用 qwen3.7-max（复杂结构化提取）。
+    自动使用 qwen3.8-max（复杂结构化提取）。
     """
     if not full_text.strip():
         return '{"reactions": [], "summary": ""}'

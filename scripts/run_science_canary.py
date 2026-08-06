@@ -15,6 +15,7 @@ sys.path.insert(0, str(BACKEND_DIR))
 from app.services.model_call_ledger import ModelCallLedgerStore  # noqa: E402
 from app.services.science_canary import require_dashscope_key, run_canary_item  # noqa: E402
 from app.core.legacy import llm_client as load_llm_client  # noqa: E402
+from app.core.config import get_settings  # noqa: E402
 
 
 CANARY_IDS = ("S125-006", "S125-043", "S125-054")
@@ -59,6 +60,7 @@ def _write_summary(path: Path, payload: dict[str, object]) -> None:
 
 
 def main() -> int:
+    settings = get_settings()
     parser = argparse.ArgumentParser(description="Run three real, auditable Science 125 Qwen canaries.")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument(
@@ -70,7 +72,7 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--summary-path", type=Path, required=True)
     parser.add_argument("--ledger-path", type=Path, default=PROJECT_ROOT / "data" / "web.db")
-    parser.add_argument("--model", default="qwen3.7-max")
+    parser.add_argument("--model", default=load_llm_client().REASONING_MODEL)
     parser.add_argument("--max-total-tokens", type=int, default=120_000)
     parser.add_argument(
         "--max-estimated-cost-cny",
@@ -80,12 +82,16 @@ def main() -> int:
     parser.add_argument(
         "--input-cost-per-million-cny",
         type=float,
-        default=os.getenv("QWEN_INPUT_COST_PER_MILLION_CNY", "0"),
+        default=os.getenv("QWEN_INPUT_COST_PER_MILLION_CNY")
+        or settings.qwen_input_cost_per_million_cny
+        or "0",
     )
     parser.add_argument(
         "--output-cost-per-million-cny",
         type=float,
-        default=os.getenv("QWEN_OUTPUT_COST_PER_MILLION_CNY", "0"),
+        default=os.getenv("QWEN_OUTPUT_COST_PER_MILLION_CNY")
+        or settings.qwen_output_cost_per_million_cny
+        or "0",
     )
     parser.add_argument(
         "--require-cost-budget",

@@ -66,6 +66,7 @@ from app.services.job_store import StoredJob, WebJobStore
 from app.services.model_call_ledger import ModelCallLedgerStore
 from app.services.research_generation import (
     ResearchGenerationRequest,
+    ResearchGenerationCallError,
     ResearchGenerationService,
     ResearchGenerationValidationError,
 )
@@ -2284,6 +2285,7 @@ class JobService:
 
     def _required_science125_llm_config(self, user_id: int):
         credential_environment = api_keys.api_key_store.science125_environment(user_id)
+        settings = get_settings()
         api_key = str(credential_environment.get("DASHSCOPE_API_KEY") or "").strip()
         if not api_key:
             raise SafeJobError(
@@ -2291,8 +2293,16 @@ class JobService:
                 "Science 125 generation requires a configured DashScope API Key.",
             )
         try:
-            input_cost = float(str(credential_environment.get("QWEN_INPUT_COST_PER_MILLION_CNY") or ""))
-            output_cost = float(str(credential_environment.get("QWEN_OUTPUT_COST_PER_MILLION_CNY") or ""))
+            input_cost = float(str(
+                credential_environment.get("QWEN_INPUT_COST_PER_MILLION_CNY")
+                or settings.qwen_input_cost_per_million_cny
+                or ""
+            ))
+            output_cost = float(str(
+                credential_environment.get("QWEN_OUTPUT_COST_PER_MILLION_CNY")
+                or settings.qwen_output_cost_per_million_cny
+                or ""
+            ))
         except ValueError as exc:
             raise SafeJobError(
                 "SCIENCE125_MODEL_PRICING_REQUIRED",
@@ -2305,7 +2315,7 @@ class JobService:
             )
         return llm_client().LLMConfig(
             api_key=api_key,
-            model="qwen3.7-max",
+            model=llm_client().REASONING_MODEL,
             input_cost_per_million_cny=input_cost,
             output_cost_per_million_cny=output_cost,
         )
@@ -2464,6 +2474,30 @@ class JobService:
             ) from exc
         except ValueError as exc:
             raise SafeJobError("SCIENCE125_GENERATION_INVALID", "Science 125 generation input is invalid.") from exc
+        except ResearchGenerationCallError as exc:
+            result = exc.result
+            status = result.status_code
+            error_type = result.error_type or ("budget" if result.status == "budget_exceeded" else "unknown")
+            if error_type == "budget":
+                advice = "Increase the Science 125 per-run budget or reduce the reviewed evidence context."
+            elif status in {401, 403}:
+                advice = "Re-save a valid server DashScope API key in API Settings and retry."
+            elif status in {400, 404}:
+                advice = "Verify the DashScope model name and request configuration."
+            elif status == 429:
+                advice = "DashScope rate limit persisted after retries; wait for cooldown and retry."
+            elif status is not None and status >= 500:
+                advice = "DashScope returned a server error after retries; retry later."
+            elif error_type in {"timeout", "network"}:
+                advice = "DashScope connection timed out after retries; check network and retry."
+            else:
+                advice = "Review the Qwen API configuration and retry."
+            request_hint = f" requestId={result.request_id}." if result.request_id else ""
+            raise SafeJobError(
+                "SCIENCE125_QWEN_FAILED",
+                f"DashScope Qwen generation failed: status={status or 'none'}, "
+                f"error_type={error_type}, attempts={result.attempts}.{request_hint} {advice}",
+            ) from exc
         except RuntimeError as exc:
             raise SafeJobError("SCIENCE125_QWEN_FAILED", "DashScope Qwen could not generate the Science 125 result.") from exc
         self._raise_if_cancelled(job)

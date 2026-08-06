@@ -296,6 +296,18 @@ class LLMTransportTestCase(unittest.TestCase):
         self.assertEqual(result.status, "budget_exceeded")
         post.assert_not_called()
 
+    def test_mixed_language_science_prompt_keeps_completion_budget(self) -> None:
+        # Regression: the old one-byte-per-token reserve rejected this valid
+        # 30 KB prompt before making a DashScope request.
+        prompt = "界面现象与可重复测量。" * 1_000
+        budget = llm_client.LLMBudget(max_total_tokens=20_000)
+
+        with patch.object(llm_client.requests, "post", return_value=success_response()) as post:
+            result = llm_client._chat_result(prompt, self.config(), budget=budget)
+
+        self.assertEqual(result.status, "succeeded")
+        self.assertGreater(post.call_args.kwargs["json"]["max_tokens"], 0)
+
     def test_cost_budget_reserves_prompt_cost_and_caps_completion(self) -> None:
         config = llm_client.LLMConfig(
             api_key=API_KEY,

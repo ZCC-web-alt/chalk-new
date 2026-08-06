@@ -41,7 +41,7 @@ jobs:
           --output-dir data/canary
           --summary-path canary-summary.json
           --ledger-path data/canary-ledger.db
-          --model qwen3.7-max
+          --model qwen3.8-max
           --max-total-tokens 120000
           --require-cost-budget
       - uses: actions/upload-artifact@v4

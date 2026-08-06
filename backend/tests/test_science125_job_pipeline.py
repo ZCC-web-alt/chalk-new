@@ -280,13 +280,13 @@ class Science125JobPipelineTestCase(unittest.TestCase):
         self.assertEqual(research_output["profile"], "general_science")
         self.assertEqual(research_output["science125"]["questionId"], "S125-006")
         self.assertEqual(research_output["science125"]["evidenceStatus"], "sufficient")
-        self.assertEqual(output["audit"]["model"], "qwen3.7-max")
+        self.assertEqual(output["audit"]["model"], "qwen3.8-max")
         self.assertRegex(output["audit"]["policyHash"], r"^[0-9a-f]{64}$")
         self.assertRegex(output["audit"]["evidenceSnapshotHash"], r"^[0-9a-f]{64}$")
         rows = self.service.model_call_ledger.list_for_context("science125_item", job.id)
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].provider, "DashScope")
-        self.assertEqual(rows[0].model, "qwen3.7-max")
+        self.assertEqual(rows[0].model, "qwen3.8-max")
         self.assertEqual(rows[0].policy_hash, output["audit"]["policyHash"])
         self.assertEqual(rows[0].evidence_snapshot_hash, output["audit"]["evidenceSnapshotHash"])
 
@@ -312,7 +312,27 @@ class Science125JobPipelineTestCase(unittest.TestCase):
 
         credentials.assert_called_once_with(1)
         self.assertEqual(output["audit"]["provider"], "DashScope")
-        self.assertEqual(output["audit"]["model"], "qwen3.7-max")
+        self.assertEqual(output["audit"]["model"], "qwen3.8-max")
+
+    def test_generation_uses_persistent_price_settings_when_process_prices_are_missing(self) -> None:
+        from types import SimpleNamespace
+
+        credential_environment = {
+            "DASHSCOPE_API_KEY": "saved-user-dashscope-key",
+        }
+        settings = SimpleNamespace(
+            qwen_input_cost_per_million_cny="3.2",
+            qwen_output_cost_per_million_cny="12",
+        )
+        with patch(
+            "app.services.jobs.api_keys.api_key_store.science125_environment",
+            return_value=credential_environment,
+        ), patch("app.services.jobs.get_settings", return_value=settings):
+            config = self.service._required_science125_llm_config(1)
+
+        self.assertEqual(config.model, "qwen3.8-max")
+        self.assertEqual(config.input_cost_per_million_cny, 3.2)
+        self.assertEqual(config.output_cost_per_million_cny, 12.0)
 
     def test_metadata_only_results_cannot_bypass_the_generation_evidence_gate(self) -> None:
         from app.services.jobs import SafeJobError

@@ -35,7 +35,7 @@ MULTIMODAL_MODELS = {
     "image_understand": "qwen-vl-max",   # 学术图表理解（最强推理）
     "table_ocr":      "qwen-vl-ocr",     # 表格 OCR（专用模型）
     "chart_analysis": "qwen-vl-max",     # 数据图表分析
-    "excel_interpret":"qwen3.7-max",       # Excel 数据解读（纯文本推理）
+    "excel_interpret":"qwen3.8-max",       # Excel 数据解读（纯文本推理）
 }
 
 

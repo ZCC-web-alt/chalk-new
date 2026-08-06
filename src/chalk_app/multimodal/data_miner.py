@@ -3,7 +3,7 @@ data_miner.py — 多模态数据关联挖掘引擎
 
 从清洗后的多模态数据中自动发现跨数据源的科学关联规律：
   1. 规则驱动 — 基于催化领域先验知识的 descriptor-property 映射
-  2. LLM 辅助 — 让 qwen3.7-max 补充规则未覆盖的关联
+  2. LLM 辅助 — 让 qwen3.8-max 补充规则未覆盖的关联
   3. 关系类型 — correlation / causation / descriptor / mechanism
 
 比赛要求对应：

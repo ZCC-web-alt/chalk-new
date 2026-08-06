@@ -691,7 +691,7 @@ class HypothesisAgent(BaseAgent):
     """
 
     role = AgentRole.HYPOTHESIS
-    model_task = "compare"  # 用 qwen3.7-max
+    model_task = "compare"  # 用 qwen3.8-max
     system_prompt = (
         "你是一名具有创新思维的材料科学与化学研究专家。"
         "你擅长从已有科学事实中发现知识缺口，"
@@ -1248,7 +1248,7 @@ class ResultsVerificationAgent(BaseAgent):
     """
 
     role = AgentRole.RESULTS_VERIFICATION
-    model_task = "compare"  # 用 qwen3.7-max
+    model_task = "compare"  # 用 qwen3.8-max
     system_prompt = (
         "你是一名擅长公式推导和定量验证的理论化学/材料科学研究专家。"
         "你的职责是对科学假设进行严谨的公式推导验证——从基本原理出发，"

@@ -498,7 +498,7 @@ class ReasoningChainAgent:
     输出：ReasoningChain JSON（供 HypothesisAgent 消费）
     """
 
-    # 使用 qwen3.7-max 保证推理质量
+    # 使用 qwen3.8-max 保证推理质量
     model_task: str = "compare"
     timeout: int = 150
 

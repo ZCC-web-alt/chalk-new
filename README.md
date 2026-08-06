@@ -116,19 +116,26 @@ runtime database while a run is active.
 
 ### Server credentials
 
-Science 125 provider credentials are process-only. The backend does not read the
-per-user `data/api_keys.json` store for these profiles and the profile API returns
-only public provider metadata and redacted readiness codes. Keep real values in a
-local process environment or a protected deployment secret, never in Git, chat, or
-`backend/.env.example`.
+For local development, API settings stores user-scoped provider credentials outside
+Git and the profile API returns only redacted readiness codes. Production uses server
+environment variables or protected deployment secrets. Never commit credentials,
+share them in chat, or place them in `backend/.env.example`.
+
+The two Qwen price values are not credentials. Chalk defaults to the currently verified
+`qwen3.8-max` non-cache prices: input `12 CNY/M token` and output `36 CNY/M token`.
+To pin a future price change, add values once to your ignored `backend/.env`; a
+PowerShell or deployment environment value still takes precedence. The model limits
+recorded in the client are 991K input, 131K output, 1M context, and 5M TPM. Chalk's
+application-level 8,192-token completion cap remains deliberately lower than the
+provider maximum to control per-run cost.
 
 The template lists these variables with placeholders:
 
 | Variable | Used for |
 | --- | --- |
-| `DASHSCOPE_API_KEY` | DashScope Qwen model calls (`qwen3.7-max`) |
-| `QWEN_INPUT_COST_PER_MILLION_CNY` | Current official input-token price used by the per-run budget |
-| `QWEN_OUTPUT_COST_PER_MILLION_CNY` | Current official output-token price used by the per-run budget |
+| `DASHSCOPE_API_KEY` | DashScope Qwen model calls (`qwen3.8-max`) |
+| `QWEN_INPUT_COST_PER_MILLION_CNY` | Current official qwen3.8-max input-token price used by the per-run budget; may persist locally in `backend/.env` |
+| `QWEN_OUTPUT_COST_PER_MILLION_CNY` | Current official qwen3.8-max output-token price used by the per-run budget; may persist locally in `backend/.env` |
 | `SCIENCE125_CROSSREF_MAILTO` | Crossref polite-contact metadata |
 | `SCIENCE125_OPENALEX_MAILTO` | OpenAlex polite-contact metadata |
 | `SCIENCE125_NCBI_API_KEY` | NCBI keyed quota for biomedical profiles |
@@ -141,8 +148,8 @@ and remove them afterward:
 
 ```powershell
 $env:DASHSCOPE_API_KEY = '<DashScope key>'
-$env:QWEN_INPUT_COST_PER_MILLION_CNY = '<current official input price>'
-$env:QWEN_OUTPUT_COST_PER_MILLION_CNY = '12'
+$env:QWEN_INPUT_COST_PER_MILLION_CNY = '12'
+$env:QWEN_OUTPUT_COST_PER_MILLION_CNY = '36'
 $env:SCIENCE125_CROSSREF_MAILTO = '<registered contact email>'
 $env:SCIENCE125_OPENALEX_MAILTO = '<registered contact email>'
 $env:SCIENCE125_NCBI_API_KEY = '<NCBI key>'
@@ -235,8 +242,8 @@ complete booklet context index from the earlier section must also exist at
 
 ```powershell
 $env:DASHSCOPE_API_KEY = '<session-only key>'
-$env:QWEN_INPUT_COST_PER_MILLION_CNY = '<current official input price>'
-$env:QWEN_OUTPUT_COST_PER_MILLION_CNY = '12'
+$env:QWEN_INPUT_COST_PER_MILLION_CNY = '12'
+$env:QWEN_OUTPUT_COST_PER_MILLION_CNY = '36'
 python scripts/run_science_canary.py `
   --manifest benchmarks/science125/science125-v1.json `
   --evidence data/canary-reviewed-evidence.json `
@@ -248,8 +255,8 @@ Remove-Item Env:DASHSCOPE_API_KEY,Env:QWEN_INPUT_COST_PER_MILLION_CNY,Env:QWEN_O
 ```
 
 `--max-total-tokens` defaults to 120,000 and each Qwen completion is capped at
-8,192 completion tokens. To enforce a model-price budget as well, pass current
-DashScope prices with `--input-cost-per-million-cny`,
+8,192 completion tokens. This remains below qwen3.8-max's 131K output maximum.
+To enforce a model-price budget as well, pass current DashScope prices with `--input-cost-per-million-cny`,
 `--output-cost-per-million-cny`, and a positive `--max-estimated-cost-cny`.
 The runner rejects a cost ceiling when either price is unknown instead of
 recording a misleading budget.
@@ -257,8 +264,8 @@ recording a misleading budget.
 For GitHub, create a protected environment named `qwen-canary`, add its
 `DASHSCOPE_API_KEY` secret, and define `QWEN_MAX_ESTIMATED_COST_CNY`,
 `QWEN_INPUT_COST_PER_MILLION_CNY`, and
-`QWEN_OUTPUT_COST_PER_MILLION_CNY` environment variables using the current
-DashScope model price. Add these three additional **environment secrets** (not
+`QWEN_OUTPUT_COST_PER_MILLION_CNY` environment variables using qwen3.8-max's
+current input price 12 and output price 36 CNY/M token. Add these three additional **environment secrets** (not
 variables):
 
 | Secret | Value |

@@ -401,7 +401,7 @@ def _llm_extract_points(analysis_text: str, config) -> List[Dict[str, Any]]:
     response = _chat(
         prompt,
         config=config,
-        task="hypothesis",  # 使用 qwen3.7-max
+        task="hypothesis",  # 使用 qwen3.8-max
         timeout=120,
     )
 

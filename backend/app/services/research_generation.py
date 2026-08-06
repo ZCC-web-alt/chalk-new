@@ -30,6 +30,22 @@ class ResearchGenerationValidationError(ValueError):
         self.repair_content = repair_content
 
 
+class ResearchGenerationCallError(RuntimeError):
+    """Safe failure metadata for a DashScope call; never exposes response text."""
+
+    def __init__(self, result: LLMCallResult, *, phase: str = "initial"):
+        self.result = result
+        self.phase = phase
+        status = result.status_code
+        error_type = result.error_type or ("budget" if result.status == "budget_exceeded" else "unknown")
+        request_id = result.request_id or "unavailable"
+        super().__init__(
+            f"DashScope call failed during {phase} generation "
+            f"(status={status or 'none'}, error_type={error_type}, attempts={result.attempts}, "
+            f"requestId={request_id})."
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class ResearchGenerationRequest:
     question: str
@@ -216,7 +232,7 @@ class DeterministicQwenTestTransport:
         ):
             self._failed_round_ids.add(context.resource_id)
             raise RuntimeError("The deterministic Qwen transport forced one failure for this test round.")
-        model = str(config.model or "qwen3.7-max")
+        model = str(config.model or _llm_client.REASONING_MODEL)
         if not model.lower().startswith("qwen"):
             raise RuntimeError("The deterministic research transport only represents Qwen models.")
         content = json.dumps(_deterministic_payload(request), ensure_ascii=False, separators=(",", ":"))
@@ -572,7 +588,7 @@ class ResearchGenerationService:
         calls = [first]
         repair_content: str | None = None
         if first.status != "succeeded":
-            raise RuntimeError("The DashScope Qwen call did not succeed.")
+            raise ResearchGenerationCallError(first)
         if not first.request_id:
             raise ValueError("DashScope did not return a request ID.")
         if first.usage.total_tokens <= 0:
@@ -593,6 +609,8 @@ class ResearchGenerationService:
             )
             calls.append(repair)
             repair_content = repair.content
+            if repair.status != "succeeded":
+                raise ResearchGenerationCallError(repair, phase="JSON repair")
             try:
                 output = _validate(repair, request)
             except (ValueError, json.JSONDecodeError) as final_error:

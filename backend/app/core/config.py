@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     secure_cookies: bool = Field(default=False, alias="CHALK_SECURE_COOKIES")
     max_upload_bytes: int = Field(default=50 * 1024 * 1024, alias="CHALK_MAX_UPLOAD_BYTES")
     max_analysis_chars: int = Field(default=200_000, alias="CHALK_MAX_ANALYSIS_CHARS")
+    qwen_input_cost_per_million_cny: str | None = Field(
+        default="12",
+        alias="QWEN_INPUT_COST_PER_MILLION_CNY",
+    )
+    qwen_output_cost_per_million_cny: str | None = Field(
+        default="36",
+        alias="QWEN_OUTPUT_COST_PER_MILLION_CNY",
+    )
     data_dir: Path = Field(default=PROJECT_ROOT / "data", alias="CHALK_WEB_DATA_DIR")
     legacy_root: Path = Field(default=PROJECT_ROOT, alias="CHALK_LEGACY_ROOT")
 

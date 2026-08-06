@@ -218,7 +218,7 @@ def test_qwen_timeout_is_not_reported_as_json_parse_error():
 def test_llm_error_marker_raises_clear_service_error():
     raw = (
         LLM_ERROR_PREFIX
-        + '{"error_type":"timeout","model":"qwen3.7-max","message":"通义千问接口请求超时。","detail":"read timeout=1000"}'
+        + '{"error_type":"timeout","model":"qwen3.8-max","message":"通义千问接口请求超时。","detail":"read timeout=1000"}'
     )
 
     try:
@@ -226,7 +226,7 @@ def test_llm_error_marker_raises_clear_service_error():
     except LLMServiceError as exc:
         text = str(exc)
         assert "生成初始假设失败" in text
-        assert "qwen3.7-max" in text
+        assert "qwen3.8-max" in text
         assert "read timeout=1000" in text
     else:
         raise AssertionError("LLMServiceError was not raised")
