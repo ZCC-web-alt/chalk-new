@@ -10,6 +10,34 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 
 class Science125RelevanceTestCase(unittest.TestCase):
+    def test_generation_qualification_requires_full_text_and_at_least_medium_relevance(self) -> None:
+        from app.services.science125_relevance import qualify_science125_evidence
+        from app.services.science125_retrieval import EvidenceRecord
+
+        query = "microscopic interfacial phenomena measurement spectroscopy microscopy nanoscale dynamics"
+        low_relevance_full_text = EvidenceRecord(
+            provider="arxiv",
+            stable_id="arxiv:unrelated",
+            title="Medieval manuscript catalogues",
+            abstract="A study of historical bibliography.",
+            access_status="open_full_text",
+        )
+        high_relevance_metadata = EvidenceRecord(
+            provider="crossref",
+            stable_id="doi:10.1000/interface",
+            title="Microscopic measurement of interfacial phenomena",
+            abstract="Operando spectroscopy measures nanoscale interface dynamics.",
+            access_status="metadata",
+        )
+
+        low_quality = qualify_science125_evidence("S125-006", query, low_relevance_full_text)
+        metadata_only = qualify_science125_evidence("S125-006", query, high_relevance_metadata)
+
+        self.assertFalse(low_quality.eligible_for_generation)
+        self.assertIn("RELEVANCE_BELOW_MEDIUM", low_quality.reasons)
+        self.assertFalse(metadata_only.eligible_for_generation)
+        self.assertIn("ACCESS_NOT_FULL_TEXT", metadata_only.reasons)
+
     def test_hybrid_score_separates_relevant_and_unrelated_records(self) -> None:
         from app.services.science125_relevance import assess_science125_relevance
         from app.services.science125_retrieval import EvidenceRecord

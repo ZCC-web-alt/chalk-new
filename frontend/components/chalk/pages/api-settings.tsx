@@ -13,22 +13,18 @@ type ProviderConfig = {
   label: string
   hint: string
   placeholder: string
-  managedBy: "user" | "server_env"
-  environmentVariable?: string
 }
 
 const PROVIDERS: ProviderConfig[] = [
-  { id: "dashscope", label: "DashScope API Key", hint: "文献向量化、问答和模型分析", placeholder: "sk-...", managedBy: "user" },
-  { id: "semantic_scholar", label: "Semantic Scholar API Key", hint: "提高 Semantic Scholar 检索配额", placeholder: "可选", managedBy: "user" },
-  { id: "ncbi", label: "NCBI API Key", hint: "提高 PMC / Entrez 检索配额", placeholder: "可选", managedBy: "user" },
-  { id: "crossref_mailto", label: "Crossref 联系邮箱", hint: "进入 Crossref polite pool", placeholder: "researcher@example.com", managedBy: "user" },
+  { id: "dashscope", label: "DashScope API Key", hint: "文献向量化、问答和模型分析", placeholder: "sk-..." },
+  { id: "semantic_scholar", label: "Semantic Scholar API Key", hint: "提高 Semantic Scholar 检索配额", placeholder: "输入 API Key" },
+  { id: "ncbi", label: "NCBI API Key", hint: "提高 PMC / Entrez 检索配额", placeholder: "输入 API Key" },
+  { id: "crossref_mailto", label: "文献 API 联系邮箱（Crossref / OpenAlex）", hint: "用于 Crossref polite pool 和 OpenAlex API 联系信息", placeholder: "researcher@example.com" },
   {
     id: "nasa_ads",
     label: "NASA ADS API Token",
     hint: "用于天文学和高能天体物理文献检索",
-    placeholder: "",
-    managedBy: "server_env",
-    environmentVariable: "SCIENCE125_NASA_ADS_API_TOKEN",
+    placeholder: "输入 API Token",
   },
 ]
 
@@ -104,7 +100,7 @@ export function ApiSettingsPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-medium text-foreground">{provider.label}</p>
-                <p className="text-[11px] text-muted-foreground">{provider.hint}{provider.managedBy === "server_env" ? " · 服务器环境变量管理" : ""}</p>
+                <p className="text-[11px] text-muted-foreground">{provider.hint}</p>
               </div>
               <Tag tone={configured[provider.id] ? "green" : "gray"}>{configured[provider.id] ? "已配置" : "未配置"}</Tag>
             </div>
@@ -118,23 +114,17 @@ export function ApiSettingsPage() {
 
       <Panel title="API 配置" icon={KeyRound}>
         <div className="space-y-3">
-          {PROVIDERS.map((provider) => provider.managedBy === "server_env" ? (
+          {PROVIDERS.map((provider) => (
             <div key={provider.id} data-testid={`api-provider-${provider.id}`}>
-              <FieldLabel>{provider.label}</FieldLabel>
-              <div className="flex flex-wrap items-center justify-between gap-2 border border-border bg-secondary px-3 py-2">
-                <div className="min-w-0">
-                  <p className="font-mono text-xs text-foreground">{provider.environmentVariable}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">服务器环境变量管理；修改后需要重启后端服务。</p>
-                </div>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel>{provider.label}</FieldLabel>
                 <Tag tone={configured[provider.id] ? "green" : "gray"}>{configured[provider.id] ? "已配置" : "未配置"}</Tag>
               </div>
-            </div>
-          ) : (
-            <div key={provider.id}>
-              <FieldLabel>{provider.label}</FieldLabel>
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <Input
+                    aria-label={provider.label}
+                    autoComplete="off"
                     type={provider.id === "crossref_mailto" || showSecrets ? "text" : "password"}
                     value={values[provider.id]}
                     onChange={(event) => setValues((current) => ({ ...current, [provider.id]: event.target.value }))}

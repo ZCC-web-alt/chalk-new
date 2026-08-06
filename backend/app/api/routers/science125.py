@@ -19,6 +19,7 @@ from app.services.science125_context import (
     Science125ContextError,
     load_science125_context_index,
 )
+from app.services import api_keys
 
 
 router = APIRouter(prefix="/science-125", tags=["science-125"])
@@ -39,7 +40,7 @@ def list_questions(_user=Depends(current_user)) -> Science125QuestionListOut:
 @router.get("/questions/{question_id}/profile", response_model=Science125QuestionProfileOut)
 def get_question_profile(
     question_id: str,
-    _user=Depends(current_user),
+    user=Depends(current_user),
 ) -> Science125QuestionProfileOut:
     try:
         catalog = get_science125_catalog()
@@ -56,7 +57,10 @@ def get_question_profile(
             status.HTTP_404_NOT_FOUND,
         )
     try:
-        return get_science125_question_profile(question_id)
+        return get_science125_question_profile(
+            question_id,
+            environ=api_keys.api_key_store.science125_environment(user.id),
+        )
     except Science125RoutingError as exc:
         raise ApiError(
             "SCIENCE125_ROUTING_UNAVAILABLE",

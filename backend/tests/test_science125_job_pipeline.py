@@ -55,8 +55,8 @@ class Science125JobPipelineTestCase(unittest.TestCase):
         rows = [
             {
                 "id": "doi:10.1000/one",
-                "title": "Reviewed full text one",
-                "abstract": "Full reviewed evidence one.",
+                "title": "Microscopic interface measurement with operando spectroscopy",
+                "abstract": "Nanoscale interfacial dynamics are measured by microscopy and spectroscopy.",
                 "sourcePlatform": "crossref",
                 "providerFamily": "doi_registry",
                 "accessStatus": access_status,
@@ -64,8 +64,8 @@ class Science125JobPipelineTestCase(unittest.TestCase):
             },
             {
                 "id": "openalex:W2",
-                "title": "Reviewed full text two",
-                "abstract": "Full reviewed evidence two.",
+                "title": "Microscopic interface measurement with calibrated microscopy",
+                "abstract": "Nanoscale interfacial dynamics are measured by microscopy and spectroscopy.",
                 "sourcePlatform": "openalex",
                 "providerFamily": "scholarly_index",
                 "accessStatus": access_status,
@@ -73,8 +73,8 @@ class Science125JobPipelineTestCase(unittest.TestCase):
             },
             {
                 "id": "pmid:3",
-                "title": "Reviewed full text three",
-                "abstract": "Full reviewed evidence three.",
+                "title": "Microscopic interface measurement for interfacial transport",
+                "abstract": "Nanoscale interfacial dynamics are measured by microscopy and spectroscopy.",
                 "sourcePlatform": "europe_pmc",
                 "providerFamily": "biomedical_index",
                 "accessStatus": access_status,
@@ -153,9 +153,114 @@ class Science125JobPipelineTestCase(unittest.TestCase):
         self.assertEqual(output["relevanceScoringVersion"], "science125-relevance-v1")
         self.assertEqual(output["evidenceStatus"], "evidence_insufficient")
         self.assertEqual(adapters.call_count, 1)
-        self.assertEqual(search.call_args.args[0], "retrieval.chem.interface.v1")
-        self.assertEqual(search.call_args.args[1], "microscopic interface measurement")
-        self.assertNotIn("provider_ids", search.call_args.kwargs)
+        self.assertEqual(search.call_args_list[0].args[0], "retrieval.chem.interface.v1")
+        self.assertEqual(search.call_args_list[0].args[1], "microscopic interface measurement")
+        self.assertEqual(search.call_count, 3)
+        self.assertTrue(all("provider_ids" not in call.kwargs for call in search.call_args_list))
+
+    def test_science125_search_refines_when_initial_evidence_is_not_eligible(self) -> None:
+        from app.services.science125_retrieval import (
+            EvidenceRecord,
+            ProviderDiagnostic,
+            Science125SearchResult,
+        )
+
+        job = self.store.create(1, "literature_search", {
+            "science125Id": "S125-006",
+            "queryText": "microscopic interface measurement",
+        })
+        initial = Science125SearchResult(
+            profile_id="retrieval.chem.interface.v1",
+            query_hash="a" * 64,
+            cache_key="b" * 64,
+            evidence=(EvidenceRecord(
+                provider="crossref",
+                stable_id="doi:10.1000/metadata",
+                title="Microscopic interface measurement",
+                abstract="Interfacial spectroscopy and microscopy.",
+                access_status="metadata",
+            ),),
+            diagnostics=(ProviderDiagnostic(provider="crossref", status="succeeded"),),
+        )
+        refined = Science125SearchResult(
+            profile_id="retrieval.chem.interface.v1",
+            query_hash="c" * 64,
+            cache_key="d" * 64,
+            evidence=(
+                EvidenceRecord(
+                    provider="openalex",
+                    stable_id="openalex:one",
+                    title="Operando spectroscopy of microscopic interfaces",
+                    abstract="Nanoscale interface measurement with calibrated microscopy.",
+                    access_status="open_full_text",
+                ),
+                EvidenceRecord(
+                    provider="semantic_scholar",
+                    stable_id="semantic:two",
+                    title="Molecular dynamics validation of interfacial transport",
+                    abstract="Microscopic interface measurements are validated by simulation.",
+                    access_status="open_full_text",
+                ),
+                EvidenceRecord(
+                    provider="europe_pmc",
+                    stable_id="pmid:three",
+                    title="Nanoscale imaging of liquid solid interfaces",
+                    abstract="Operando spectroscopy measures molecular interfacial dynamics.",
+                    access_status="open_full_text",
+                ),
+            ),
+            diagnostics=(ProviderDiagnostic(provider="openalex", status="succeeded"),),
+        )
+        with patch.dict(os.environ, self._environment(), clear=False), patch(
+            "app.services.jobs.default_provider_adapters", return_value={}
+        ), patch(
+            "app.services.jobs.search_science125",
+            side_effect=[initial, refined, refined],
+        ) as search:
+            output = self.service._run_literature_search(job)
+
+        self.assertEqual(output["evidenceStatus"], "ready_for_review")
+        self.assertEqual(output["evidenceReadiness"]["eligibleFullTextCount"], 3)
+        self.assertGreaterEqual(output["evidenceReadiness"]["providerFamilyCount"], 2)
+        self.assertEqual(len(output["refinementQueries"]), 2)
+        self.assertEqual(search.call_count, 3)
+        metadata_row = next(row for row in output["results"] if row["id"] == "doi:10.1000/metadata")
+        self.assertFalse(metadata_row["evidenceEligibility"]["eligibleForGeneration"])
+        self.assertIn("ACCESS_NOT_FULL_TEXT", metadata_row["evidenceEligibility"]["reasons"])
+
+    def test_science125_search_uses_the_same_user_credential_environment_end_to_end(self) -> None:
+        from app.services.science125_retrieval import Science125SearchResult
+
+        job = self.store.create(7, "literature_search", {
+            "science125Id": "S125-006",
+            "queryText": "microscopic interface measurement",
+        })
+        credential_environment = {
+            **self._environment(),
+            "SCIENCE125_CROSSREF_MAILTO": "user@example.org",
+            "SCIENCE125_OPENALEX_MAILTO": "user@example.org",
+            "SCIENCE125_SEMANTIC_SCHOLAR_API_KEY": "user-semantic-key",
+        }
+        result = Science125SearchResult(
+            profile_id="retrieval.chem.interface.v1",
+            query_hash="a" * 64,
+            cache_key="b" * 64,
+            evidence=(),
+            diagnostics=(),
+        )
+        with patch(
+            "app.services.jobs.api_keys.api_key_store.science125_environment",
+            return_value=credential_environment,
+        ) as credentials, patch(
+            "app.services.jobs.default_provider_adapters", return_value={}
+        ) as adapters, patch(
+            "app.services.jobs.search_science125", return_value=result
+        ) as search:
+            self.service._run_literature_search(job)
+
+        credentials.assert_called_once_with(7)
+        self.assertEqual(adapters.call_args.kwargs["environ"], credential_environment)
+        self.assertEqual(search.call_args.kwargs["environ"], credential_environment)
 
     def test_generation_reloads_the_owned_reviewed_snapshot_and_records_hashes(self) -> None:
         search = self._complete_search()
@@ -185,10 +290,59 @@ class Science125JobPipelineTestCase(unittest.TestCase):
         self.assertEqual(rows[0].policy_hash, output["audit"]["policyHash"])
         self.assertEqual(rows[0].evidence_snapshot_hash, output["audit"]["evidenceSnapshotHash"])
 
+    def test_generation_uses_the_current_users_saved_dashscope_key(self) -> None:
+        search = self._complete_search()
+        job = self.store.create(1, "hypothesis_generate", {
+            "science125Id": "S125-006",
+            "literatureSearchJobId": search.id,
+            "reviewedEvidenceIds": ["doi:10.1000/one", "openalex:W2", "pmid:3"],
+        })
+        credential_environment = {
+            **self._environment(),
+            "DASHSCOPE_API_KEY": "saved-user-dashscope-key",
+        }
+
+        with patch.dict(os.environ, {**self._environment(), "DASHSCOPE_API_KEY": ""}, clear=False), patch(
+            "app.services.jobs.api_keys.api_key_store.science125_environment",
+            return_value=credential_environment,
+        ) as credentials, patch(
+            "app.services.jobs.load_science125_context_index", return_value=self._context_index()
+        ):
+            output = self.service._run_hypothesis_generate(job)
+
+        credentials.assert_called_once_with(1)
+        self.assertEqual(output["audit"]["provider"], "DashScope")
+        self.assertEqual(output["audit"]["model"], "qwen3.7-max")
+
     def test_metadata_only_results_cannot_bypass_the_generation_evidence_gate(self) -> None:
         from app.services.jobs import SafeJobError
 
         search = self._complete_search(access_status="metadata")
+        job = self.store.create(1, "hypothesis_generate", {
+            "science125Id": "S125-006",
+            "literatureSearchJobId": search.id,
+            "reviewedEvidenceIds": ["doi:10.1000/one", "openalex:W2", "pmid:3"],
+        })
+
+        with patch("app.services.jobs.load_science125_context_index", return_value=self._context_index()), self.assertRaises(SafeJobError) as raised:
+            self.service._run_hypothesis_generate(job)
+
+        self.assertEqual(raised.exception.code, "EVIDENCE_INSUFFICIENT")
+
+    def test_low_relevance_full_text_cannot_bypass_the_generation_evidence_gate(self) -> None:
+        from app.services.jobs import SafeJobError
+
+        search = self._complete_search()
+        result = dict(search.result)
+        result["results"] = [
+            {
+                **row,
+                "title": "Unrelated administrative policy record",
+                "abstract": "This record discusses an unrelated administrative process.",
+            }
+            for row in result["results"]
+        ]
+        search = self.store.update(search.id, result=result)
         job = self.store.create(1, "hypothesis_generate", {
             "science125Id": "S125-006",
             "literatureSearchJobId": search.id,

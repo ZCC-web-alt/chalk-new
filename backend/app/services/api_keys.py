@@ -1,14 +1,26 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from threading import RLock
+from typing import Mapping
 
 from app.core.config import get_settings
 
 
 class ApiKeyStore:
-    PROVIDERS = ("dashscope", "semantic_scholar", "ncbi", "crossref_mailto")
+    PROVIDERS = ("dashscope", "semantic_scholar", "ncbi", "crossref_mailto", "nasa_ads")
+    SCIENCE125_ENVIRONMENT_VARIABLES: dict[str, tuple[str, ...]] = {
+        "dashscope": ("DASHSCOPE_API_KEY",),
+        "semantic_scholar": ("SCIENCE125_SEMANTIC_SCHOLAR_API_KEY",),
+        "ncbi": ("SCIENCE125_NCBI_API_KEY",),
+        "crossref_mailto": (
+            "SCIENCE125_CROSSREF_MAILTO",
+            "SCIENCE125_OPENALEX_MAILTO",
+        ),
+        "nasa_ads": ("SCIENCE125_NASA_ADS_API_TOKEN",),
+    }
 
     def __init__(self, path: Path | None = None):
         self.path = path or get_settings().api_key_store_path
@@ -54,6 +66,25 @@ class ApiKeyStore:
             data = self._read()
             bucket = data.get(str(user_id), {})
             return {provider: bool(bucket.get(provider)) for provider in self.PROVIDERS}
+
+    def science125_environment(
+        self,
+        user_id: int,
+        environ: Mapping[str, str] | None = None,
+    ) -> dict[str, str]:
+        """Resolve Science 125 credentials without exposing stored values to callers."""
+        resolved = dict(os.environ if environ is None else environ)
+        if get_settings().is_production:
+            return resolved
+        with self._lock:
+            bucket = self._read().get(str(user_id), {})
+            for provider, variable_names in self.SCIENCE125_ENVIRONMENT_VARIABLES.items():
+                value = bucket.get(provider)
+                if not value:
+                    continue
+                for variable_name in variable_names:
+                    resolved[variable_name] = value
+        return resolved
 
 
 api_key_store = ApiKeyStore()

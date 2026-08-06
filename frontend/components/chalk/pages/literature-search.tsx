@@ -237,7 +237,15 @@ export function SearchPage({
 
   const running = job && ["QUEUED", "RUNNING"].includes(job.status)
   const selectedResults = useMemo(() => results.filter((result) => selectedIds.has(result.id)), [results, selectedIds])
-  const literatureContext = useMemo(() => formatHypothesisContext(selectedResults), [selectedResults])
+  const eligibleSelectedResults = useMemo(
+    () => selectedResults.filter((result) => result.evidenceEligibility?.eligibleForGeneration === true),
+    [selectedResults],
+  )
+  // Science 125 metadata and low-relevance records remain visible as review leads, but never enter the Qwen evidence input.
+  const literatureContext = useMemo(
+    () => formatHypothesisContext(science125Id ? eligibleSelectedResults : selectedResults),
+    [eligibleSelectedResults, science125Id, selectedResults],
+  )
   const selectedContext = useMemo(() => {
     const combined = [
       literatureContext,
@@ -248,14 +256,16 @@ export function SearchPage({
       : combined
   }, [literatureContext, pageExcerpts])
   const selectedEvidenceCount = selectedResults.length + pageExcerpts.length
-  const reviewedFullTextResults = selectedResults.filter((result) => !["", "metadata", "metadata_only", "needs_verification"].includes((result.accessStatus || "").toLowerCase()))
   const reviewedProviderFamilies = new Set([
-    ...reviewedFullTextResults.map((result) => result.providerFamily || result.sourcePlatform),
+    ...eligibleSelectedResults.map((result) => result.providerFamily || result.sourcePlatform),
     ...(pageExcerpts.length > 0 ? ["user_pdf"] : []),
   ].filter(Boolean))
+  const minimumAcceptedEvidence = diagnostics?.evidenceReadiness?.minimumAcceptedEvidence ?? 3
+  const minimumProviderFamilies = diagnostics?.evidenceReadiness?.minimumProviderFamilies ?? 2
+  const eligibleEvidenceCount = eligibleSelectedResults.length + pageExcerpts.length
   const science125EvidenceReady = !science125Id || (
-    reviewedFullTextResults.length + pageExcerpts.length >= 3
-    && reviewedProviderFamilies.size >= 2
+    eligibleEvidenceCount >= minimumAcceptedEvidence
+    && reviewedProviderFamilies.size >= minimumProviderFamilies
   )
   const canConfirmReview = selectedEvidenceCount > 0 && (
     job?.status === "SUCCEEDED" || pageExcerpts.length > 0
@@ -404,7 +414,8 @@ export function SearchPage({
           </div>
         )}
         {science125Id && science125Profile && science125Profile.providerReadiness.some((item) => !item.ready) && <p data-testid="science125-provider-readiness" className="mt-2 text-xs text-warning">必需检索源尚未就绪：{science125Profile.providerReadiness.filter((item) => !item.ready).flatMap((item) => item.missingConfigurationCodes).join("、") || "等待 provider cooldown 或服务恢复"}</p>}
-        {science125Id && job?.status === "SUCCEEDED" && diagnostics?.evidenceStatus === "evidence_insufficient" && <p data-testid="science125-evidence-insufficient" className="mt-2 text-xs text-warning">检索结果尚不足以作为生成证据：需审核至少 3 条全文证据，并覆盖至少两个来源家族。</p>}
+        {science125Id && job?.status === "SUCCEEDED" && diagnostics?.evidenceStatus === "evidence_insufficient" && <p data-testid="science125-evidence-insufficient" className="mt-2 text-xs text-warning">自动补检后仍未找到足够的中高相关全文；请从标为“可用于生成”的结果中审核证据，或补充你已核验的 PDF 页。</p>}
+        {science125Id && (diagnostics?.refinementQueries?.length ?? 0) > 0 && <p data-testid="science125-refinement-summary" className="mt-1 text-xs text-muted-foreground">系统已按该题目的领域路线自动执行 {diagnostics?.refinementQueries?.length} 条精确子查询；所有请求均受来源官方限频、缓存和冷却状态约束。</p>}
       </Panel>
 
       {science125Id && <DocumentPageEvidence
@@ -418,11 +429,16 @@ export function SearchPage({
       {(results.length > 0 || pageExcerpts.length > 0 || actionMessage) && (
         <div className="flex flex-wrap items-center gap-2 border border-border bg-card px-3 py-2">
           <span className="text-xs text-muted-foreground">已审核 {selectedResults.length} 条检索结果 · {pageExcerpts.length} 组 PDF 页</span>
+          {science125Id && <>
+            <span data-testid="science125-eligible-fulltext-count" className={eligibleEvidenceCount >= minimumAcceptedEvidence ? "text-xs text-success" : "text-xs text-warning"}>合格全文 {eligibleEvidenceCount}/{minimumAcceptedEvidence}</span>
+            <span data-testid="science125-provider-family-count" className={reviewedProviderFamilies.size >= minimumProviderFamilies ? "text-xs text-success" : "text-xs text-warning"}>来源家族 {reviewedProviderFamilies.size}/{minimumProviderFamilies}</span>
+            <span className="text-xs text-muted-foreground">仅中/高相关全文计入；metadata 和低相关结果仅作线索。</span>
+          </>}
           <Btn data-testid="use-literature-for-hypothesis" size="xs" icon={Lightbulb} disabled={!canConfirmReview} onClick={useAsHypothesis}>加入假设输入</Btn>
           <Btn size="xs" icon={PlusCircle} disabled={selectedResults.length === 0} onClick={() => void addToEvidence()}>加入证据库</Btn>
           <Btn size="xs" icon={Download} disabled={results.length === 0} onClick={exportReferences}>导出 References</Btn>
           {actionMessage && <span className="ml-auto text-xs text-success">{actionMessage}</span>}
-          {science125Id && !science125EvidenceReady && <span className="text-xs text-warning">全文证据或来源家族不足，暂不能生成。</span>}
+          {science125Id && !science125EvidenceReady && <span className="text-xs text-warning">尚未达到生成门槛。</span>}
         </div>
       )}
 
@@ -434,7 +450,7 @@ export function SearchPage({
         ) : results.length === 0 ? (
           <NoDataState title="未找到结果" />
         ) : (
-          <table className="w-full min-w-[980px] text-[13px]">
+          <table className="w-full min-w-[1100px] text-[13px]">
             <thead className="sticky top-0 z-10 bg-secondary text-xs text-muted-foreground">
               <tr>
                 <th className="w-10 px-2 py-2"><span className="sr-only">选择</span></th>
@@ -446,10 +462,11 @@ export function SearchPage({
                 <th className="px-2 py-2 text-left font-medium">平台</th>
                 <th className="px-2 py-2 text-left font-medium">访问状态</th>
                 <th className="px-2 py-2 text-left font-medium">相关度</th>
+                {science125Id && <th className="px-2 py-2 text-left font-medium">生成资格</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {results.map((result) => <SearchResultRow key={result.id} result={result} checked={selectedIds.has(result.id)} onToggle={() => toggleResult(result.id)} />)}
+              {results.map((result) => <SearchResultRow key={result.id} result={result} checked={selectedIds.has(result.id)} science125={Boolean(science125Id)} onToggle={() => toggleResult(result.id)} />)}
             </tbody>
           </table>
         )}
@@ -485,13 +502,19 @@ function formatHypothesisContext(results: LiteratureSearchResult[]) {
   return lines.join("\n")
 }
 
-function SearchResultRow({ result, checked, onToggle }: { result: LiteratureSearchResult; checked: boolean; onToggle: () => void }) {
+function SearchResultRow({ result, checked, science125, onToggle }: { result: LiteratureSearchResult; checked: boolean; science125: boolean; onToggle: () => void }) {
   const url = safeExternalUrl(result.url || (result.doi ? `https://doi.org/${result.doi}` : ""))
   const relevance = Math.max(0, Math.min(100, Math.round(result.relevanceScore * 100)))
   const hasAuditableAssessment = Boolean(result.relevanceBreakdown || result.relevanceLabel)
   const relevanceLabel = result.relevanceLabel || (relevance >= 75 ? "high" : relevance >= 50 ? "medium" : relevance >= 30 ? "low" : "very_low")
   const relevanceLabelZh = { high: "高", medium: "中", low: "低", very_low: "很低" }[relevanceLabel]
   const relevanceTone = { high: "green", medium: "blue", low: "orange", very_low: "gray" }[relevanceLabel] as "green" | "blue" | "orange" | "gray"
+  const eligibility = result.evidenceEligibility
+  const eligibilityReasons = (eligibility?.reasons || []).map((reason) => {
+    if (reason === "ACCESS_NOT_FULL_TEXT") return "仅元数据线索：未确认可访问全文"
+    if (reason === "RELEVANCE_BELOW_MEDIUM") return "相关度不足：未达到中等相关"
+    return reason
+  })
   const breakdown = result.relevanceBreakdown
   const relevanceTitle = breakdown
     ? [
@@ -524,6 +547,11 @@ function SearchResultRow({ result, checked, onToggle }: { result: LiteratureSear
           </> : <Tag tone="gray">待重算</Tag>}
         </div>
       </td>
+      {science125 && <td className="max-w-52 px-2 py-2">
+        {eligibility?.eligibleForGeneration === true ? <Tag tone="green">可用于生成</Tag>
+          : eligibility ? <span data-testid={`science125-evidence-ineligible-${result.id}`} className="text-xs text-warning">{eligibilityReasons.join("；") || "不计入生成门槛"}</span>
+            : <span className="text-xs text-muted-foreground">旧检索结果：请重新检索后判定</span>}
+      </td>}
     </tr>
   )
 }

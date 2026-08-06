@@ -10,6 +10,9 @@ from app.services.science125_retrieval import EvidenceRecord
 
 
 SCORING_VERSION = "science125-relevance-v1"
+ELIGIBILITY_VERSION = "science125-evidence-eligibility-v1"
+MIN_GENERATION_RELEVANCE_SCORE = 0.50
+_NON_FULL_TEXT_STATUSES = {"", "metadata", "metadata_only", "needs_verification"}
 _STOP_WORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "can", "for", "from", "how",
     "in", "is", "it", "of", "on", "or", "the", "to", "used", "using", "we", "what",
@@ -41,6 +44,23 @@ class RelevanceAssessment:
             "scoringVersion": self.scoring_version,
             **self.components,
             "matchedConcepts": list(self.matched_concepts),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceQualification:
+    relevance: RelevanceAssessment
+    eligible_for_generation: bool
+    reasons: tuple[str, ...]
+    eligibility_version: str = ELIGIBILITY_VERSION
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "eligibleForGeneration": self.eligible_for_generation,
+            "reasons": list(self.reasons),
+            "minimumRelevanceScore": MIN_GENERATION_RELEVANCE_SCORE,
+            "minimumRelevanceLabel": "medium",
+            "eligibilityVersion": self.eligibility_version,
         }
 
 
@@ -147,4 +167,30 @@ def assess_science125_relevance(
     )
 
 
-__all__ = ["RelevanceAssessment", "SCORING_VERSION", "assess_science125_relevance"]
+def qualify_science125_evidence(
+    question_id: str,
+    query: str,
+    record: EvidenceRecord,
+) -> EvidenceQualification:
+    relevance = assess_science125_relevance(question_id, query, record)
+    reasons: list[str] = []
+    if record.access_status.strip().casefold() in _NON_FULL_TEXT_STATUSES:
+        reasons.append("ACCESS_NOT_FULL_TEXT")
+    if relevance.score < MIN_GENERATION_RELEVANCE_SCORE:
+        reasons.append("RELEVANCE_BELOW_MEDIUM")
+    return EvidenceQualification(
+        relevance=relevance,
+        eligible_for_generation=not reasons,
+        reasons=tuple(reasons),
+    )
+
+
+__all__ = [
+    "ELIGIBILITY_VERSION",
+    "EvidenceQualification",
+    "MIN_GENERATION_RELEVANCE_SCORE",
+    "RelevanceAssessment",
+    "SCORING_VERSION",
+    "assess_science125_relevance",
+    "qualify_science125_evidence",
+]

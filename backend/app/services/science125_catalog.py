@@ -6,7 +6,7 @@ import json
 import unicodedata
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, get_args
+from typing import Any, Mapping, get_args
 
 from pydantic import ValidationError
 
@@ -302,12 +302,16 @@ def _public_configuration_code(code: str) -> str:
     return "PROVIDER_CONFIGURATION_REQUIRED"
 
 
-def get_science125_question_profile(question_id: str) -> Science125QuestionProfileOut:
+def get_science125_question_profile(
+    question_id: str,
+    *,
+    environ: Mapping[str, str] | None = None,
+) -> Science125QuestionProfileOut:
     route = get_science125_route(question_id)
     localization = get_science125_localization(question_id)
     try:
         retrieval_profile = get_science125_retrieval_profile(route.retrieval_profile)
-        readiness = profile_readiness(route.retrieval_profile)
+        readiness = profile_readiness(route.retrieval_profile, environ=environ)
     except KeyError:
         raise Science125RoutingError()
     required_ids = set(retrieval_profile.required_providers)

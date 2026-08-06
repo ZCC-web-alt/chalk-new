@@ -221,6 +221,13 @@ export type LiteratureSearchResult = {
     evidenceCompleteness: number
     matchedConcepts: string[]
   }
+  evidenceEligibility?: {
+    eligibleForGeneration: boolean
+    reasons: Array<"ACCESS_NOT_FULL_TEXT" | "RELEVANCE_BELOW_MEDIUM" | string>
+    minimumRelevanceScore: number
+    minimumRelevanceLabel: "medium"
+    eligibilityVersion: "science125-evidence-eligibility-v1"
+  }
   accessStatus: string
   needsFulltext: boolean
   warning: string
@@ -232,6 +239,16 @@ export type LiteratureSearchJobResult = {
   platformStatus: Record<string, Record<string, unknown>>
   warnings: string[]
   evidenceStatus?: "ready_for_review" | "evidence_insufficient"
+  evidenceReadiness?: {
+    eligibleFullTextCount: number
+    minimumAcceptedEvidence: number
+    providerFamilyCount: number
+    minimumProviderFamilies: number
+    providerFamilies: string[]
+    minimumRelevanceLabel: "medium"
+    ready: boolean
+  }
+  refinementQueries?: string[]
   providerDiagnostics?: Array<Record<string, unknown>>
   policyHashes?: Record<string, string>
   query: Record<string, unknown>

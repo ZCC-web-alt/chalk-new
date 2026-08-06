@@ -9,21 +9,27 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 from app.core.dependencies import current_user
 from app.core.errors import ApiError
-from app.services.api_keys import api_key_store
+from app.services import api_keys
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
 
 class ApiKeyInput(BaseModel):
-    provider: Literal["dashscope", "semantic_scholar", "ncbi", "crossref_mailto"] = "dashscope"
+    provider: Literal["dashscope", "semantic_scholar", "ncbi", "crossref_mailto", "nasa_ads"] = "dashscope"
     api_key: str = Field(alias="apiKey", min_length=1, max_length=500)
 
     model_config = {"populate_by_name": True}
 
 
 def _configured_credentials(user_id: int) -> dict[str, bool]:
-    configured = api_key_store.configured(user_id)
-    configured["nasa_ads"] = bool(os.getenv("SCIENCE125_NASA_ADS_API_TOKEN", "").strip())
+    configured = api_keys.api_key_store.configured(user_id)
+    environment = api_keys.api_key_store.science125_environment(user_id)
+    configured["dashscope"] = configured["dashscope"] or bool(os.getenv("DASHSCOPE_API_KEY", "").strip())
+    for provider, variable_names in api_keys.api_key_store.SCIENCE125_ENVIRONMENT_VARIABLES.items():
+        configured[provider] = configured[provider] or any(
+            bool(environment.get(variable_name, "").strip())
+            for variable_name in variable_names
+        )
     return configured
 
 
@@ -40,5 +46,5 @@ def set_api_key(payload: ApiKeyInput, user=Depends(current_user)) -> dict[str, d
             "Production credentials must be injected through the server environment.",
             status.HTTP_403_FORBIDDEN,
         )
-    api_key_store.set_key(user.id, payload.provider, payload.api_key.strip())
+    api_keys.api_key_store.set_key(user.id, payload.provider, payload.api_key.strip())
     return {"configured": _configured_credentials(user.id)}

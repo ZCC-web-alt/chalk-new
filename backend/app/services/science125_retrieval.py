@@ -1174,7 +1174,7 @@ _provider_defs: dict[str, ProviderDefinition] = {
         policy=_SEMANTIC_POLICY,
         required_env_vars=("SCIENCE125_SEMANTIC_SCHOLAR_API_KEY",),
         required_eligible=True,
-        capabilities=("metadata", "abstract", "citation_graph"),
+        capabilities=("metadata", "abstract", "citation_graph", "open_full_text"),
     ),
     "crossref": _provider(
         "crossref",
@@ -1193,6 +1193,7 @@ _provider_defs: dict[str, ProviderDefinition] = {
         family="scholarly_index",
         policy=_header_policy("openalex"),
         optional_env_vars=("SCIENCE125_OPENALEX_MAILTO",),
+        capabilities=("metadata", "abstract", "open_full_text"),
     ),
     "europe_pmc": _provider(
         "europe_pmc",
@@ -1665,6 +1666,30 @@ def _openalex_adapter(session: Any, environ: Mapping[str, str]) -> ProviderAdapt
                 abstract = " ".join(word for _, word in sorted(positions))
             record_id = str(item.get("id") or "").rstrip("/").rsplit("/", 1)[-1]
             stable_id = f"doi:{doi}" if doi else f"openalex:{record_id or _hash_text(title)[:24]}"
+            open_access = item.get("open_access") if isinstance(item.get("open_access"), Mapping) else {}
+            locations = tuple(
+                location
+                for location in (item.get("best_oa_location"), item.get("primary_location"))
+                if isinstance(location, Mapping)
+            )
+            pdf_url = next(
+                (
+                    str(location.get("pdf_url") or "").strip()
+                    for location in locations
+                    if str(location.get("pdf_url") or "").strip()
+                ),
+                "",
+            )
+            oa_url = str(open_access.get("oa_url") or "").strip()
+            landing_url = next(
+                (
+                    str(location.get("landing_page_url") or "").strip()
+                    for location in locations
+                    if str(location.get("landing_page_url") or "").strip()
+                ),
+                "",
+            )
+            has_open_full_text = bool(open_access.get("is_oa") and (pdf_url or oa_url))
             records.append(EvidenceRecord(
                 provider="openalex",
                 stable_id=stable_id,
@@ -1672,10 +1697,16 @@ def _openalex_adapter(session: Any, environ: Mapping[str, str]) -> ProviderAdapt
                 authors=authors,
                 abstract=abstract,
                 doi=doi,
-                full_text_url=str(item.get("primary_location", {}).get("landing_page_url") or "") or None
-                if isinstance(item.get("primary_location"), Mapping)
-                else None,
-                access_status="metadata",
+                full_text_url=pdf_url or oa_url or landing_url or None,
+                access_status="open_full_text" if has_open_full_text else "metadata",
+                license=next(
+                    (
+                        str(location.get("license") or "").strip()
+                        for location in locations
+                        if str(location.get("license") or "").strip()
+                    ),
+                    None,
+                ),
                 retrieved_at=_utc_now(),
             ))
         return ProviderSearchResponse(status_code=status, headers=_response_headers(response), records=tuple(records))
@@ -1754,6 +1785,11 @@ def _semantic_scholar_adapter(session: Any, environ: Mapping[str, str]) -> Provi
             doi = _normalize_doi(external.get("DOI"))
             authors = _author_names(item.get("authors"))
             open_access = item.get("openAccessPdf")
+            open_access_url = (
+                str(open_access.get("url") or "").strip()
+                if isinstance(open_access, Mapping)
+                else ""
+            )
             records.append(EvidenceRecord(
                 provider="semantic_scholar",
                 stable_id=f"semantic_scholar:{paper_id}",
@@ -1762,8 +1798,8 @@ def _semantic_scholar_adapter(session: Any, environ: Mapping[str, str]) -> Provi
                 abstract=_strip_markup(item.get("abstract")),
                 doi=doi,
                 arxiv_id=str(external.get("ArXiv") or "").strip() or None,
-                full_text_url=str(open_access.get("url") or "") or None if isinstance(open_access, Mapping) else None,
-                access_status="open_full_text" if isinstance(open_access, Mapping) and open_access.get("url") else "metadata",
+                full_text_url=open_access_url or None,
+                access_status="open_full_text" if open_access_url else "metadata",
                 retrieved_at=_utc_now(),
             ))
         return ProviderSearchResponse(status_code=status, headers=_response_headers(response), records=tuple(records))
@@ -2099,10 +2135,22 @@ def search_science125(
             diagnostics.append(
                 ProviderDiagnostic(
                     provider=provider_id,
-                    status="succeeded" if 200 <= response.status_code < 300 else "http_error",
+                    status=(
+                        "succeeded"
+                        if 200 <= response.status_code < 300
+                        else "credential_rejected"
+                        if response.status_code in {401, 403}
+                        else "http_error"
+                    ),
                     status_code=response.status_code,
                     attempts=request_result.attempts,
-                    message=None if 200 <= response.status_code < 300 else "Provider returned a non-success status.",
+                    message=(
+                        None
+                        if 200 <= response.status_code < 300
+                        else "Provider rejected the configured credential or denied this API operation."
+                        if response.status_code in {401, 403}
+                        else "Provider returned a non-success status."
+                    ),
                 )
             )
         except ProviderNotReadyError as exc:

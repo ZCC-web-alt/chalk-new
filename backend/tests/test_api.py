@@ -155,7 +155,13 @@ class ApiTestCase(unittest.TestCase):
     def test_science125_question_profile_exposes_routing_and_safe_provider_readiness(self) -> None:
         self.register("alice")
 
-        response = self.client.get("/api/science-125/questions/S125-006/profile")
+        empty_provider_environment = {
+            "SCIENCE125_CROSSREF_MAILTO": "",
+            "SCIENCE125_OPENALEX_MAILTO": "",
+            "SCIENCE125_SEMANTIC_SCHOLAR_API_KEY": "",
+        }
+        with patch.dict("os.environ", empty_provider_environment, clear=False):
+            response = self.client.get("/api/science-125/questions/S125-006/profile")
 
         self.assertEqual(response.status_code, 200, response.text)
         payload = response.json()
@@ -176,6 +182,25 @@ class ApiTestCase(unittest.TestCase):
         self.assertNotIn("SCIENCE125_", response.text)
         self.assertNotIn("Authorization", response.text)
         self.assertNotIn("api_keys.json", response.text)
+
+        for provider, value in [
+            ("semantic_scholar", "semantic-user-key"),
+            ("crossref_mailto", "researcher@example.com"),
+        ]:
+            saved = self.client.put(
+                "/api/settings/api-keys",
+                json={"provider": provider, "apiKey": value},
+            )
+            self.assertEqual(saved.status_code, 200, saved.text)
+        with patch.dict("os.environ", empty_provider_environment, clear=False):
+            configured_response = self.client.get("/api/science-125/questions/S125-006/profile")
+        self.assertEqual(configured_response.status_code, 200, configured_response.text)
+        configured_payload = configured_response.json()
+        self.assertTrue(configured_payload["ready"])
+        self.assertEqual(configured_payload["missingConfigurationCodes"], [])
+        self.assertTrue(all(item["ready"] for item in configured_payload["providerReadiness"] if item["providerId"] in {"crossref", "openalex", "semantic_scholar"}))
+        self.assertNotIn("semantic-user-key", configured_response.text)
+        self.assertNotIn("researcher@example.com", configured_response.text)
 
         unknown = self.client.get("/api/science-125/questions/S125-999/profile")
         self.assertEqual(unknown.status_code, 404, unknown.text)
@@ -292,12 +317,15 @@ class ApiTestCase(unittest.TestCase):
         self.assertNotIn(secret, response.text)
 
     def test_api_key_status_supports_literature_providers_without_returning_values(self) -> None:
+        from app.services import api_keys as api_keys_module
+
         self.register()
         for provider, value in [
             ("dashscope", "sk-test"),
             ("semantic_scholar", "semantic-test"),
             ("ncbi", "ncbi-test"),
             ("crossref_mailto", "researcher@example.com"),
+            ("nasa_ads", "ads-test-token"),
         ]:
             response = self.client.put(
                 "/api/settings/api-keys",
@@ -305,8 +333,7 @@ class ApiTestCase(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 200, response.text)
 
-        with patch.dict("os.environ", {"SCIENCE125_NASA_ADS_API_TOKEN": "ads-test-token"}):
-            status_response = self.client.get("/api/settings/api-keys")
+        status_response = self.client.get("/api/settings/api-keys")
         self.assertEqual(status_response.status_code, 200, status_response.text)
         configured = status_response.json()["configured"]
         self.assertEqual(configured, {
@@ -319,21 +346,25 @@ class ApiTestCase(unittest.TestCase):
         self.assertNotIn("sk-test", status_response.text)
         self.assertNotIn("semantic-test", status_response.text)
         self.assertNotIn("ads-test-token", status_response.text)
+        resolved = api_keys_module.api_key_store.science125_environment(1, environ={})
+        self.assertEqual(resolved["DASHSCOPE_API_KEY"], "sk-test")
+        self.assertEqual(resolved["SCIENCE125_SEMANTIC_SCHOLAR_API_KEY"], "semantic-test")
 
-        with patch.dict("os.environ", {"SCIENCE125_NASA_ADS_API_TOKEN": "ads-test-token"}):
-            updated_status = self.client.put(
-                "/api/settings/api-keys",
-                json={"provider": "semantic_scholar", "apiKey": "semantic-updated"},
-            )
+        updated_status = self.client.put(
+            "/api/settings/api-keys",
+            json={"provider": "semantic_scholar", "apiKey": "semantic-updated"},
+        )
         self.assertEqual(updated_status.status_code, 200, updated_status.text)
         self.assertTrue(updated_status.json()["configured"]["nasa_ads"])
         self.assertNotIn("ads-test-token", updated_status.text)
 
-        server_only = self.client.put(
+        updated_ads = self.client.put(
             "/api/settings/api-keys",
-            json={"provider": "nasa_ads", "apiKey": "must-not-be-stored"},
+            json={"provider": "nasa_ads", "apiKey": "ads-updated-token"},
         )
-        self.assertEqual(server_only.status_code, 422, server_only.text)
+        self.assertEqual(updated_ads.status_code, 200, updated_ads.text)
+        self.assertTrue(updated_ads.json()["configured"]["nasa_ads"])
+        self.assertNotIn("ads-updated-token", updated_ads.text)
 
         invalid = self.client.put(
             "/api/settings/api-keys",
@@ -358,11 +389,17 @@ class ApiTestCase(unittest.TestCase):
         path = self.tmp_path / "production-api-keys.json"
         store = ApiKeyStore(path)
         store.set_key(1, "dashscope", "development-key")
+        store.set_key(1, "nasa_ads", "development-ads-token")
         with patch("app.services.api_keys.get_settings", return_value=production):
             with self.assertRaises(RuntimeError):
                 store.set_key(1, "dashscope", "must-not-be-written")
             self.assertIsNone(store.get_key(1, "dashscope"))
             self.assertTrue(all(not value for value in store.configured(1).values()))
+            resolved = store.science125_environment(
+                1,
+                environ={"SCIENCE125_NASA_ADS_API_TOKEN": "server-ads-token"},
+            )
+            self.assertEqual(resolved["SCIENCE125_NASA_ADS_API_TOKEN"], "server-ads-token")
 
         persisted = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(persisted["1"]["dashscope"], "development-key")

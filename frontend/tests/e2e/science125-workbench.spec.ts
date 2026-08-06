@@ -53,6 +53,13 @@ const completedSearch = {
         evidenceCompleteness: 1,
         matchedConcepts: ["界面", "微观尺度", "测量方法"],
       },
+      evidenceEligibility: {
+        eligibleForGeneration: true,
+        reasons: [],
+        minimumRelevanceScore: 0.5,
+        minimumRelevanceLabel: "medium",
+        eligibilityVersion: "science125-evidence-eligibility-v1",
+      },
       accessStatus: "open_access",
       needsFulltext: false,
       warning: "",
@@ -69,6 +76,14 @@ const completedSearch = {
       url: "https://example.test/openalex",
       isOpenAccess: true,
       relevanceScore: 0.8,
+      relevanceLabel: "high",
+      evidenceEligibility: {
+        eligibleForGeneration: true,
+        reasons: [],
+        minimumRelevanceScore: 0.5,
+        minimumRelevanceLabel: "medium",
+        eligibilityVersion: "science125-evidence-eligibility-v1",
+      },
       accessStatus: "open_full_text",
       needsFulltext: false,
       warning: "",
@@ -85,6 +100,62 @@ const completedSearch = {
       url: "https://example.test/epmc",
       isOpenAccess: true,
       relevanceScore: 0.7,
+      relevanceLabel: "medium",
+      evidenceEligibility: {
+        eligibleForGeneration: true,
+        reasons: [],
+        minimumRelevanceScore: 0.5,
+        minimumRelevanceLabel: "medium",
+        eligibilityVersion: "science125-evidence-eligibility-v1",
+      },
+      accessStatus: "open_full_text",
+      needsFulltext: false,
+      warning: "",
+    }, {
+      id: "result-metadata",
+      title: "Interface metadata lead",
+      authors: "D. Researcher",
+      journal: "Metadata Index",
+      year: "2023",
+      doi: "10.0000/metadata",
+      abstract: "A relevant title without verified full text.",
+      sourcePlatform: "Crossref",
+      providerFamily: "doi_registry",
+      url: "https://example.test/metadata",
+      isOpenAccess: false,
+      relevanceScore: 0.85,
+      relevanceLabel: "high",
+      evidenceEligibility: {
+        eligibleForGeneration: false,
+        reasons: ["ACCESS_NOT_FULL_TEXT"],
+        minimumRelevanceScore: 0.5,
+        minimumRelevanceLabel: "medium",
+        eligibilityVersion: "science125-evidence-eligibility-v1",
+      },
+      accessStatus: "metadata",
+      needsFulltext: true,
+      warning: "",
+    }, {
+      id: "result-low",
+      title: "Low relevance full text",
+      authors: "E. Researcher",
+      journal: "Open Archive",
+      year: "2022",
+      doi: "10.0000/low",
+      abstract: "An unrelated administrative study.",
+      sourcePlatform: "OpenAlex",
+      providerFamily: "scholarly_index",
+      url: "https://example.test/low",
+      isOpenAccess: true,
+      relevanceScore: 0.2,
+      relevanceLabel: "very_low",
+      evidenceEligibility: {
+        eligibleForGeneration: false,
+        reasons: ["RELEVANCE_BELOW_MEDIUM"],
+        minimumRelevanceScore: 0.5,
+        minimumRelevanceLabel: "medium",
+        eligibilityVersion: "science125-evidence-eligibility-v1",
+      },
       accessStatus: "open_full_text",
       needsFulltext: false,
       warning: "",
@@ -92,6 +163,16 @@ const completedSearch = {
     platformStatus: {},
     warnings: [],
     evidenceStatus: "ready_for_review",
+    evidenceReadiness: {
+      eligibleFullTextCount: 3,
+      minimumAcceptedEvidence: 3,
+      providerFamilyCount: 3,
+      minimumProviderFamilies: 2,
+      providerFamilies: ["doi_registry", "scholarly_index", "biomedical_index"],
+      minimumRelevanceLabel: "medium",
+      ready: true,
+    },
+    refinementQueries: ["operando nanoscale interface spectroscopy"],
     query: {},
   },
   createdAt: "2026-07-15T00:00:00Z",
@@ -337,6 +418,24 @@ test("adds selected pages from an owned PDF to the reviewed hypothesis input", a
   await expect(page.getByTestId("start-hypothesis")).toBeVisible()
 })
 
+test("counts only medium-or-higher full text and explains every rejected lead", async ({ page }) => {
+  await mockScience125Workspace(page, {
+    jobId: completedSearch.id,
+    selectedIds: [],
+    confirmed: false,
+  })
+
+  await page.goto("/research/general/new?question=S125-006&stage=presearch")
+  await page.getByLabel("选择检索结果 Interface metadata lead").check()
+  await page.getByLabel("选择检索结果 Low relevance full text").check()
+
+  await expect(page.getByTestId("science125-eligible-fulltext-count")).toHaveText("合格全文 0/3")
+  await expect(page.getByTestId("science125-provider-family-count")).toHaveText("来源家族 0/2")
+  await expect(page.getByTestId("science125-evidence-ineligible-result-metadata")).toContainText("仅元数据线索")
+  await expect(page.getByTestId("science125-evidence-ineligible-result-low")).toContainText("相关度不足")
+  await expect(page.getByTestId("use-literature-for-hypothesis")).toBeDisabled()
+})
+
 test("does not let reviewed PDF pages alone bypass the evidence gate", async ({ page }) => {
   await mockScience125Workspace(page, {
     jobId: "science125-search-missing",
@@ -356,7 +455,9 @@ test("does not let reviewed PDF pages alone bypass the evidence gate", async ({ 
   await page.getByTestId("science125-page-input").fill("2, 4-5")
   await page.getByTestId("science125-add-page-excerpt").click()
   await expect(page.getByTestId("use-literature-for-hypothesis")).toBeDisabled()
-  await expect(page.getByText("全文证据或来源家族不足，暂不能生成。")).toBeVisible()
+  await expect(page.getByTestId("science125-eligible-fulltext-count")).toHaveText("合格全文 1/3")
+  await expect(page.getByTestId("science125-provider-family-count")).toHaveText("来源家族 1/2")
+  await expect(page.getByText("尚未达到生成门槛。")).toBeVisible()
 })
 
 test("does not apply an old Science 125 review selection to a newer search job", async ({ page }) => {

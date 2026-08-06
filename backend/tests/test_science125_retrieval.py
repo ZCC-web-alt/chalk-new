@@ -115,6 +115,37 @@ class Science125RateLimiterTestCase(unittest.TestCase):
         resumed.release()
         reopened.dispose()
 
+    def test_semantic_scholar_403_is_reported_as_credential_rejected_without_secret_details(self) -> None:
+        from app.services.science125_retrieval import (
+            ProviderRateStateStore,
+            ProviderSearchResponse,
+            search_science125,
+        )
+
+        store = ProviderRateStateStore(self.db_path)
+        try:
+            result = search_science125(
+                "retrieval.chem.interface.v1",
+                "microscopic interface measurement",
+                adapters={
+                    "semantic_scholar": lambda _provider, _query: ProviderSearchResponse(
+                        status_code=403,
+                    ),
+                },
+                store=store,
+                environ={"SCIENCE125_SEMANTIC_SCHOLAR_API_KEY": "private-key"},
+                provider_ids=("semantic_scholar",),
+                use_cache=False,
+            )
+        finally:
+            store.dispose()
+
+        diagnostic = result.diagnostics[0]
+        self.assertEqual(diagnostic.status, "credential_rejected")
+        self.assertEqual(diagnostic.status_code, 403)
+        self.assertIn("configured credential", diagnostic.message or "")
+        self.assertNotIn("private-key", repr(diagnostic))
+
         connection = sqlite3.connect(self.db_path)
         try:
             columns = {row[1] for row in connection.execute("PRAGMA table_info(science125_provider_rate_state)")}
@@ -356,6 +387,7 @@ class Science125RateLimiterTestCase(unittest.TestCase):
                     "doi": "https://doi.org/10.1000/openalex",
                     "authorships": [{"author": {"display_name": "A Researcher"}}],
                     "abstract_inverted_index": {"Microscopic": [0], "interface": [1]},
+                    "open_access": {"is_oa": True, "oa_url": "https://example.test/openalex.pdf"},
                 }],
             },
             "europepmc": {
@@ -419,7 +451,10 @@ class Science125RateLimiterTestCase(unittest.TestCase):
             },
             session=Session(),
         )
-        self.assertEqual(adapters["openalex"](None, "interface").records[0].doi, "10.1000/openalex")  # type: ignore[arg-type]
+        openalex = adapters["openalex"](None, "interface").records[0]  # type: ignore[arg-type]
+        self.assertEqual(openalex.doi, "10.1000/openalex")
+        self.assertEqual(openalex.access_status, "open_full_text")
+        self.assertEqual(openalex.full_text_url, "https://example.test/openalex.pdf")
         self.assertEqual(adapters["europe_pmc"](None, "editing").records[0].pmid, "7654321")  # type: ignore[arg-type]
         self.assertEqual(adapters["semantic_scholar"](None, "interface").records[0].stable_id, "semantic_scholar:paper-1")  # type: ignore[arg-type]
         self.assertEqual(adapters["clinical_trials"](None, "editing").records[0].stable_id, "nct:NCT00000001")  # type: ignore[arg-type]

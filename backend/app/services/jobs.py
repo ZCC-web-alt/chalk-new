@@ -85,7 +85,8 @@ from app.services.science125_retrieval import (
     profile_readiness,
     search_science125,
 )
-from app.services.science125_relevance import SCORING_VERSION, assess_science125_relevance
+from app.services.science125_queries import build_science125_refinement_queries
+from app.services.science125_relevance import SCORING_VERSION, qualify_science125_evidence
 from app.services.modeling_generation import (
     MsGuideExtraction,
     VaspExtraction,
@@ -1542,10 +1543,14 @@ class JobService:
 
     def _run_science125_literature_search(self, job: StoredJob, query_text: str) -> dict[str, Any]:
         science125_id = str(job.payload.get("science125Id") or "").strip()
+        credential_environment = api_keys.api_key_store.science125_environment(job.user_id)
         try:
             route = get_science125_route(science125_id)
             retrieval_profile = get_science125_retrieval_profile(route.retrieval_profile)
-            readiness = profile_readiness(route.retrieval_profile)
+            readiness = profile_readiness(
+                route.retrieval_profile,
+                environ=credential_environment,
+            )
         except (KeyError, Science125RoutingError) as exc:
             raise SafeJobError(
                 "SCIENCE125_ROUTING_UNAVAILABLE",
@@ -1559,21 +1564,106 @@ class JobService:
             )
 
         self._update_progress(job, progress=10, message="Searching Science 125 official literature APIs.")
-        result = search_science125(
-            route.retrieval_profile,
-            query_text,
-            adapters=default_provider_adapters(),
-            store=self.science125_rate_store,
-            parameters={"science125Id": science125_id},
-            window=f"daily:{datetime.now(UTC).date().isoformat()}",
-            user_scope=str(job.user_id),
-        )
-        self._raise_if_cancelled(job)
+        adapters = default_provider_adapters(environ=credential_environment)
+        search_window = f"daily:{datetime.now(UTC).date().isoformat()}"
+        searches: list[tuple[str, Any]] = []
 
+        def run_search(search_query: str, *, refinement_index: int | None = None) -> None:
+            parameters: dict[str, Any] = {"science125Id": science125_id}
+            if refinement_index is not None:
+                parameters["refinementIndex"] = refinement_index
+            searches.append((
+                search_query,
+                search_science125(
+                    route.retrieval_profile,
+                    search_query,
+                    adapters=adapters,
+                    store=self.science125_rate_store,
+                    environ=credential_environment,
+                    parameters=parameters,
+                    window=search_window,
+                    user_scope=str(job.user_id),
+                ),
+            ))
+
+        def record_identity(record: EvidenceRecord) -> str:
+            return str(
+                record.doi
+                or record.pmid
+                or record.arxiv_id
+                or record.ads_id
+                or record.stable_id
+                or record.title
+            ).strip().casefold()
+
+        def qualification(record: EvidenceRecord):
+            return qualify_science125_evidence(science125_id, query_text, record)
+
+        def merged_records() -> list[EvidenceRecord]:
+            merged: dict[str, EvidenceRecord] = {}
+            for _search_query, search_result in searches:
+                for record in search_result.evidence:
+                    identity = record_identity(record)
+                    previous = merged.get(identity)
+                    if previous is None:
+                        merged[identity] = record
+                        continue
+                    previous_quality = qualification(previous)
+                    current_quality = qualification(record)
+                    if (
+                        current_quality.eligible_for_generation,
+                        current_quality.relevance.score,
+                    ) > (
+                        previous_quality.eligible_for_generation,
+                        previous_quality.relevance.score,
+                    ):
+                        merged[identity] = record
+            return list(merged.values())
+
+        def readiness_for(records: list[EvidenceRecord]) -> dict[str, Any]:
+            eligible = [record for record in records if qualification(record).eligible_for_generation]
+            families = sorted({
+                self._science125_provider_family(record.provider)
+                for record in eligible
+            })
+            return {
+                "eligibleFullTextCount": len(eligible),
+                "minimumAcceptedEvidence": retrieval_profile.min_accepted_evidence,
+                "providerFamilyCount": len(families),
+                "minimumProviderFamilies": retrieval_profile.min_provider_families,
+                "providerFamilies": families,
+                "minimumRelevanceLabel": "medium",
+                "ready": (
+                    len(eligible) >= retrieval_profile.min_accepted_evidence
+                    and len(families) >= retrieval_profile.min_provider_families
+                ),
+            }
+
+        run_search(query_text)
+        self._raise_if_cancelled(job)
+        refinement_queries: list[str] = []
+        if not readiness_for(merged_records())["ready"]:
+            planned_refinements = build_science125_refinement_queries(
+                retrieval_profile.query_adapter,
+                query_text,
+            )
+            for index, refined_query in enumerate(planned_refinements, 1):
+                self._update_progress(
+                    job,
+                    progress=20 + index * 15,
+                    message=f"Refining the literature search ({index}/{len(planned_refinements)}).",
+                )
+                run_search(refined_query, refinement_index=index)
+                refinement_queries.append(refined_query)
+                self._raise_if_cancelled(job)
+
+        records = merged_records()
+        evidence_readiness = readiness_for(records)
         rows: list[dict[str, Any]] = []
-        for record in result.evidence:
+        for record in records:
             access_status = record.access_status or "metadata"
-            relevance = assess_science125_relevance(science125_id, query_text, record)
+            evidence_qualification = qualification(record)
+            relevance = evidence_qualification.relevance
             rows.append({
                 "id": record.stable_id,
                 "title": record.title,
@@ -1589,47 +1679,48 @@ class JobService:
                 "relevanceScore": relevance.score,
                 "relevanceLabel": relevance.label,
                 "relevanceBreakdown": relevance.to_dict(),
+                "evidenceEligibility": evidence_qualification.to_dict(),
                 "accessStatus": access_status,
                 "needsFulltext": not self._science125_evidence_is_full_text(record.to_dict()),
                 "warning": record.warning or "",
             })
         rows.sort(
             key=lambda row: (
+                not bool((row.get("evidenceEligibility") or {}).get("eligibleForGeneration")),
                 -float(row["relevanceScore"]),
                 str(row["sourcePlatform"]),
                 str(row["title"]).casefold(),
             )
         )
-        diagnostics = {item.provider: item.to_dict() for item in result.diagnostics}
-        full_text_records = [row for row in rows if self._science125_evidence_is_full_text(row)]
-        families = {
-            self._science125_provider_family(str(row["sourcePlatform"]))
-            for row in full_text_records
-        }
-        evidence_status = (
-            "ready_for_review"
-            if len(full_text_records) >= retrieval_profile.min_accepted_evidence
-            and len(families) >= retrieval_profile.min_provider_families
-            else "evidence_insufficient"
-        )
+        diagnostics: dict[str, Any] = {}
+        diagnostic_rows: list[dict[str, Any]] = []
+        for search_index, (search_query, search_result) in enumerate(searches):
+            for item in search_result.diagnostics:
+                key = item.provider if search_index == 0 else f"{item.provider}#refinement{search_index}"
+                payload = {**item.to_dict(), "query": search_query}
+                diagnostics[key] = payload
+                diagnostic_rows.append(payload)
+        evidence_status = "ready_for_review" if evidence_readiness["ready"] else "evidence_insufficient"
         warnings = [
-            item.message
-            for item in result.diagnostics
-            if item.message and item.status != "succeeded"
+            str(item["message"])
+            for item in diagnostic_rows
+            if item.get("message") and item.get("status") != "succeeded"
         ]
         return {
             "results": rows,
             "relevanceScoringVersion": SCORING_VERSION,
             "platformStatus": diagnostics,
-            "providerDiagnostics": [item.to_dict() for item in result.diagnostics],
+            "providerDiagnostics": diagnostic_rows,
             "warnings": warnings,
             "evidenceStatus": evidence_status,
+            "evidenceReadiness": evidence_readiness,
+            "refinementQueries": refinement_queries,
             "query": {
                 "queryText": query_text,
                 "science125Id": science125_id,
                 "retrievalProfile": route.retrieval_profile,
-                "queryHash": result.query_hash,
-                "cacheKey": result.cache_key,
+                "queryHash": searches[0][1].query_hash,
+                "cacheKey": searches[0][1].cache_key,
                 "maxProviders": retrieval_profile.max_providers,
             },
             "policyHashes": {
@@ -2191,16 +2282,17 @@ class JobService:
             json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
 
-    def _required_science125_llm_config(self):
-        api_key = str(os.getenv("DASHSCOPE_API_KEY") or "").strip()
+    def _required_science125_llm_config(self, user_id: int):
+        credential_environment = api_keys.api_key_store.science125_environment(user_id)
+        api_key = str(credential_environment.get("DASHSCOPE_API_KEY") or "").strip()
         if not api_key:
             raise SafeJobError(
                 "DASHSCOPE_API_KEY_REQUIRED",
-                "Science 125 generation requires the server DASHSCOPE_API_KEY.",
+                "Science 125 generation requires a configured DashScope API Key.",
             )
         try:
-            input_cost = float(str(os.getenv("QWEN_INPUT_COST_PER_MILLION_CNY") or ""))
-            output_cost = float(str(os.getenv("QWEN_OUTPUT_COST_PER_MILLION_CNY") or ""))
+            input_cost = float(str(credential_environment.get("QWEN_INPUT_COST_PER_MILLION_CNY") or ""))
+            output_cost = float(str(credential_environment.get("QWEN_OUTPUT_COST_PER_MILLION_CNY") or ""))
         except ValueError as exc:
             raise SafeJobError(
                 "SCIENCE125_MODEL_PRICING_REQUIRED",
@@ -2241,20 +2333,35 @@ class JobService:
                 "SCIENCE125_EVIDENCE_SNAPSHOT_INVALID",
                 "One or more reviewed evidence records are unavailable in the completed search snapshot.",
             )
+        query_context = search_result.get("query") if isinstance(search_result.get("query"), dict) else {}
+        query_text = str(query_context.get("queryText") or search_job.payload.get("queryText") or "").strip()
         records: list[dict[str, Any]] = []
         for evidence_id in reviewed_ids:
             row = by_id[evidence_id]
+            evidence_record = EvidenceRecord(
+                provider=str(row.get("sourcePlatform") or "").strip(),
+                stable_id=evidence_id,
+                title=str(row.get("title") or "").strip(),
+                abstract=str(row.get("abstract") or "").strip(),
+                doi=str(row.get("doi") or "").strip() or None,
+                full_text_url=str(row.get("url") or "").strip() or None,
+                access_status=str(row.get("accessStatus") or "metadata").strip() or "metadata",
+                warning=str(row.get("warning") or "").strip(),
+            )
+            evidence_qualification = qualify_science125_evidence(science125_id, query_text, evidence_record)
+            if not evidence_qualification.eligible_for_generation:
+                continue
             records.append({
-                "provider": str(row.get("sourcePlatform") or "").strip(),
+                "provider": evidence_record.provider,
                 "providerFamily": str(row.get("providerFamily") or "").strip()
-                or self._science125_provider_family(str(row.get("sourcePlatform") or "")),
+                or self._science125_provider_family(evidence_record.provider),
                 "stableId": evidence_id,
-                "title": str(row.get("title") or "").strip(),
-                "abstract": str(row.get("abstract") or "").strip(),
-                "doi": str(row.get("doi") or "").strip() or None,
-                "fullTextUrl": str(row.get("url") or "").strip() or None,
-                "accessStatus": str(row.get("accessStatus") or "metadata").strip() or "metadata",
-                "warning": str(row.get("warning") or "").strip() or None,
+                "title": evidence_record.title,
+                "abstract": evidence_record.abstract,
+                "doi": evidence_record.doi,
+                "fullTextUrl": evidence_record.full_text_url,
+                "accessStatus": evidence_record.access_status,
+                "warning": evidence_record.warning or None,
             })
 
         _page_context, page_snapshots = self._source_page_input(job, include_excerpt_text=True)
@@ -2283,7 +2390,7 @@ class JobService:
         if len(full_text_records) < 3 or len(families) < 2:
             raise SafeJobError(
                 "EVIDENCE_INSUFFICIENT",
-                "Science 125 generation requires at least three reviewed full-text evidence records from two provider families.",
+                "Science 125 generation requires at least three reviewed full-text evidence records with medium or higher relevance from two provider families.",
             )
         search_query = search_result.get("query") if isinstance(search_result.get("query"), dict) else {}
         snapshot = {
@@ -2319,7 +2426,7 @@ class JobService:
             raise SafeJobError("SCIENCE125_ROUTING_UNAVAILABLE", "The Science 125 routing profile is unavailable.") from exc
         records, evidence_snapshot, evidence_snapshot_hash, policy_hash = self._science125_reviewed_evidence(job)
         self._raise_if_cancelled(job)
-        config = self._required_science125_llm_config()
+        config = self._required_science125_llm_config(job.user_id)
         budget = llm_client().LLMBudget(max_total_tokens=20_000, max_estimated_cost_cny=3.0)
         request = ResearchGenerationRequest(
             question=question,
