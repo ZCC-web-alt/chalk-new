@@ -50,6 +50,18 @@ class FakeResponse:
             )
 
 
+class FakeStreamingResponse(FakeResponse):
+    def __init__(self, events: list[dict[str, Any]], *, headers: dict[str, str] | None = None) -> None:
+        super().__init__(200, {}, headers=headers)
+        self._events = events
+
+    def iter_lines(self, decode_unicode: bool = False):
+        for event in self._events:
+            line = f"data: {json.dumps(event, ensure_ascii=False)}"
+            yield line if decode_unicode else line.encode("utf-8")
+        yield "data: [DONE]" if decode_unicode else b"data: [DONE]"
+
+
 def success_response(
     *,
     request_id: str = "body-request-id",
@@ -213,6 +225,52 @@ class LLMTransportTestCase(unittest.TestCase):
 
                 self.assertEqual(result.content, CONTENT)
                 self.assertEqual(post.call_count, 2)
+
+    def test_reasoning_model_uses_streaming_response_to_avoid_waiting_for_complete_json(self) -> None:
+        streamed = FakeStreamingResponse(
+            [
+                {"id": "stream-request", "choices": [{"delta": {"content": "Structured "}}]},
+                {"id": "stream-request", "choices": [{"delta": {"content": "answer"}}]},
+                {
+                    "id": "stream-request",
+                    "choices": [{"delta": {}}],
+                    "usage": {"prompt_tokens": 13, "completion_tokens": 8, "total_tokens": 21},
+                },
+            ],
+            headers={"X-DashScope-Request-Id": "stream-header-request"},
+        )
+        config = llm_client.LLMConfig(api_key=API_KEY, model=llm_client.REASONING_MODEL)
+
+        with patch.object(llm_client.requests, "post", return_value=streamed) as post:
+            result = llm_client._chat_result(PROMPT, config, task="hypothesis")
+
+        self.assertEqual(result.status, "succeeded")
+        self.assertEqual(result.content, "Structured answer")
+        self.assertEqual(result.request_id, "stream-header-request")
+        self.assertEqual(usage_value(result.usage, "total_tokens"), 21)
+        self.assertTrue(post.call_args.kwargs["stream"])
+        self.assertTrue(post.call_args.kwargs["json"]["stream"])
+
+    def test_four_read_timeouts_return_safe_terminal_metadata(self) -> None:
+        events: list[Any] = []
+        failures = [requests.exceptions.ReadTimeout("read timed out") for _ in range(4)]
+
+        with (
+            patch.object(llm_client.requests, "post", side_effect=failures) as post,
+            patch("time.sleep"),
+            patch("random.uniform", return_value=0.0),
+        ):
+            result = self.call_result(telemetry_sink=events.append)
+
+        self.assertEqual(post.call_count, 4)
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(result.error_type, "timeout")
+        self.assertEqual(result.status_code, None)
+        self.assertEqual(result.request_id, None)
+        self.assertEqual(result.attempts, 4)
+        self.assertEqual(len(events), 4)
+        self.assertEqual(as_mapping(events[-1])["status"], "failed")
+        self.assertNotIn(PROMPT, json.dumps([as_mapping(event) for event in events], ensure_ascii=False))
 
     def test_retryable_failure_never_exceeds_four_total_attempts(self) -> None:
         always_unavailable = [FakeResponse(503, {"error": {"message": "temporary"}}) for _ in range(5)]

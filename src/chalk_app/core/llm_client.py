@@ -8,6 +8,7 @@ API Key 通过 LLMConfig 传入（用户在界面设置），或环境变量 DAS
 """
 
 import hashlib
+import json
 import os
 import random
 import time
@@ -219,6 +220,75 @@ def _parse_usage(data: Mapping[str, Any]) -> LLMUsage:
     if total_tokens == 0:
         total_tokens = prompt_tokens + completion_tokens
     return LLMUsage(prompt_tokens, completion_tokens, total_tokens)
+
+
+def _stream_payload(response: Any) -> Mapping[str, Any]:
+    """Collect an OpenAI-compatible SSE response into the normal chat shape.
+
+    Reasoning models can spend longer than a normal read timeout producing a
+    complete structured answer. Keeping the HTTP response streamed means each
+    received event refreshes the socket read timer while the final result is
+    still validated through the same JSON contract as non-streaming calls.
+    """
+    iter_lines = getattr(response, "iter_lines", None)
+    if not callable(iter_lines):
+        raw = response.json()
+        if not isinstance(raw, Mapping):
+            raise TypeError("DashScope returned a non-object JSON response.")
+        return raw
+
+    content_parts: list[str] = []
+    latest_event: Mapping[str, Any] | None = None
+    latest_usage: Mapping[str, Any] | None = None
+    saw_event = False
+
+    for raw_line in iter_lines(decode_unicode=True):
+        line = raw_line.decode("utf-8", errors="replace") if isinstance(raw_line, bytes) else str(raw_line)
+        line = line.strip()
+        if not line or not line.startswith("data:"):
+            continue
+        encoded_event = line[5:].strip()
+        if encoded_event == "[DONE]":
+            continue
+        try:
+            event = json.loads(encoded_event)
+        except json.JSONDecodeError as exc:
+            raise ValueError("DashScope returned malformed streaming JSON.") from exc
+        if not isinstance(event, Mapping):
+            raise TypeError("DashScope returned a non-object streaming event.")
+        saw_event = True
+        latest_event = event
+        usage = event.get("usage")
+        if isinstance(usage, Mapping):
+            latest_usage = usage
+        choices = event.get("choices")
+        if not isinstance(choices, list) or not choices:
+            continue
+        choice = choices[0]
+        if not isinstance(choice, Mapping):
+            continue
+        message = choice.get("delta")
+        if not isinstance(message, Mapping):
+            message = choice.get("message")
+        if not isinstance(message, Mapping):
+            continue
+        content = message.get("content")
+        if isinstance(content, str):
+            content_parts.append(content)
+
+    if not saw_event:
+        raise ValueError("DashScope returned an empty streaming response.")
+    if not content_parts:
+        raise ValueError("DashScope streaming response did not contain text content.")
+    payload: dict[str, Any] = {
+        "choices": [{"message": {"content": "".join(content_parts)}}],
+        "usage": dict(latest_usage or {}),
+    }
+    if latest_event is not None:
+        for key in ("id", "request_id", "requestId"):
+            if key in latest_event:
+                payload[key] = latest_event[key]
+    return payload
 
 
 def _response_request_id(response: Any, data: Mapping[str, Any] | None = None) -> str | None:
@@ -448,6 +518,12 @@ def _chat_result(
             {"role": "user", "content": prompt},
         ],
     }
+    # qwen3.8-max can take longer than one socket read window to finish a
+    # research-v1 object. SSE lets the client receive progress as it is
+    # generated instead of timing out while waiting for one buffered response.
+    use_streaming = model == REASONING_MODEL
+    if use_streaming:
+        request_payload["stream"] = True
     if completion_cap is not None:
         request_payload["max_tokens"] = completion_cap
 
@@ -465,10 +541,12 @@ def _chat_result(
                 },
                 json=request_payload,
                 timeout=request_timeout,
+                stream=use_streaming,
             )
-            latency_ms = max(0, int((time.perf_counter() - started) * 1000))
-            total_latency_ms += latency_ms
-            latency_recorded = True
+            if not use_streaming:
+                latency_ms = max(0, int((time.perf_counter() - started) * 1000))
+                total_latency_ms += latency_ms
+                latency_recorded = True
             status_code = _safe_nonnegative_int(getattr(response, "status_code", 0)) or None
             request_id = _response_request_id(response)
 
@@ -496,6 +574,10 @@ def _chat_result(
                 continue
 
             if status_code is not None and status_code >= 400:
+                if not latency_recorded:
+                    latency_ms = max(0, int((time.perf_counter() - started) * 1000))
+                    total_latency_ms += latency_ms
+                    latency_recorded = True
                 _emit_telemetry(
                     telemetry_sink,
                     _attempt_event(
@@ -525,7 +607,16 @@ def _chat_result(
                     status_code=status_code,
                 )
 
-            raw_data = response.json()
+            try:
+                raw_data = _stream_payload(response) if use_streaming else response.json()
+            finally:
+                close = getattr(response, "close", None)
+                if callable(close):
+                    close()
+            if not latency_recorded:
+                latency_ms = max(0, int((time.perf_counter() - started) * 1000))
+                total_latency_ms += latency_ms
+                latency_recorded = True
             if not isinstance(raw_data, Mapping):
                 raise TypeError("DashScope returned a non-object JSON response.")
             choices = raw_data.get("choices")
@@ -581,13 +672,15 @@ def _chat_result(
                 total_latency_ms += latency_ms
             reason = "timeout" if isinstance(exc, requests.exceptions.Timeout) else "connection_error"
             should_retry = attempt < attempts_allowed
+            response_request_id = _response_request_id(response) if response is not None else None
+            response_status = _safe_nonnegative_int(getattr(response, "status_code", 0)) or None
             _emit_telemetry(
                 telemetry_sink,
                 _attempt_event(
                     context=call_context,
                     model=model,
-                    request_id=None,
-                    status_code=None,
+                    request_id=response_request_id,
+                    status_code=response_status,
                     attempt=attempt,
                     usage=LLMUsage(),
                     latency_ms=latency_ms,
@@ -609,6 +702,8 @@ def _chat_result(
                 latency_ms=total_latency_ms,
                 error_type="timeout" if reason == "timeout" else "network",
                 detail=exc,
+                request_id=response_request_id,
+                status_code=response_status,
             )
         except requests.exceptions.RequestException as exc:
             if not latency_recorded:
