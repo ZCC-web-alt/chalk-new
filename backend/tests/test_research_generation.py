@@ -238,6 +238,8 @@ class DeterministicResearchTransportTestCase(unittest.TestCase):
         prompt = generation_prompt(request)
         self.assertIn("dedicated Science 125", prompt)
         self.assertIn("selection effects", prompt)
+        self.assertIn('"promptVersion":"science125-prompts-v2"', prompt)
+        self.assertIn("QUESTION MODULE [S125-054]", prompt)
         self.assertNotIn("electrocatalysis", prompt.lower())
 
         with patch.dict(os.environ, {"CHALK_WEB_ENV": "test"}, clear=False):
@@ -253,6 +255,18 @@ class DeterministicResearchTransportTestCase(unittest.TestCase):
         self.assertIsNone(result.output.chemistry)
         self.assertEqual(result.output.science125.question_id, "S125-054")  # type: ignore[union-attr]
         self.assertEqual(result.output.science125.evidence_status, "sufficient")  # type: ignore[union-attr]
+        self.assertEqual(
+            result.output.science125.domain_checks,  # type: ignore[union-attr]
+            [
+                "selection_effects",
+                "uncertainty_budget",
+                "measurement_plan",
+                "negative_evidence",
+                "data_leakage",
+                "replication",
+                "applicability_boundary",
+            ],
+        )
         self.assertEqual(result.output.evidence_claims[0].source_refs, ["doi:10.0000/cosmic-1"])
 
 

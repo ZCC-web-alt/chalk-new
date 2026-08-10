@@ -9,7 +9,11 @@ from typing import Any, Callable, Mapping, Protocol
 
 from app.core.legacy import llm_client as load_llm_client
 from app.schemas.research import ResearchOutput
-from app.services.science125_prompts import compose_science125_prompt
+from app.services.science125_prompts import (
+    SCIENCE125_PROMPT_VERSION_V1,
+    compose_science125_prompt,
+    resolve_science125_prompt_snapshot,
+)
 
 
 _llm_client = load_llm_client()
@@ -58,6 +62,7 @@ class ResearchGenerationRequest:
     science125_id: str | None = None
     science125_source_context: str = ""
     science125_routing: Mapping[str, Any] | None = None
+    science125_prompt_version: str | None = None
     evidence_records: tuple[dict[str, Any], ...] = ()
 
 
@@ -358,6 +363,7 @@ def _prompt(request: ResearchGenerationRequest) -> str:
             routing=request.science125_routing,
             evidence_records=request.evidence_records,
             schema_text=_schema_text(),
+            prompt_version=request.science125_prompt_version,
         )
     chemistry = (
         f"Use profile chemistry and chemistrySubdomain {request.chemistry_subdomain!r}."
@@ -411,15 +417,22 @@ def _science125_extension_payload(request: ResearchGenerationRequest) -> dict[st
     secondary = method_profile.get("secondary") or []
     if isinstance(secondary, list):
         methods.extend(str(value) for value in secondary)
-    checks = ["source_traceability", "negative_evidence", "measurement_plan", "applicability_boundary"]
-    if "observational" in methods:
-        checks.extend(["uncertainty_budget", "selection_effects"])
-    if "experimental" in methods or "clinical" in methods:
-        checks.extend(["replication", "safety_boundary"])
-    if "computational" in methods:
-        checks.extend(["data_leakage", "replication"])
-    if "proof" in methods:
-        checks.append("operational_definition")
+    snapshot = resolve_science125_prompt_snapshot(
+        question_id=request.science125_id,
+        routing=routing,
+        prompt_version=request.science125_prompt_version,
+    )
+    checks = list(snapshot.required_domain_checks)
+    if snapshot.prompt_version == SCIENCE125_PROMPT_VERSION_V1:
+        checks = ["source_traceability", "negative_evidence", "measurement_plan", "applicability_boundary"]
+        if "observational" in methods:
+            checks.extend(["uncertainty_budget", "selection_effects"])
+        if "experimental" in methods or "clinical" in methods:
+            checks.extend(["replication", "safety_boundary"])
+        if "computational" in methods:
+            checks.extend(["data_leakage", "replication"])
+        if "proof" in methods:
+            checks.append("operational_definition")
     stable_records = [
         record for record in request.evidence_records
         if str(record.get("stableId") or record.get("stable_id") or "").strip()

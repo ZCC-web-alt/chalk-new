@@ -45,6 +45,10 @@ class StandaloneLayoutTestCase(unittest.TestCase):
             relocated = Path(temp_dir) / "renamed-web-project"
             shutil.copytree(PROJECT_DIR / "backend" / "app", relocated / "backend" / "app")
             shutil.copytree(PROJECT_DIR / "src", relocated / "src")
+            shutil.copytree(
+                PROJECT_DIR / "benchmarks" / "science125",
+                relocated / "benchmarks" / "science125",
+            )
 
             probe = r'''
 import importlib
@@ -102,6 +106,7 @@ with TestClient(main.app) as client:
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertTrue((relocated / "data" / "app.db").is_file())
             self.assertTrue((relocated / "data" / "web.db").is_file())
+            self.assertTrue((relocated / "benchmarks" / "science125" / "science125-prompts-v2.json").is_file())
 
             override_dir = relocated / "external-runtime-data"
             override_probe = r'''

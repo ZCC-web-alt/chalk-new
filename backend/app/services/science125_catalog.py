@@ -32,6 +32,7 @@ from app.services.science125_localization import (
     get_science125_localization,
     load_science125_localizations,
 )
+from app.services.science125_prompts import resolve_science125_prompt_snapshot
 
 
 MANIFEST_PATH = PROJECT_ROOT / "benchmarks" / "science125" / "science125-v1.json"
@@ -275,6 +276,8 @@ _ENV_PROVIDER_IDS: dict[str, str] = {
     "SCIENCE125_NCBI_TOOL_EMAIL": "ncbi",
     "SCIENCE125_SEMANTIC_SCHOLAR_API_KEY": "semantic_scholar",
     "SCIENCE125_NASA_ADS_API_TOKEN": "nasa_ads",
+    "MATERIALS_PROJECT_API_KEY": "materials_project",
+    "MP_API_KEY": "materials_project",
 }
 
 
@@ -290,6 +293,8 @@ def _public_configuration_code(code: str) -> str:
             return "NASA_ADS_CREDENTIAL_REQUIRED"
         if "NCBI" in normalized:
             return "NCBI_CREDENTIAL_REQUIRED"
+        if "MATERIALS_PROJECT" in normalized or normalized == "MP_API_KEY":
+            return "MATERIALS_PROJECT_CREDENTIAL_REQUIRED"
     if normalized.endswith("_MAILTO"):
         if "CROSSREF" in normalized:
             return "CROSSREF_CONTACT_REQUIRED"
@@ -309,6 +314,13 @@ def get_science125_question_profile(
 ) -> Science125QuestionProfileOut:
     route = get_science125_route(question_id)
     localization = get_science125_localization(question_id)
+    try:
+        prompt_snapshot = resolve_science125_prompt_snapshot(
+            question_id=route.question_id,
+            routing=route.model_dump(by_alias=True),
+        )
+    except ValueError:
+        raise Science125RoutingError() from None
     try:
         retrieval_profile = get_science125_retrieval_profile(route.retrieval_profile)
         readiness = profile_readiness(route.retrieval_profile, environ=environ)
@@ -343,6 +355,7 @@ def get_science125_question_profile(
             "europe_pmc": "Europe PMC",
             "inspire": "INSPIRE HEP",
             "nasa_ads": "NASA ADS",
+            "materials_project": "Materials Project",
             "dblp": "DBLP",
             "gbif": "GBIF Literature",
             "osti": "OSTI",
@@ -406,6 +419,9 @@ def get_science125_question_profile(
         searchIntentZh=localization.search_intent_zh if localization else None,
         recommendedQuery=(localization.recommended_query or None) if localization else None,
         translationReviewStatus=localization.translation_review_status if localization else None,
+        promptVersion=prompt_snapshot.prompt_version,
+        promptModuleHash=prompt_snapshot.question_module_hash,
+        promptReviewStatus=prompt_snapshot.review_status,
         ready=readiness.ready and not profile_missing_codes,
         missingConfigurationCodes=profile_missing_codes,
         benchmarkDomain=route.benchmark_domain,
