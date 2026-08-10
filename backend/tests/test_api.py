@@ -57,7 +57,11 @@ class ApiTestCase(unittest.TestCase):
 
     def tearDown(self) -> None:
         from app.services.jobs import job_service
+        from app.services.science125_report_service import get_science125_report_service
 
+        if get_science125_report_service.cache_info().currsize:
+            get_science125_report_service().dispose()
+            get_science125_report_service.cache_clear()
         job_service.dispose_stores()
         self.engine.dispose()
 
@@ -173,6 +177,10 @@ class ApiTestCase(unittest.TestCase):
         self.assertIn("interfacial", payload["recommendedQuery"])
         self.assertEqual(payload["primarySubdomain"], "chem.interface")
         self.assertEqual(payload["retrievalProfile"], "retrieval.chem.interface.v1")
+        self.assertEqual(payload["promptVersion"], "science125-prompts-v2")
+        self.assertRegex(payload["promptModuleHash"], r"^[0-9a-f]{64}$")
+        self.assertEqual(payload["promptReviewStatus"], "draft_pending_review")
+        self.assertNotIn("RESEARCH OBJECTIVE", response.text)
         self.assertFalse(payload["ready"])
         self.assertTrue(payload["missingConfigurationCodes"])
         self.assertTrue(payload["providers"])
@@ -218,6 +226,81 @@ class ApiTestCase(unittest.TestCase):
         response = self.client.post("/api/science-125/questions", json={})
 
         self.assertEqual(response.status_code, 405, response.text)
+
+    def test_science125_batch_report_and_export_apis_are_user_scoped(self) -> None:
+        self.register("alice")
+        created = self.client.post(
+            "/api/science-125/batches",
+            json={"questionIds": ["S125-006"]},
+        )
+        self.assertEqual(created.status_code, 201, created.text)
+        batch = created.json()
+        batch_id = batch["batchId"]
+        self.assertEqual(batch["status"], "DRAFT")
+        self.assertEqual(batch["questionIds"], ["S125-006"])
+        self.assertEqual(batch["totalCount"], 1)
+        self.assertRegex(batch["manifestSha256"], r"^[0-9a-f]{64}$")
+        self.assertRegex(batch["routingSha256"], r"^[0-9a-f]{64}$")
+
+        listed = self.client.get("/api/science-125/batches")
+        self.assertEqual(listed.status_code, 200, listed.text)
+        self.assertEqual(listed.json()[0]["batchId"], batch_id)
+
+        docx_blocked = self.client.post(
+            f"/api/science-125/batches/{batch_id}/exports",
+            json={"format": "docx"},
+        )
+        self.assertEqual(docx_blocked.status_code, 409, docx_blocked.text)
+        self.assertEqual(docx_blocked.json()["error"]["code"], "BATCH_FINAL_DOCX_NOT_READY")
+
+        json_export = self.client.post(
+            f"/api/science-125/batches/{batch_id}/exports",
+            json={"format": "json"},
+        )
+        self.assertEqual(json_export.status_code, 201, json_export.text)
+        download = self.client.get(f"/api/science-125/exports/{json_export.json()['exportId']}")
+        self.assertEqual(download.status_code, 200, download.text)
+        self.assertIn("S125-006", download.text)
+
+        from app.services.science125_report_service import get_science125_report_service
+
+        service = get_science125_report_service()
+        report = service.store.upsert_report(
+            user_id=1,
+            batch_id=batch_id,
+            question_id="S125-006",
+            question="How can we measure interface phenomena on the microscopic level?",
+            question_zh="我们如何在微观尺度上测量界面现象？",
+            benchmark_domain="Chemistry",
+            primary_subdomain="chem.interface",
+            attempt_number=1,
+            status="SUCCEEDED",
+            evidence_status="sufficient",
+            selected_evidence_count=3,
+            provider_families=("doi_registry", "scholarly_index"),
+            selected_hypothesis_id="H2",
+            selected_hypothesis_confidence=0.72,
+            selected_hypothesis_reason="系统自动选择 H2。",
+            retrieval_query="microscopic interface measurement",
+            evidence_snapshot_sha256="c" * 64,
+        )
+        reports = self.client.get("/api/science-125/reports?questionId=S125-006")
+        self.assertEqual(reports.status_code, 200, reports.text)
+        self.assertEqual(reports.json()[0]["selectedHypothesisId"], "H2")
+        by_question = self.client.get("/api/science-125/reports/by-question/S125-006")
+        self.assertEqual(by_question.status_code, 200, by_question.text)
+        self.assertEqual(by_question.json()[0]["reportId"], report.id)
+        detail = self.client.get(f"/api/science-125/reports/{report.id}")
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertNotIn(str(self.tmp_path), detail.text)
+
+        self.client.post("/api/auth/logout")
+        self.register("bob")
+        bob_batches = self.client.get("/api/science-125/batches")
+        self.assertEqual(bob_batches.status_code, 200, bob_batches.text)
+        self.assertEqual(bob_batches.json(), [])
+        denied = self.client.get(f"/api/science-125/batches/{batch_id}")
+        self.assertEqual(denied.status_code, 404, denied.text)
 
     def test_science125_catalog_failure_returns_safe_service_error(self) -> None:
         from app.services.science125_catalog import Science125CatalogError
@@ -326,6 +409,7 @@ class ApiTestCase(unittest.TestCase):
             ("ncbi", "ncbi-test"),
             ("crossref_mailto", "researcher@example.com"),
             ("nasa_ads", "ads-test-token"),
+            ("materials_project", "mp-test-key"),
         ]:
             response = self.client.put(
                 "/api/settings/api-keys",
@@ -342,13 +426,17 @@ class ApiTestCase(unittest.TestCase):
             "ncbi": True,
             "crossref_mailto": True,
             "nasa_ads": True,
+            "materials_project": True,
         })
         self.assertNotIn("sk-test", status_response.text)
         self.assertNotIn("semantic-test", status_response.text)
         self.assertNotIn("ads-test-token", status_response.text)
+        self.assertNotIn("mp-test-key", status_response.text)
         resolved = api_keys_module.api_key_store.science125_environment(1, environ={})
         self.assertEqual(resolved["DASHSCOPE_API_KEY"], "sk-test")
         self.assertEqual(resolved["SCIENCE125_SEMANTIC_SCHOLAR_API_KEY"], "semantic-test")
+        self.assertEqual(resolved["MATERIALS_PROJECT_API_KEY"], "mp-test-key")
+        self.assertEqual(resolved["MP_API_KEY"], "mp-test-key")
 
         updated_status = self.client.put(
             "/api/settings/api-keys",

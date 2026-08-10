@@ -15,7 +15,14 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 
 class ApiKeyInput(BaseModel):
-    provider: Literal["dashscope", "semantic_scholar", "ncbi", "crossref_mailto", "nasa_ads"] = "dashscope"
+    provider: Literal[
+        "dashscope",
+        "semantic_scholar",
+        "ncbi",
+        "crossref_mailto",
+        "nasa_ads",
+        "materials_project",
+    ] = "dashscope"
     api_key: str = Field(alias="apiKey", min_length=1, max_length=500)
 
     model_config = {"populate_by_name": True}
