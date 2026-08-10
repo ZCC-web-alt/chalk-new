@@ -1126,6 +1126,7 @@ _HEADER_POLICY_SOURCES = {
     "osti": "https://www.osti.gov/api",
     "doaj": "https://doaj.org/api/docs",
     "clinical_trials": "https://clinicaltrials.gov/data-api/api",
+    "materials_project": "https://docs.materialsproject.org/downloading-data/using-the-api/tips-for-large-downloads",
 }
 
 
@@ -1265,6 +1266,17 @@ _provider_defs: dict[str, ProviderDefinition] = {
         policy=_header_policy("clinical_trials"),
         capabilities=("metadata", "study_registry"),
     ),
+    "materials_project": _provider(
+        "materials_project",
+        base_url="https://api.materialsproject.org/materials/summary/",
+        docs_url="https://docs.materialsproject.org/downloading-data/using-the-api/getting-started",
+        domains=("chemistry", "engineering_materials", "energy", "physics"),
+        family="materials_database",
+        policy=_header_policy("materials_project"),
+        required_env_vars=("MATERIALS_PROJECT_API_KEY",),
+        required_eligible=False,
+        capabilities=("structured_material_data",),
+    ),
 }
 
 # Keep the public provider id used by the routing manifest while sharing the
@@ -1299,14 +1311,19 @@ def _profile(
 
 RETRIEVAL_PROFILE_REGISTRY: Mapping[str, RetrievalProfile] = {
     "retrieval.mathematics.v1": _profile("retrieval.mathematics.v1", ("arxiv", "openalex", "crossref")),
-    "retrieval.chemistry.v1": _profile("retrieval.chemistry.v1", ("crossref", "openalex", "europe_pmc"), conditional=("arxiv", "osti", "semantic_scholar")),
+    "retrieval.chemistry.v1": _profile(
+        "retrieval.chemistry.v1",
+        ("crossref", "openalex", "europe_pmc"),
+        conditional=("materials_project", "arxiv", "osti", "semantic_scholar"),
+    ),
     "retrieval.chem.interface.v1": _profile(
         "retrieval.chem.interface.v1",
         ("crossref", "openalex", "europe_pmc"),
-        conditional=("semantic_scholar",),
+        conditional=("semantic_scholar", "materials_project"),
         required=("semantic_scholar",),
         required_env_vars=("SCIENCE125_CROSSREF_MAILTO", "SCIENCE125_OPENALEX_MAILTO"),
         query_adapter="chem_interface_v1",
+        max_providers=5,
     ),
     "retrieval.medicine.v1": _profile("retrieval.medicine.v1", ("europe_pmc", "ncbi", "crossref", "openalex"), conditional=("clinical_trials",)),
     "retrieval.biology.v1": _profile("retrieval.biology.v1", ("europe_pmc", "ncbi", "crossref", "openalex"), conditional=("clinical_trials",)),
@@ -1943,6 +1960,100 @@ def _nasa_ads_adapter(session: Any, environ: Mapping[str, str]) -> ProviderAdapt
     return adapter
 
 
+_ELEMENT_SYMBOLS = frozenset({
+    "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",
+    "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr",
+    "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe",
+    "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
+    "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra",
+    "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db",
+    "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og",
+})
+
+
+def _is_chemical_formula(value: str) -> bool:
+    tokens = re.findall(r"([A-Z][a-z]?)(?:\d+(?:\.\d+)?)?", value)
+    rebuilt = "".join(re.findall(r"[A-Z][a-z]?\d*(?:\.\d+)?", value))
+    return bool(tokens) and rebuilt == value and all(symbol in _ELEMENT_SYMBOLS for symbol in tokens)
+
+
+def _materials_project_formula(query: str) -> str | None:
+    normalized = " ".join(str(query).split())
+    if re.fullmatch(r"(?:[A-Z][a-z]?\d*){1,12}", normalized) and _is_chemical_formula(normalized):
+        return normalized
+    candidates = re.findall(r"\b(?:[A-Z][a-z]?\d*){1,12}\b", normalized)
+    for candidate in candidates:
+        element_count = len(re.findall(r"[A-Z][a-z]?", candidate))
+        if _is_chemical_formula(candidate) and (
+            any(character.isdigit() for character in candidate) or element_count >= 2
+        ):
+            return candidate
+    return None
+
+
+def _materials_project_adapter(session: Any, environ: Mapping[str, str]) -> ProviderAdapter:
+    def adapter(_provider: ProviderDefinition, query: str) -> ProviderSearchResponse:
+        api_key = str(environ.get("MATERIALS_PROJECT_API_KEY") or environ.get("MP_API_KEY") or "").strip()
+        formula = _materials_project_formula(query)
+        if not api_key or not formula:
+            return ProviderSearchResponse(status_code=200)
+        response = session.get(
+            "https://api.materialsproject.org/materials/summary/",
+            params={
+                "formula": formula,
+                "_fields": (
+                    "material_id,formula_pretty,band_gap,formation_energy_per_atom,"
+                    "energy_above_hull,total_magnetization,volume,density"
+                ),
+                "_limit": 20,
+            },
+            headers={"Accept": "application/json", "X-API-KEY": api_key},
+            timeout=(10, 30),
+        )
+        status = _response_status(response)
+        if status >= 400:
+            return ProviderSearchResponse(status_code=status, headers=_response_headers(response))
+        payload = _response_json(response)
+        items = payload.get("data", [])
+        if not isinstance(items, Sequence) or isinstance(items, (str, bytes)):
+            items = []
+        records: list[EvidenceRecord] = []
+        for item in items:
+            if not isinstance(item, Mapping):
+                continue
+            material_id = str(item.get("material_id") or "").strip()
+            formula_pretty = str(item.get("formula_pretty") or formula).strip()
+            if not material_id or not formula_pretty:
+                continue
+            property_parts = [
+                f"band_gap={item.get('band_gap')}",
+                f"formation_energy_per_atom={item.get('formation_energy_per_atom')}",
+                f"energy_above_hull={item.get('energy_above_hull')}",
+                f"density={item.get('density')}",
+            ]
+            records.append(EvidenceRecord(
+                provider="materials_project",
+                stable_id=f"materials_project:{material_id}",
+                title=f"Materials Project {material_id}: {formula_pretty}",
+                abstract="; ".join(property_parts),
+                full_text_url=f"https://materialsproject.org/materials/{material_id}",
+                access_status="metadata",
+                license="Materials Project terms apply",
+                warning=(
+                    "Materials Project structured enrichment is not a peer-reviewed full-text "
+                    "literature source and does not count toward the Science 125 evidence gate."
+                ),
+                retrieved_at=_utc_now(),
+            ))
+        return ProviderSearchResponse(
+            status_code=status,
+            headers=_response_headers(response),
+            records=tuple(records),
+        )
+
+    return adapter
+
+
 def _generic_json_adapter(provider_id: str, session: Any, environ: Mapping[str, str]) -> ProviderAdapter:
     definition = get_provider(provider_id)
 
@@ -2023,6 +2134,7 @@ def default_provider_adapters(
         "clinical_trials": _clinical_trials_adapter(client),
         "inspire": _inspire_adapter(client),
         "nasa_ads": _nasa_ads_adapter(client, env),
+        "materials_project": _materials_project_adapter(client, env),
     }
     return adapters
 

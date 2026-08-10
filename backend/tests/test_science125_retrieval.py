@@ -37,6 +37,11 @@ class Science125RetrievalRegistryTestCase(unittest.TestCase):
         self.assertRegex(arxiv.policy.policy_hash, r"^[0-9a-f]{64}$")
         self.assertIn("retrieval.chem.interface.v1", RETRIEVAL_PROFILE_REGISTRY)
         self.assertIn("crossref", get_retrieval_profile("retrieval.chem.interface.v1").primary)
+        self.assertIn("materials_project", get_retrieval_profile("retrieval.chem.interface.v1").conditional)
+        materials_project = get_provider("materials_project")
+        self.assertEqual(materials_project.family, "materials_database")
+        self.assertEqual(materials_project.capabilities, ("structured_material_data",))
+        self.assertEqual(materials_project.required_env_vars, ("MATERIALS_PROJECT_API_KEY",))
         self.assertGreaterEqual(len(PROVIDER_REGISTRY), 10)
 
     def test_readiness_does_not_expose_secret_and_reports_profile_missing_key(self) -> None:
@@ -365,6 +370,48 @@ class Science125RateLimiterTestCase(unittest.TestCase):
         self.assertEqual(crossref.records[0].doi, "10.1000/interface")
         self.assertEqual(arxiv.records[0].arxiv_id, "1234.5678")
         self.assertEqual(ncbi.records[0].pmid, "123456")
+
+    def test_materials_project_adapter_uses_configured_key_and_returns_non_literature_enrichment(self) -> None:
+        from app.services.science125_retrieval import default_provider_adapters
+
+        captured: dict[str, object] = {}
+
+        class Response:
+            status_code = 200
+            headers = {"X-RateLimit-Remaining": "99"}
+
+            def json(self):
+                return {
+                    "data": [{
+                        "material_id": "mp-149",
+                        "formula_pretty": "Si",
+                        "band_gap": 1.1,
+                        "formation_energy_per_atom": -0.25,
+                        "energy_above_hull": 0.0,
+                    }],
+                }
+
+        class Session:
+            def get(self, url, **kwargs):
+                captured["url"] = url
+                captured["kwargs"] = kwargs
+                return Response()
+
+        adapters = default_provider_adapters(
+            environ={"MATERIALS_PROJECT_API_KEY": "private-mp-key"},
+            session=Session(),
+        )
+        response = adapters["materials_project"](None, "DFT study of TiO2 interfaces")  # type: ignore[arg-type]
+
+        self.assertEqual(captured["url"], "https://api.materialsproject.org/materials/summary/")
+        kwargs = captured["kwargs"]
+        self.assertEqual(kwargs["headers"]["X-API-KEY"], "private-mp-key")  # type: ignore[index]
+        self.assertEqual(kwargs["params"]["formula"], "TiO2")  # type: ignore[index]
+        record = response.records[0]
+        self.assertEqual(record.stable_id, "materials_project:mp-149")
+        self.assertEqual(record.access_status, "metadata")
+        self.assertIn("structured enrichment", record.warning)
+        self.assertNotIn("private-mp-key", repr(record))
 
     def test_pilot_adapters_normalize_domain_specific_official_shapes(self) -> None:
         from app.services.science125_retrieval import default_provider_adapters

@@ -10,7 +10,14 @@ from app.core.config import get_settings
 
 
 class ApiKeyStore:
-    PROVIDERS = ("dashscope", "semantic_scholar", "ncbi", "crossref_mailto", "nasa_ads")
+    PROVIDERS = (
+        "dashscope",
+        "semantic_scholar",
+        "ncbi",
+        "crossref_mailto",
+        "nasa_ads",
+        "materials_project",
+    )
     SCIENCE125_ENVIRONMENT_VARIABLES: dict[str, tuple[str, ...]] = {
         "dashscope": ("DASHSCOPE_API_KEY",),
         "semantic_scholar": ("SCIENCE125_SEMANTIC_SCHOLAR_API_KEY",),
@@ -20,6 +27,7 @@ class ApiKeyStore:
             "SCIENCE125_OPENALEX_MAILTO",
         ),
         "nasa_ads": ("SCIENCE125_NASA_ADS_API_TOKEN",),
+        "materials_project": ("MATERIALS_PROJECT_API_KEY", "MP_API_KEY"),
     }
 
     def __init__(self, path: Path | None = None):

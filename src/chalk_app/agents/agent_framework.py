@@ -1862,6 +1862,9 @@ class SchemaValidator:
 
 class DatasetSourceEnricher:
 
+    def __init__(self, *, materials_project_api_key: str = ""):
+        self.materials_project_api_key = str(materials_project_api_key or "").strip()
+
     def enrich(self, hypothesis_json: str) -> str:
         from knowledge_base import ExternalKnowledgeAdapter
 
@@ -1872,7 +1875,10 @@ class DatasetSourceEnricher:
         material_names = self._extract_material_names(hypo_data)
         results = []
         for name in material_names[:5]:
-            mp_data = ExternalKnowledgeAdapter.query_material(name)
+            mp_data = ExternalKnowledgeAdapter.query_material(
+                name,
+                api_key=self.materials_project_api_key,
+            )
             if mp_data:
                 results.append({
                     "name": name,
@@ -1914,6 +1920,21 @@ class DatasetSourceEnricher:
     @staticmethod
     def _extract_material_names(hypo_data: dict) -> list:
         import re
+        element_symbols = {
+            "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",
+            "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr",
+            "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe",
+            "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
+            "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra",
+            "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db",
+            "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og",
+        }
+
+        def is_formula(value: str) -> bool:
+            parts = re.findall(r"([A-Z][a-z]?)(?:\d+(?:\.\d+)?)?", value)
+            rebuilt = "".join(re.findall(r"[A-Z][a-z]?\d*(?:\.\d+)?", value))
+            return bool(parts) and rebuilt == value and all(symbol in element_symbols for symbol in parts)
+
         names = []
         for field in ["technical_details", "methods", "problem_statement"]:
             text = str(hypo_data.get(field, ""))
@@ -1921,11 +1942,11 @@ class DatasetSourceEnricher:
                 r'\b([A-Z][a-z]?(?:\d+)?(?:[A-Z][a-z]?(?:\d+)?)+(?:/\w+)?)\b',
                 text,
             )
-            names.extend(formulas)
+            names.extend(formula for formula in formulas if is_formula(formula))
         datasets = hypo_data.get("datasets", {})
         if isinstance(datasets, dict):
             source = datasets.get("source", "")
-            if source:
+            if source and is_formula(str(source)):
                 names.append(source)
         return list(dict.fromkeys(names))[:10]
 
@@ -2298,6 +2319,7 @@ class HypothesisOrchestrator:
         source_doc_id: int = 0,
         source_doc_ids: Optional[List[int]] = None,
         enable_qwen_agent_tools: bool = True,
+        external_data_api_keys: Optional[Dict[str, str]] = None,
     ):
         self.config = _ensure_config(config)
         self.max_iterations = max_iterations
@@ -2330,6 +2352,11 @@ class HypothesisOrchestrator:
         if not self.source_doc_id and self.source_doc_ids:
             self.source_doc_id = self.source_doc_ids[0]
         self.enable_qwen_agent_tools = enable_qwen_agent_tools
+        self.external_data_api_keys = {
+            str(name): str(value)
+            for name, value in (external_data_api_keys or {}).items()
+            if str(value).strip()
+        }
         self.qwen_agent_tool_context: Dict = {}
 
         # 初始化所有 Agent
@@ -3408,7 +3435,9 @@ class HypothesisOrchestrator:
 
         dataset_source_ctx = ""
         try:
-            dataset_enricher = DatasetSourceEnricher()
+            dataset_enricher = DatasetSourceEnricher(
+                materials_project_api_key=self.external_data_api_keys.get("materials_project", ""),
+            )
             dataset_source_ctx = dataset_enricher.enrich(current_hypothesis)
         except Exception:
             pass

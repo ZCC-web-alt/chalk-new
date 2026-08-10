@@ -157,6 +157,51 @@ class JobHandlerTestCase(unittest.TestCase):
         self.assertEqual(captured["credentials"]["mailto"], "researcher@example.com")
         self.assertIn("researcher@example.com", captured["credentials"]["userAgent"])
 
+    def test_successful_science125_job_is_adopted_without_changing_job_success(self) -> None:
+        search = self.store.create(1, "literature_search", {"science125Id": "S125-006"})
+        self.store.update(search.id, status="SUCCEEDED", result={"results": []})
+        job = self.store.create(1, "hypothesis_generate", {
+            "science125Id": "S125-006",
+            "literatureSearchJobId": search.id,
+        })
+        self.service._handlers["hypothesis_generate"] = lambda _job: {
+            "researchOutput": {"contractVersion": "research-v1"},
+            "_reportSnapshot": {"reviewedEvidence": [{"abstract": "private evidence text"}]},
+        }
+        adopted = SimpleNamespace(
+            id="11111111-1111-1111-1111-111111111111",
+            batch_id="22222222-2222-2222-2222-222222222222",
+            source_type="interactive_job",
+            source_job_id=job.id,
+        )
+        report_service = SimpleNamespace(import_interactive_job=lambda **_kwargs: adopted)
+
+        with patch("app.services.science125_report_service.get_science125_report_service", return_value=report_service):
+            self.service._execute(job.id)
+
+        completed = self.store.get(job.id)
+        self.assertEqual(completed.status, "SUCCEEDED")
+        self.assertEqual(completed.result["science125Report"]["reportId"], adopted.id)
+        self.assertNotIn("_reportSnapshot", completed.result)
+
+    def test_report_adoption_failure_does_not_rewrite_successful_science125_job(self) -> None:
+        search = self.store.create(1, "literature_search", {"science125Id": "S125-006"})
+        self.store.update(search.id, status="SUCCEEDED", result={"results": []})
+        job = self.store.create(1, "hypothesis_generate", {
+            "science125Id": "S125-006",
+            "literatureSearchJobId": search.id,
+        })
+        result = {"researchOutput": {"contractVersion": "research-v1"}}
+        self.service._handlers["hypothesis_generate"] = lambda _job: result
+        report_service = SimpleNamespace(import_interactive_job=lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("report failed")))
+
+        with patch("app.services.science125_report_service.get_science125_report_service", return_value=report_service):
+            self.service._execute(job.id)
+
+        completed = self.store.get(job.id)
+        self.assertEqual(completed.status, "SUCCEEDED")
+        self.assertEqual(completed.result, result)
+
     def test_lab_suggestion_uses_owned_record_context_and_persists_result(self) -> None:
         from app.core.legacy import db
 
@@ -838,8 +883,52 @@ class JobHandlerTestCase(unittest.TestCase):
         self.assertEqual(captured["orchestratorOptions"]["multimodal_context"], "verified multimodal context")
         self.assertEqual(captured["orchestratorOptions"]["multimodal_evidence"]["figures"][0]["imageType"], "XRD")
         self.assertEqual(captured["orchestratorOptions"]["quantitative_report"]["scalingRelations"][0]["equation"], "y = x")
+        self.assertEqual(
+            captured["orchestratorOptions"]["external_data_api_keys"],
+            {"materials_project": "test-key"},
+        )
         extra = json.loads(hypotheses[0].extra_json)
         self.assertEqual(extra["multimodal_run_snapshots"][0]["revision"], 1)
+
+    def test_dataset_enricher_passes_the_user_materials_project_key(self) -> None:
+        from app.core.legacy import agent_framework
+
+        captured: dict[str, str] = {}
+
+        class ExternalKnowledgeAdapter:
+            @staticmethod
+            def query_material(formula, api_key=None, session=None):
+                captured["formula"] = formula
+                captured["apiKey"] = api_key
+                if formula != "TiO2":
+                    return None
+                return {
+                    "material_id": "mp-2657",
+                    "formula_pretty": "TiO2",
+                    "band_gap": 3.2,
+                    "formation_energy_per_atom": -3.1,
+                }
+
+            @staticmethod
+            def query_compound_properties(_name):
+                return None
+
+        hypothesis = json.dumps({
+            "technical_details": "Evaluate TiO2 electrocatalyst interfaces",
+            "methods": "DFT and operando spectroscopy",
+            "problem_statement": "Resolve the TiO2 active surface",
+        })
+        with patch.dict(
+            sys.modules,
+            {"knowledge_base": SimpleNamespace(ExternalKnowledgeAdapter=ExternalKnowledgeAdapter)},
+        ):
+            output = agent_framework().DatasetSourceEnricher(
+                materials_project_api_key="private-user-mp-key",
+            ).enrich(hypothesis)
+
+        self.assertEqual(captured, {"formula": "TiO2", "apiKey": "private-user-mp-key"})
+        self.assertIn("Materials Project", output)
+        self.assertNotIn("private-user-mp-key", output)
 
     def test_science125_input_assembler_uses_authoritative_context_and_hash_bound_pdf_pages(self) -> None:
         from app.services.document_excerpts import extract_document_page_excerpt

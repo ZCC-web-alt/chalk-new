@@ -9,6 +9,7 @@ import shutil
 import tempfile
 import uuid
 import zipfile
+from dataclasses import replace
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -596,14 +597,40 @@ class JobService:
                 return
             if current.status == "WAITING_FOR_FEEDBACK":
                 return
-            self.store.transition(
+            public_result = dict(result) if isinstance(result, dict) else result
+            if isinstance(public_result, dict):
+                public_result.pop("_reportSnapshot", None)
+            completed = self.store.transition(
                 current.id,
                 from_statuses=("RUNNING",),
                 status="SUCCEEDED",
                 progress=100,
                 message="Completed.",
-                result=result,
+                result=public_result,
             )
+            if completed and job.type == "hypothesis_generate" and job.payload.get("science125Id"):
+                # Report adoption is a separate, idempotent persistence step. A report failure
+                # must never rewrite an already successful Qwen job as failed.
+                try:
+                    from app.services.science125_report_service import get_science125_report_service
+
+                    search_job_id = str(job.payload.get("literatureSearchJobId") or "").strip()
+                    literature_job = self.store.get_for_user(job.user_id, search_job_id) if search_job_id else None
+                    import_job = replace(completed, result=result)
+                    report = get_science125_report_service().import_interactive_job(
+                        job=import_job,
+                        literature_job=literature_job,
+                    )
+                    enriched_result = dict(public_result) if isinstance(public_result, dict) else {"value": public_result}
+                    enriched_result["science125Report"] = {
+                        "reportId": report.id,
+                        "batchId": report.batch_id,
+                        "sourceType": report.source_type,
+                        "sourceJobId": report.source_job_id,
+                    }
+                    self.store.update(job.id, result=enriched_result)
+                except Exception:
+                    logger.exception("Science 125 job %s succeeded but report adoption failed", job.id)
         except JobCancelled:
             current = self.store.get(job.id) or job
             self.store.transition(
@@ -2504,6 +2531,12 @@ class JobService:
         output = generated.output.model_dump(by_alias=True, mode="json")
         return {
             "researchOutput": output,
+            "_reportSnapshot": {
+                "reviewedEvidence": records,
+                "evidenceSnapshot": evidence_snapshot,
+                "evidenceSnapshotHash": evidence_snapshot_hash,
+                "policyHash": policy_hash,
+            },
             "audit": {
                 "contractVersion": output["contractVersion"],
                 "provider": generated.call.provider,
@@ -2671,6 +2704,13 @@ class JobService:
             quantitative_context=quantitative_context,
             multimodal_evidence=multimodal_evidence,
             quantitative_report=quantitative_report,
+            external_data_api_keys={
+                "materials_project": (
+                    api_keys.api_key_store.get_key(job.user_id, "materials_project")
+                    or os.getenv("MATERIALS_PROJECT_API_KEY", "").strip()
+                    or os.getenv("MP_API_KEY", "").strip()
+                ),
+            },
         )
         orchestrator_holder["value"] = orchestrator
         result = orchestrator.run(

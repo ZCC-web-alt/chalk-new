@@ -2168,30 +2168,48 @@ class ExternalKnowledgeAdapter:
     # ── Materials Project API ──
 
     @staticmethod
-    def query_material(formula: str) -> Optional[dict]:
+    def query_material(
+        formula: str,
+        api_key: str | None = None,
+        session=None,
+    ) -> Optional[dict]:
         """
         查询 Materials Project 获取材料结构/性质。
 
-        需要 mp-api 包和 MP_API_KEY 环境变量。
+        API Key 可由调用方显式传入；legacy 桌面模式回退到环境变量。
         返回: {"formula": ..., "band_gap": ..., "formation_energy": ..., ...}
         """
-        api_key = os.getenv("MP_API_KEY", "")
-        if not api_key:
+        resolved_key = str(
+            api_key
+            or os.getenv("MATERIALS_PROJECT_API_KEY", "")
+            or os.getenv("MP_API_KEY", "")
+        ).strip()
+        normalized_formula = str(formula or "").strip()
+        if not resolved_key or not normalized_formula:
             return None
         try:
-            from mp_api.client import MPRester
-            with MPRester(api_key) as m:
-                docs = m.summary.search(
-                    formula=formula,
-                    fields=[
-                        "formula_pretty", "band_gap", "formation_energy_per_atom",
-                        "total_magnetization", "volume", "density",
-                    ],
-                )
-                if docs:
-                    return docs[0].dict()
-        except ImportError:
-            logger.debug("mp-api 未安装，跳过 Materials Project 查询")
+            import requests
+
+            client = session or requests
+            response = client.get(
+                "https://api.materialsproject.org/materials/summary/",
+                params={
+                    "formula": normalized_formula,
+                    "_fields": (
+                        "material_id,formula_pretty,band_gap,formation_energy_per_atom,"
+                        "energy_above_hull,total_magnetization,volume,density"
+                    ),
+                    "_limit": 1,
+                },
+                headers={"Accept": "application/json", "X-API-KEY": resolved_key},
+                timeout=(10, 30),
+            )
+            if response.status_code != 200:
+                return None
+            payload = response.json()
+            docs = payload.get("data", []) if isinstance(payload, dict) else []
+            if docs and isinstance(docs[0], dict):
+                return dict(docs[0])
         except Exception as e:
             logger.debug(f"Materials Project 查询失败: {e}")
         return None
