@@ -17,6 +17,7 @@ import {
   Settings,
   Cpu,
   BookMarked,
+  Files,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -52,6 +53,7 @@ const NAV: NavItem[] = [
 
 const DISCOVERY_NAV: Array<NavItem & { href: string }> = [
   { key: "research-general", label: "跨学科假设工作台", icon: Lightbulb, href: "/research/general/new" },
+  { key: "science125-reports", label: "Science 125 报告库", icon: Files, href: "/research/general/reports" },
 ]
 
 const HYPOTHESIS_KEYS = new Set(["hypothesis", "hyplib"])

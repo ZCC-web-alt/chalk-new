@@ -34,7 +34,7 @@ test("hypothesis generation starts with an honest empty state", async ({ page })
   await expect(page.getByTestId("start-hypothesis")).toBeDisabled()
 })
 
-test("API settings lets a user save NASA ADS without returning the token", async ({ page }) => {
+test("API settings lets a user save external provider keys without returning tokens", async ({ page }) => {
   await mockAuthenticatedEmptyWorkspace(page)
   let savedPayload: unknown = null
   await page.route("**/api/settings/api-keys", async (route) => {
@@ -51,6 +51,7 @@ test("API settings lets a user save NASA ADS without returning the token", async
           ncbi: true,
           crossref_mailto: true,
           nasa_ads: savedPayload !== null,
+          materials_project: savedPayload !== null,
         },
       }),
     })
@@ -69,4 +70,15 @@ test("API settings lets a user save NASA ADS without returning the token", async
   expect(savedPayload).toEqual({ provider: "nasa_ads", apiKey: "ads-secret-token" })
   await expect(nasaProvider).toContainText("已配置")
   await expect(nasaInput).toHaveValue("")
+
+  const materialsProvider = page.getByTestId("api-provider-materials_project")
+  const materialsInput = materialsProvider.getByLabel("Materials Project API Key")
+  await expect(materialsInput).toBeVisible()
+  await expect(materialsInput).toHaveAttribute("type", "password")
+  await materialsInput.fill("mp-secret-key")
+  await materialsProvider.getByRole("button", { name: "保存" }).click()
+
+  expect(savedPayload).toEqual({ provider: "materials_project", apiKey: "mp-secret-key" })
+  await expect(materialsProvider).toContainText("已配置")
+  await expect(materialsInput).toHaveValue("")
 })

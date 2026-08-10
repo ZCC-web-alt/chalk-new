@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import Link from "next/link"
 import {
   FileText,
   Lightbulb,
@@ -142,6 +143,7 @@ export function HypothesisPage({ seed }: { seed?: HypothesisSeed | null }) {
         intervalMs: 700,
         onUpdate: setJob,
       })
+      setJob(completed)
       if (completed.status === "SUCCEEDED" && completed.result?.researchOutput) {
         setScience125Output(completed.result.researchOutput)
         setDetail(null)
@@ -459,7 +461,7 @@ export function HypothesisPage({ seed }: { seed?: HypothesisSeed | null }) {
         )}
         <Panel title={science125Output ? "Science 125 结构化结果" : detail?.title || "假设结果"} icon={Lightbulb} className="min-h-96 xl:min-h-0 xl:flex-1" noPadding bodyClassName="flex min-h-0 flex-col">
           {science125Output ? (
-            <Science125ResultView output={science125Output} />
+            <Science125ResultView output={science125Output} report={job?.result?.science125Report} />
           ) : detail ? (
             <HypothesisDetailView detail={detail} onRefresh={() => loadDetail(detail.id)} />
           ) : running ? (
@@ -485,8 +487,21 @@ export function HypothesisPage({ seed }: { seed?: HypothesisSeed | null }) {
   )
 }
 
-function Science125ResultView({ output }: { output: ResearchOutput }) {
+function Science125ResultView({
+  output,
+  report,
+}: {
+  output: ResearchOutput
+  report?: HypothesisGenerationResult["science125Report"]
+}) {
   return <div data-testid="science125-research-output" className="min-h-0 space-y-5 overflow-auto p-4 text-sm">
+    {report && <section className="flex flex-wrap items-center justify-between gap-3 border border-success/35 bg-success-soft px-3 py-2" data-testid="science125-report-saved">
+      <div>
+        <p className="font-medium text-success">已保存到 Science 125 假设报告库</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">报告会保留审核证据、H1-H3、H0 与 Qwen 审计信息。</p>
+      </div>
+      <Link className="text-xs font-medium text-primary hover:underline" href={`/research/general/reports?report=${encodeURIComponent(report.reportId)}`}>查看报告</Link>
+    </section>}
     <section>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold text-foreground">研究简报</h3>

@@ -90,6 +90,12 @@ export type HypothesisGenerationResult = {
   warnings?: string[]
   artifacts?: HypothesisArtifact[]
   researchOutput?: ResearchOutput
+  science125Report?: {
+    reportId: string
+    batchId: string
+    sourceType: "interactive_job" | "batch"
+    sourceJobId?: string | null
+  }
   audit?: {
     contractVersion: "research-v1"
     provider: string

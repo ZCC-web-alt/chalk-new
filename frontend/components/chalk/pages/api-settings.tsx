@@ -5,7 +5,7 @@ import { Check, Cpu, Eye, EyeOff, KeyRound, RefreshCw, Search } from "lucide-rea
 import { apiFetch } from "@/lib/api/client"
 import { Btn, FieldLabel, Input, Panel, StatusDot, Tag } from "../ui"
 
-type Provider = "dashscope" | "semantic_scholar" | "ncbi" | "crossref_mailto" | "nasa_ads"
+type Provider = "dashscope" | "semantic_scholar" | "ncbi" | "crossref_mailto" | "nasa_ads" | "materials_project"
 type KeyStatus = { configured: Record<Provider, boolean> }
 
 type ProviderConfig = {
@@ -26,6 +26,12 @@ const PROVIDERS: ProviderConfig[] = [
     hint: "用于天文学和高能天体物理文献检索",
     placeholder: "输入 API Token",
   },
+  {
+    id: "materials_project",
+    label: "Materials Project API Key",
+    hint: "用于化学与 Science 125 化学题的材料结构和计算性质补充",
+    placeholder: "输入 Materials Project API Key",
+  },
 ]
 
 const EMPTY_STATUS: Record<Provider, boolean> = {
@@ -34,6 +40,7 @@ const EMPTY_STATUS: Record<Provider, boolean> = {
   ncbi: false,
   crossref_mailto: false,
   nasa_ads: false,
+  materials_project: false,
 }
 
 const EMPTY_VALUES: Record<Provider, string> = {
@@ -42,6 +49,7 @@ const EMPTY_VALUES: Record<Provider, string> = {
   ncbi: "",
   crossref_mailto: "",
   nasa_ads: "",
+  materials_project: "",
 }
 
 export function ApiSettingsPage() {

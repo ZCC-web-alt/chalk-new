@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { ArrowLeft, ArrowRight, BookOpenCheck, CircleCheck, FileCheck2, FlaskConical, Lightbulb, Search } from "lucide-react"
+import { ArrowLeft, ArrowRight, BookOpenCheck, CircleCheck, FileCheck2, FlaskConical, Lightbulb, Library, Search } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   getScience125QuestionContext,
@@ -221,6 +221,7 @@ export function Science125Workbench() {
     <header className="border-b border-border bg-topbar text-topbar-foreground">
       <div className="mx-auto flex min-h-14 max-w-7xl items-center gap-3 px-4">
         <Btn aria-label="返回主页面" size="xs" variant="ghost" icon={ArrowLeft} onClick={() => router.push("/")}>返回主页面</Btn>
+        <Btn size="xs" variant="ghost" icon={Library} onClick={() => router.push("/research/general/reports")}>报告库</Btn>
         <FlaskConical className="size-5 text-primary" />
         <span className="font-semibold">Chalk</span>
         <span className="hidden text-sm text-white/65 sm:inline">Science 125 跨学科假设</span>

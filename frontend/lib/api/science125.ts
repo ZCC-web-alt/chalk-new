@@ -1,4 +1,5 @@
 import { apiFetch } from "./client"
+import type { ResearchOutput } from "./generated/research-v1"
 
 export type Science125Question = {
   id: string
@@ -45,6 +46,9 @@ export type Science125QuestionProfile = {
   searchIntentZh?: string | null
   recommendedQuery?: string | null
   translationReviewStatus?: "reviewed" | "translated_pending_review" | null
+  promptVersion: "science125-prompts-v1" | "science125-prompts-v2"
+  promptModuleHash: string
+  promptReviewStatus: "draft_pending_review" | "team_reviewed"
   benchmarkDomain: string
   primarySubdomain: string
   crossDomainTags: string[]
@@ -71,6 +75,87 @@ export type Science125QuestionContext = {
   availability: "available"
 }
 
+export type Science125BatchStatus = "DRAFT" | "RUNNING" | "PAUSED" | "SUCCEEDED" | "FAILED" | "CANCELLED"
+export type Science125ReportStatus = "PENDING" | "RETRIEVING" | "EVIDENCE_READY" | "BLOCKED_EVIDENCE" | "GENERATING" | "SUCCEEDED" | "FAILED" | "RETRYING"
+export type Science125ExportFormat = "docx" | "json"
+
+export type Science125Export = {
+  exportId: string
+  batchId: string
+  reportId?: string | null
+  format: Science125ExportFormat
+  fileName: string
+  mimeType: string
+  sizeBytes: number
+  createdAt: string
+}
+
+export type Science125ReportSummary = {
+  reportId: string
+  batchId: string
+  questionId: string
+  question: string
+  questionZh?: string | null
+  benchmarkDomain: string
+  primarySubdomain: string
+  status: Science125ReportStatus
+  attemptNumber: number
+  selectedHypothesisId?: string | null
+  selectedHypothesisConfidence?: number | null
+  selectedHypothesisReason?: string | null
+  evidenceStatus: "sufficient" | "partial" | "insufficient"
+  selectedEvidenceCount: number
+  providerFamilies: string[]
+  model?: string | null
+  requestId?: string | null
+  totalTokens: number
+  latencyMs: number
+  estimatedCostCny: number
+  createdAt: string
+  updatedAt: string
+  sourceType: "interactive_job" | "batch"
+  sourceJobId?: string | null
+}
+
+export type Science125Report = Science125ReportSummary & {
+  retrievalQuery: string
+  retrievalQueryZh?: string | null
+  refinementQueries: string[]
+  retrievalSnapshot: Record<string, unknown>
+  evidenceSnapshot: Record<string, unknown>
+  evidenceSnapshotSha256: string
+  researchOutput?: ResearchOutput | null
+  provenance?: Record<string, unknown> | null
+  exportArtifacts: Science125Export[]
+}
+
+export type Science125BatchSummary = {
+  batchId: string
+  manifestVersion: "science125-v1"
+  manifestSha256: string
+  routingVersion: "science125-routing-v1"
+  routingSha256: string
+  promptVersion: string
+  promptRegistrySha256: string
+  model: string
+  status: Science125BatchStatus
+  totalCount: number
+  succeededCount: number
+  failedCount: number
+  blockedEvidenceCount: number
+  totalTokens: number
+  estimatedCostCny: number
+  startedAt?: string | null
+  completedAt?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type Science125Batch = Science125BatchSummary & {
+  questionIds: string[]
+  reports: Science125ReportSummary[]
+}
+
 type Science125Catalog = {
   manifestVersion: "science125-v1"
   routingVersion: "science125-routing-v1"
@@ -87,4 +172,71 @@ export async function getScience125QuestionContext(questionId: string) {
 
 export async function getScience125QuestionProfile(questionId: string) {
   return apiFetch<Science125QuestionProfile>(`/science-125/questions/${encodeURIComponent(questionId)}/profile`)
+}
+
+export async function createScience125Batch(questionIds?: string[]) {
+  return apiFetch<Science125Batch>("/science-125/batches", {
+    method: "POST",
+    body: JSON.stringify({ questionIds }),
+  })
+}
+
+export async function listScience125Batches() {
+  return apiFetch<Science125BatchSummary[]>("/science-125/batches")
+}
+
+export async function getScience125Batch(batchId: string) {
+  return apiFetch<Science125Batch>(`/science-125/batches/${encodeURIComponent(batchId)}`)
+}
+
+export async function resumeScience125Batch(batchId: string) {
+  return apiFetch<Science125Batch>(`/science-125/batches/${encodeURIComponent(batchId)}/resume`, { method: "POST" })
+}
+
+export async function pauseScience125Batch(batchId: string) {
+  return apiFetch<Science125Batch>(`/science-125/batches/${encodeURIComponent(batchId)}/pause`, { method: "POST" })
+}
+
+export async function retryScience125Batch(batchId: string, questionIds?: string[]) {
+  return apiFetch<Science125Batch>(`/science-125/batches/${encodeURIComponent(batchId)}/retries`, {
+    method: "POST",
+    body: JSON.stringify({ questionIds }),
+  })
+}
+
+export async function listScience125Reports(params: {
+  batchId?: string
+  questionId?: string
+  status?: string
+  benchmarkDomain?: string
+  sortBy?: "updatedAt" | "questionId" | "selectedHypothesisConfidence"
+  sortOrder?: "asc" | "desc"
+} = {}) {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value) query.set(key, value)
+  }
+  return apiFetch<Science125ReportSummary[]>(`/science-125/reports${query.toString() ? `?${query}` : ""}`)
+}
+
+export async function getScience125Report(reportId: string) {
+  return apiFetch<Science125Report>(`/science-125/reports/${encodeURIComponent(reportId)}`)
+}
+
+export async function createScience125ReportExport(reportId: string, format: Science125ExportFormat) {
+  return apiFetch<Science125Export>(`/science-125/reports/${encodeURIComponent(reportId)}/exports`, {
+    method: "POST",
+    body: JSON.stringify({ format }),
+  })
+}
+
+export async function createScience125BatchExport(batchId: string, format: Science125ExportFormat) {
+  return apiFetch<Science125Export>(`/science-125/batches/${encodeURIComponent(batchId)}/exports`, {
+    method: "POST",
+    body: JSON.stringify({ format }),
+  })
+}
+
+export function science125ExportUrl(exportId: string) {
+  return `/api/science-125/exports/${encodeURIComponent(exportId)}`
 }
