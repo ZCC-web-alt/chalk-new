@@ -29,6 +29,19 @@ class Science125QueryExpansionTestCase(unittest.TestCase):
 
         self.assertEqual(build_science125_refinement_queries("unknown", "query"), ())
 
+    def test_preproduction_subdomain_builds_server_controlled_refinements(self) -> None:
+        from app.services.science125_queries import build_science125_refinement_queries
+
+        queries = build_science125_refinement_queries(
+            "default",
+            "color pigments discover possible create colors",
+            primary_subdomain="chem.colorant_materials",
+        )
+
+        self.assertEqual(len(queries), 2)
+        self.assertTrue(any("chromophore" in query for query in queries))
+        self.assertTrue(any("solid-state synthesis" in query for query in queries))
+
 
 if __name__ == "__main__":
     unittest.main()

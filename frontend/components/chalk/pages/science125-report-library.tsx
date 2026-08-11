@@ -1,12 +1,13 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { AlertTriangle, ArrowLeft, BookOpenCheck, CircleCheck, Download, FileText, Library, Pause, Play, RefreshCw, Search } from "lucide-react"
+import { AlertTriangle, ArrowLeft, BookOpenCheck, CircleCheck, Download, FileText, Library, Pause, Play, RefreshCw, Search, Trash2 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   createScience125Batch,
   createScience125BatchExport,
   createScience125ReportExport,
+  deleteScience125Batch,
   getScience125Report,
   listScience125Batches,
   listScience125Reports,
@@ -22,6 +23,10 @@ import { ErrorState, LoadingState, NoDataState } from "../api-state"
 import { Btn, Input, Panel, Select, Tag } from "../ui"
 
 const REPORT_STATUSES: Array<Science125ReportStatus | ""> = ["", "PENDING", "RETRIEVING", "BLOCKED_EVIDENCE", "GENERATING", "SUCCEEDED", "FAILED", "RETRYING"]
+const PREPRODUCTION_QUESTION_IDS = [
+  "S125-001", "S125-004", "S125-006", "S125-013", "S125-024",
+  "S125-043", "S125-054", "S125-069", "S125-107", "S125-118",
+]
 
 function statusTone(status: string) {
   if (status === "SUCCEEDED") return "green" as const
@@ -141,6 +146,16 @@ export function Science125ReportLibraryPage() {
     })
   }
 
+  async function deleteBatch(batchId: string) {
+    if (!window.confirm("确定删除这个批次吗？该批次的题目报告和导出文件也会一并删除，此操作无法撤销。")) return
+    await runAction(`delete-batch-${batchId}`, async () => {
+      await deleteScience125Batch(batchId)
+      setActiveBatchId("")
+      setActiveReport(null)
+      setSelectedReportIds(new Set())
+    })
+  }
+
   return <main className="min-h-screen bg-background text-foreground">
     <header className="border-b border-border bg-topbar text-topbar-foreground">
       <div className="mx-auto flex min-h-14 max-w-7xl items-center gap-3 px-4">
@@ -153,7 +168,9 @@ export function Science125ReportLibraryPage() {
     <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 xl:grid-cols-[360px_minmax(0,1fr)]">
       <aside className="space-y-4">
         <Panel title="批次" icon={BookOpenCheck} bodyClassName="space-y-3">
+          <Btn className="w-full" size="xs" icon={BookOpenCheck} disabled={Boolean(busy)} onClick={() => void runAction("create-preproduction", async () => { await createScience125Batch(PREPRODUCTION_QUESTION_IDS) })}>创建 10 题预生产批次</Btn>
           <Btn className="w-full" size="xs" variant="primary" icon={FileText} disabled={Boolean(busy)} onClick={() => void runAction("create-full", async () => { await createScience125Batch() })}>创建 125 题正式批次</Btn>
+          <p className="text-xs leading-5 text-muted-foreground">预生产批次固定覆盖 10 道跨领域代表题，用于先验证证据获取、限频、费用和恢复流程。</p>
           {batches.length === 0 ? <NoDataState title="暂无批次" hint="创建批次后仍需手动点击开始；服务端会按题号顺序单并发执行。" /> : <div className="space-y-2">
             {batches.map((batch) => <button key={batch.batchId} type="button" onClick={() => setActiveBatchId(batch.batchId)} className={`w-full border px-3 py-2 text-left text-xs ${activeBatchId === batch.batchId || (!activeBatchId && batch === activeBatch) ? "border-primary/50 bg-primary-soft" : "border-border hover:bg-secondary"}`}>
               <div className="flex items-center justify-between gap-2">
@@ -171,6 +188,7 @@ export function Science125ReportLibraryPage() {
             <Btn size="xs" variant="ghost" icon={Pause} disabled={Boolean(busy) || activeBatch.status !== "RUNNING"} onClick={() => void runAction("pause", async () => { await pauseScience125Batch(activeBatch.batchId) })}>暂停</Btn>
             <Btn size="xs" variant="ghost" icon={Download} disabled={Boolean(busy)} onClick={() => void exportBatch(activeBatch.batchId, "json")}>导出 JSON</Btn>
             <Btn size="xs" variant="ghost" icon={Download} disabled={Boolean(busy) || activeBatch.totalCount !== 125 || activeBatch.succeededCount !== 125} onClick={() => void exportBatch(activeBatch.batchId, "docx")}>最终 DOCX</Btn>
+            <Btn className="col-span-2" size="xs" variant="danger" icon={Trash2} disabled={Boolean(busy) || activeBatch.status === "RUNNING"} onClick={() => void deleteBatch(activeBatch.batchId)}>删除批次</Btn>
           </div>}
         </Panel>
 

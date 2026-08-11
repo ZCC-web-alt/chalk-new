@@ -48,6 +48,7 @@ def _raise_science125_error(exc: Science125ReportError) -> None:
         "NOT_FOUND": status.HTTP_404_NOT_FOUND,
         "BATCH_FINAL_DOCX_NOT_READY": status.HTTP_409_CONFLICT,
         "REPORT_NOT_SUCCEEDED": status.HTTP_409_CONFLICT,
+        "SCIENCE125_BATCH_DELETE_CONFLICT": status.HTTP_409_CONFLICT,
         "UNSUPPORTED_EXPORT_FORMAT": status.HTTP_422_UNPROCESSABLE_CONTENT,
         "DASHSCOPE_API_KEY_REQUIRED": status.HTTP_409_CONFLICT,
         "SCIENCE125_MODEL_PRICING_REQUIRED": status.HTTP_409_CONFLICT,
@@ -177,6 +178,16 @@ def get_batch(batch_id: str, user=Depends(current_user)) -> Science125BatchOut:
     if out is None:
         raise ApiError("NOT_FOUND", "Science 125 batch not found.", status.HTTP_404_NOT_FOUND)
     return Science125BatchOut.model_validate(out)
+
+
+@router.delete("/batches/{batch_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_batch(batch_id: str, user=Depends(current_user)) -> None:
+    try:
+        batch = _report_service().delete_batch(user_id=user.id, batch_id=batch_id)
+    except Science125ReportError as exc:
+        _raise_science125_error(exc)
+    if batch is None:
+        raise ApiError("NOT_FOUND", "Science 125 batch not found.", status.HTTP_404_NOT_FOUND)
 
 
 @router.post("/batches/{batch_id}/pause", response_model=Science125BatchOut)

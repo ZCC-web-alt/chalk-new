@@ -560,6 +560,21 @@ class Science125ReportStore:
             row = session.get(Science125BatchRow, batch_id)
             return self._batch(row) if row else None
 
+    def delete_batch(self, *, user_id: int, batch_id: str) -> StoredScience125Batch | None:
+        with self.session_factory() as session:
+            row = session.scalar(
+                select(Science125BatchRow).where(
+                    Science125BatchRow.id == batch_id,
+                    Science125BatchRow.user_id == user_id,
+                )
+            )
+            if row is None:
+                return None
+            batch = self._batch(row)
+            session.delete(row)
+            session.commit()
+            return batch
+
     def list_batch_items(self, *, user_id: int, batch_id: str) -> list[StoredScience125BatchItem]:
         with self.session_factory() as session:
             rows = session.scalars(

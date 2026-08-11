@@ -564,3 +564,75 @@ test("downloads Science 125 report exports from the backend API", async ({ page 
 
   expect(new URL((await downloadRequest).url()).origin).toBe("http://127.0.0.1:8000")
 })
+
+test("creates the fixed 10-question preproduction batch and deletes an idle batch", async ({ page }) => {
+  const batchId = "44444444-4444-4444-4444-444444444444"
+  const timestamp = "2026-08-11T00:00:00Z"
+  const expectedQuestionIds = [
+    "S125-001", "S125-004", "S125-006", "S125-013", "S125-024",
+    "S125-043", "S125-054", "S125-069", "S125-107", "S125-118",
+  ]
+  let createdQuestionIds: string[] = []
+  let deletedBatchId = ""
+  const batch = {
+    batchId,
+    manifestVersion: "science125-v1",
+    manifestSha256: "a".repeat(64),
+    routingVersion: "science125-routing-v1",
+    routingSha256: "b".repeat(64),
+    promptVersion: "science125-prompts-v2",
+    promptRegistrySha256: "c".repeat(64),
+    model: "qwen3.8-max",
+    status: "DRAFT",
+    totalCount: 10,
+    succeededCount: 0,
+    failedCount: 0,
+    blockedEvidenceCount: 0,
+    totalTokens: 0,
+    estimatedCostCny: 0,
+    startedAt: null,
+    completedAt: null,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }
+
+  await page.route("**/api/auth/me", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ user: { id: 1, username: "science125-user", createdAt: timestamp } }),
+  }))
+  await page.route("**/api/health", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ status: "ok" }),
+  }))
+  await page.route("**/api/science-125/batches", async (route) => {
+    if (route.request().method() === "POST") {
+      createdQuestionIds = (await route.request().postDataJSON()).questionIds
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ...batch, questionIds: expectedQuestionIds, reports: [] }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([batch]) })
+  })
+  await page.route(/\/api\/science-125\/reports(?:\?.*)?$/, (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([]),
+  }))
+  await page.route(`**/api/science-125/batches/${batchId}`, async (route) => {
+    if (route.request().method() === "DELETE") {
+      deletedBatchId = batchId
+      await route.fulfill({ status: 204 })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...batch, questionIds: expectedQuestionIds, reports: [] }) })
+  })
+
+  await page.goto("/research/general/reports")
+  await page.getByRole("button", { name: "创建 10 题预生产批次" }).click()
+  expect(createdQuestionIds).toEqual(expectedQuestionIds)
+
+  page.once("dialog", (dialog) => dialog.accept())
+  await page.getByRole("button", { name: "删除批次" }).click()
+  await expect.poll(() => deletedBatchId).toBe(batchId)
+})

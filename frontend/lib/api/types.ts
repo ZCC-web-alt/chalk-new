@@ -219,7 +219,7 @@ export type LiteratureSearchResult = {
   relevanceScore: number
   relevanceLabel?: "high" | "medium" | "low" | "very_low"
   relevanceBreakdown?: {
-    scoringVersion: "science125-relevance-v1"
+    scoringVersion: "science125-relevance-v1" | "science125-relevance-v2"
     titleCoverage: number
     abstractCoverage: number
     conceptCoverage: number
@@ -232,7 +232,7 @@ export type LiteratureSearchResult = {
     reasons: Array<"ACCESS_NOT_FULL_TEXT" | "RELEVANCE_BELOW_MEDIUM" | string>
     minimumRelevanceScore: number
     minimumRelevanceLabel: "medium"
-    eligibilityVersion: "science125-evidence-eligibility-v1"
+    eligibilityVersion: "science125-evidence-eligibility-v1" | "science125-evidence-eligibility-v2"
   }
   accessStatus: string
   needsFulltext: boolean
@@ -241,7 +241,7 @@ export type LiteratureSearchResult = {
 
 export type LiteratureSearchJobResult = {
   results: LiteratureSearchResult[]
-  relevanceScoringVersion?: "science125-relevance-v1"
+  relevanceScoringVersion?: "science125-relevance-v1" | "science125-relevance-v2"
   platformStatus: Record<string, Record<string, unknown>>
   warnings: string[]
   evidenceStatus?: "ready_for_review" | "evidence_insufficient"

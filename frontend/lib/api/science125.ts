@@ -189,6 +189,10 @@ export async function getScience125Batch(batchId: string) {
   return apiFetch<Science125Batch>(`/science-125/batches/${encodeURIComponent(batchId)}`)
 }
 
+export async function deleteScience125Batch(batchId: string) {
+  return apiFetch<void>(`/science-125/batches/${encodeURIComponent(batchId)}`, { method: "DELETE" })
+}
+
 export async function resumeScience125Batch(batchId: string) {
   return apiFetch<Science125Batch>(`/science-125/batches/${encodeURIComponent(batchId)}/resume`, { method: "POST" })
 }

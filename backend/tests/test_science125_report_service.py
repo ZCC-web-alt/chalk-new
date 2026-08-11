@@ -382,6 +382,22 @@ class Science125InteractiveJobImportTestCase(unittest.TestCase):
         self.assertEqual(retried.status, "RETRYING")
         self.assertEqual(retried.attempt_number, 2)
 
+    def test_submitted_runner_reschedules_when_resume_races_with_pause_exit(self) -> None:
+        batch = self.service.create_batch(user_id=1, question_ids=("S125-006", "S125-043"))
+        self.store.mark_batch_running(user_id=1, batch_id=batch.id)
+
+        with patch.object(self.service, "_run_batch", return_value=batch), patch.object(
+            self.service,
+            "_submit_batch",
+        ) as submit:
+            self.service._run_submitted_batch(
+                batch_id=batch.id,
+                user_id=1,
+                question_ids=None,
+            )
+
+        submit.assert_called_once_with(batch_id=batch.id, user_id=1, question_ids=None)
+
     def test_final_docx_is_blocked_until_batch_has_125_succeeded_reports(self) -> None:
         from app.services.science125_report_service import Science125ReportError
 

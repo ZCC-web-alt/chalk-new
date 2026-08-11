@@ -5,12 +5,13 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Mapping
 
+from app.services.science125_catalog import get_science125_catalog
 from app.services.science125_localization import get_science125_localization
 from app.services.science125_retrieval import EvidenceRecord
 
 
-SCORING_VERSION = "science125-relevance-v1"
-ELIGIBILITY_VERSION = "science125-evidence-eligibility-v1"
+SCORING_VERSION = "science125-relevance-v2"
+ELIGIBILITY_VERSION = "science125-evidence-eligibility-v2"
 MIN_GENERATION_RELEVANCE_SCORE = 0.50
 _NON_FULL_TEXT_STATUSES = {"", "metadata", "metadata_only", "needs_verification"}
 _STOP_WORDS = {
@@ -69,7 +70,7 @@ def _normalized_text(value: str) -> str:
 
 
 def _tokens(value: str) -> tuple[str, ...]:
-    raw = re.findall(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", _normalized_text(value))
+    raw = re.findall(r"[a-z][a-z0-9]*", _normalized_text(value))
     return tuple(_TOKEN_ALIASES.get(token, token) for token in raw)
 
 
@@ -81,6 +82,13 @@ def _coverage(query_terms: tuple[str, ...], text_tokens: set[str]) -> float:
     if not query_terms:
         return 0.0
     return sum(term in text_tokens for term in query_terms) / len(query_terms)
+
+
+def _bounded_coverage(query_terms: tuple[str, ...], text_tokens: set[str], *, required_terms: int = 6) -> float:
+    if not query_terms:
+        return 0.0
+    denominator = min(len(query_terms), required_terms)
+    return min(1.0, sum(term in text_tokens for term in query_terms) / denominator)
 
 
 def _phrase_match(query_terms: tuple[str, ...], text: str) -> float:
@@ -109,6 +117,18 @@ def _concept_matches(question_id: str, text: str) -> tuple[float, tuple[str, ...
     return len(matched) / len(localization.relevance_concepts), tuple(matched)
 
 
+def _authoritative_question_terms(question_id: str, fallback_query: str) -> tuple[str, ...]:
+    try:
+        item = next(
+            question
+            for question in get_science125_catalog().data
+            if question.id == question_id
+        )
+    except (StopIteration, RuntimeError):
+        return _query_terms(fallback_query)
+    return _query_terms(item.question)
+
+
 def _evidence_completeness(record: EvidenceRecord) -> float:
     score = 0.0
     if record.abstract.strip():
@@ -135,14 +155,28 @@ def assess_science125_relevance(
     query: str,
     record: EvidenceRecord,
 ) -> RelevanceAssessment:
+    localization = get_science125_localization(question_id)
+    has_curated_concepts = bool(localization and localization.relevance_concepts)
     query_terms = _query_terms(query)
+    authoritative_terms = (
+        query_terms
+        if has_curated_concepts
+        else _authoritative_question_terms(question_id, query)
+    )
+    expanded_terms = tuple(dict.fromkeys((*authoritative_terms, *query_terms)))
     title_tokens = set(_tokens(record.title))
     abstract_tokens = set(_tokens(record.abstract))
     combined_text = f"{record.title}\n{record.abstract}"
-    title_coverage = _coverage(query_terms, title_tokens)
-    abstract_coverage = _coverage(query_terms, abstract_tokens)
+    title_coverage = _coverage(authoritative_terms, title_tokens)
+    abstract_coverage = _coverage(authoritative_terms, abstract_tokens)
+    if not has_curated_concepts:
+        title_coverage = max(title_coverage, _bounded_coverage(expanded_terms, title_tokens))
+        abstract_coverage = max(abstract_coverage, _bounded_coverage(expanded_terms, abstract_tokens))
     concept_coverage, matched_concepts = _concept_matches(question_id, combined_text)
-    phrase_match = _phrase_match(query_terms, combined_text)
+    phrase_match = max(
+        _phrase_match(authoritative_terms, combined_text),
+        _phrase_match(expanded_terms, combined_text) if not has_curated_concepts else 0.0,
+    )
     evidence_completeness = _evidence_completeness(record)
     components = {
         "titleCoverage": round(title_coverage, 4),
@@ -151,12 +185,16 @@ def assess_science125_relevance(
         "phraseMatch": round(phrase_match, 4),
         "evidenceCompleteness": round(evidence_completeness, 4),
     }
-    score = round(
+    non_concept_score = (
         0.30 * title_coverage
         + 0.20 * abstract_coverage
-        + 0.35 * concept_coverage
         + 0.10 * phrase_match
-        + 0.05 * evidence_completeness,
+        + 0.05 * evidence_completeness
+    )
+    score = round(
+        non_concept_score + 0.35 * concept_coverage
+        if has_curated_concepts
+        else non_concept_score / 0.65,
         4,
     )
     return RelevanceAssessment(

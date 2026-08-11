@@ -107,6 +107,51 @@ class Science125ReportStoreTestCase(unittest.TestCase):
         self.assertIsNone(store.get_export_for_user(user_id=2, export_id=export.id))
         self.assertEqual(store.list_exports_for_batch(user_id=1, batch_id=batch.id)[0].id, export.id)
 
+    def test_deleting_a_batch_is_user_scoped_and_cascades_reports_items_and_exports(self) -> None:
+        store = self.make_store()
+        batch = store.create_batch(
+            user_id=1,
+            question_ids=("S125-006",),
+            manifest_version="science125-v1",
+            manifest_sha256="a" * 64,
+            routing_version="science125-routing-v1",
+            routing_sha256="b" * 64,
+            prompt_version="science125-prompts-v2",
+            prompt_registry_sha256="c" * 64,
+            model="qwen3.8-max",
+        )
+        report = store.upsert_report(
+            user_id=1,
+            batch_id=batch.id,
+            question_id="S125-006",
+            question="How can we measure interface phenomena on the microscopic level?",
+            benchmark_domain="Chemistry",
+            primary_subdomain="chem.interface",
+            attempt_number=1,
+            status="SUCCEEDED",
+            evidence_status="sufficient",
+            selected_evidence_count=3,
+        )
+        export = store.create_export(
+            user_id=1,
+            batch_id=batch.id,
+            report_id=report.id,
+            format="json",
+            file_name="S125-006.json",
+            mime_type="application/json",
+            size_bytes=2,
+            managed_path=Path(self.tmp.name) / "S125-006.json",
+        )
+
+        self.assertIsNone(store.delete_batch(user_id=2, batch_id=batch.id))
+        deleted = store.delete_batch(user_id=1, batch_id=batch.id)
+
+        self.assertEqual(deleted.id, batch.id)  # type: ignore[union-attr]
+        self.assertIsNone(store.get_batch_for_user(user_id=1, batch_id=batch.id))
+        self.assertEqual(store.list_batch_items(user_id=1, batch_id=batch.id), [])
+        self.assertEqual(store.list_reports(user_id=1, batch_id=batch.id), [])
+        self.assertIsNone(store.get_export_for_user(user_id=1, export_id=export.id))
+
     def test_existing_batch_table_gains_prompt_registry_hash_without_losing_rows(self) -> None:
         store = self.make_store()
         batch = store.create_batch(

@@ -1625,7 +1625,8 @@ class JobService:
             ).strip().casefold()
 
         def qualification(record: EvidenceRecord):
-            return qualify_science125_evidence(science125_id, query_text, record)
+            scoring_query = " ".join(search_query for search_query, _result in searches)
+            return qualify_science125_evidence(science125_id, scoring_query or query_text, record)
 
         def merged_records() -> list[EvidenceRecord]:
             merged: dict[str, EvidenceRecord] = {}
@@ -1674,6 +1675,7 @@ class JobService:
             planned_refinements = build_science125_refinement_queries(
                 retrieval_profile.query_adapter,
                 query_text,
+                primary_subdomain=route.primary_subdomain,
             )
             for index, refined_query in enumerate(planned_refinements, 1):
                 self._update_progress(

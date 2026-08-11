@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -549,6 +550,7 @@ class Science125ReportService:
         self._rate_store = ProviderRateStateStore(self._store.path)
         self._ledger = ModelCallLedgerStore(self._store.path)
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="chalk-science125-batch")
+        self._active_batch_ids: set[str] = set()
 
     @property
     def store(self) -> Science125ReportStore:
@@ -577,6 +579,25 @@ class Science125ReportService:
 
     def list_batches(self, *, user_id: int) -> list[StoredScience125Batch]:
         return self._store.list_batches(user_id=user_id)
+
+    def delete_batch(self, *, user_id: int, batch_id: str) -> StoredScience125Batch | None:
+        with self._lock:
+            batch = self._store.get_batch_for_user(user_id=user_id, batch_id=batch_id)
+            if batch is None:
+                return None
+            if batch.status == "RUNNING" or batch_id in self._active_batch_ids:
+                raise Science125ReportError(
+                    "SCIENCE125_BATCH_DELETE_CONFLICT",
+                    "A running Science 125 batch cannot be deleted. Pause it and wait for the current item to stop.",
+                )
+            deleted = self._store.delete_batch(user_id=user_id, batch_id=batch_id)
+            if deleted is None:
+                return None
+            user_root = (science125_exports_dir() / str(user_id)).resolve()
+            batch_root = (user_root / batch_id).resolve()
+            if batch_root.is_relative_to(user_root):
+                shutil.rmtree(batch_root, ignore_errors=True)
+            return deleted
 
     def get_batch(self, *, user_id: int, batch_id: str) -> StoredScience125Batch | None:
         return self._store.get_batch_for_user(user_id=user_id, batch_id=batch_id)
@@ -833,7 +854,7 @@ class Science125ReportService:
         batch = self._store.mark_batch_running(user_id=user_id, batch_id=batch_id)
         if batch is None:
             return None
-        self._executor.submit(self.run_batch, batch_id=batch.id, user_id=user_id)
+        self._submit_batch(batch_id=batch.id, user_id=user_id)
         return batch
 
     def retry_batch(
@@ -854,8 +875,53 @@ class Science125ReportService:
         if not retry_ids:
             return existing_batch
         batch = self._store.mark_batch_running(user_id=user_id, batch_id=batch_id)
-        self._executor.submit(self.run_batch, batch_id=batch.id, user_id=user_id, question_ids=retry_ids)
+        self._submit_batch(batch_id=batch.id, user_id=user_id, question_ids=retry_ids)
         return batch
+
+    def _submit_batch(
+        self,
+        *,
+        batch_id: str,
+        user_id: int,
+        question_ids: tuple[str, ...] | None = None,
+    ) -> None:
+        with self._lock:
+            if batch_id in self._active_batch_ids:
+                return
+            self._active_batch_ids.add(batch_id)
+        try:
+            self._executor.submit(
+                self._run_submitted_batch,
+                batch_id=batch_id,
+                user_id=user_id,
+                question_ids=question_ids,
+            )
+        except RuntimeError:
+            with self._lock:
+                self._active_batch_ids.discard(batch_id)
+            raise
+
+    def _run_submitted_batch(
+        self,
+        *,
+        batch_id: str,
+        user_id: int,
+        question_ids: tuple[str, ...] | None,
+    ) -> StoredScience125Batch | None:
+        try:
+            return self._run_batch(batch_id=batch_id, user_id=user_id, question_ids=question_ids)
+        finally:
+            with self._lock:
+                self._active_batch_ids.discard(batch_id)
+            batch = self._store.get_batch_for_user(user_id=user_id, batch_id=batch_id)
+            if batch is not None and batch.status == "RUNNING":
+                items = self._store.list_batch_items(user_id=user_id, batch_id=batch_id)
+                if any(item.status in {"PENDING", "RETRYING"} for item in items):
+                    self._submit_batch(
+                        batch_id=batch_id,
+                        user_id=user_id,
+                        question_ids=question_ids,
+                    )
 
     def _required_llm_config(self, user_id: int):
         credential_environment = api_keys.api_key_store.science125_environment(user_id)
@@ -901,11 +967,37 @@ class Science125ReportService:
         user_id: int | None = None,
         question_ids: tuple[str, ...] | None = None,
     ) -> StoredScience125Batch | None:
+        with self._lock:
+            if batch_id in self._active_batch_ids:
+                raise Science125ReportError(
+                    "SCIENCE125_BATCH_ALREADY_RUNNING",
+                    "The Science 125 batch already has an active runner.",
+                )
+            self._active_batch_ids.add(batch_id)
+        try:
+            batch = self._store.get_batch(batch_id=batch_id)
+            if batch is None:
+                return None
+            owner_id = user_id if user_id is not None else batch.user_id
+            self._store.mark_batch_running(user_id=owner_id, batch_id=batch_id)
+            return self._run_batch(batch_id=batch_id, user_id=user_id, question_ids=question_ids)
+        finally:
+            with self._lock:
+                self._active_batch_ids.discard(batch_id)
+
+    def _run_batch(
+        self,
+        *,
+        batch_id: str,
+        user_id: int | None = None,
+        question_ids: tuple[str, ...] | None = None,
+    ) -> StoredScience125Batch | None:
         batch = self._store.get_batch(batch_id=batch_id)
         if batch is None:
             return None
         owner_id = user_id if user_id is not None else batch.user_id
-        self._store.mark_batch_running(user_id=owner_id, batch_id=batch_id)
+        if batch.status != "RUNNING":
+            return batch
         items = self._store.list_batch_items_for_runner(batch_id=batch_id, question_ids=question_ids)
         consecutive_service_errors = 0
         for item in items:
@@ -1015,7 +1107,11 @@ class Science125ReportService:
 
         credential_environment = api_keys.api_key_store.science125_environment(user_id)
         adapters = default_provider_adapters(environ=credential_environment)
-        refinement_queries = build_science125_refinement_queries(retrieval_profile.query_adapter, query)
+        refinement_queries = build_science125_refinement_queries(
+            retrieval_profile.query_adapter,
+            query,
+            primary_subdomain=route.primary_subdomain,
+        )
         queries = (query, *refinement_queries)
         all_records: list[EvidenceRecord] = []
         diagnostics: list[dict[str, Any]] = []
@@ -1040,9 +1136,10 @@ class Science125ReportService:
                 "resultCount": len(records),
                 "diagnostics": [diagnostic.to_dict() for diagnostic in result.diagnostics],
             })
+            scoring_query = " ".join(str(item["query"]) for item in query_results)
             selection = select_science125_evidence(
                 question_id=question_id,
-                query=query,
+                query=scoring_query,
                 records=tuple(all_records),
                 max_selected=6,
             )

@@ -302,6 +302,38 @@ class ApiTestCase(unittest.TestCase):
         denied = self.client.get(f"/api/science-125/batches/{batch_id}")
         self.assertEqual(denied.status_code, 404, denied.text)
 
+    def test_science125_batch_delete_is_user_scoped_and_rejects_running_batches(self) -> None:
+        self.register("alice")
+        created = self.client.post(
+            "/api/science-125/batches",
+            json={"questionIds": ["S125-001", "S125-004", "S125-006"]},
+        )
+        self.assertEqual(created.status_code, 201, created.text)
+        batch_id = created.json()["batchId"]
+
+        self.client.post("/api/auth/logout")
+        self.register("bob")
+        denied = self.client.delete(f"/api/science-125/batches/{batch_id}")
+        self.assertEqual(denied.status_code, 404, denied.text)
+
+        self.client.post("/api/auth/logout")
+        login = self.client.post("/api/auth/login", json={"username": "alice", "password": "secret-pass"})
+        self.assertEqual(login.status_code, 200, login.text)
+        deleted = self.client.delete(f"/api/science-125/batches/{batch_id}")
+        self.assertEqual(deleted.status_code, 204, deleted.text)
+        self.assertEqual(self.client.get(f"/api/science-125/batches/{batch_id}").status_code, 404)
+
+        running = self.client.post(
+            "/api/science-125/batches",
+            json={"questionIds": ["S125-006"]},
+        ).json()
+        from app.services.science125_report_service import get_science125_report_service
+
+        get_science125_report_service().store.mark_batch_running(user_id=1, batch_id=running["batchId"])
+        conflict = self.client.delete(f"/api/science-125/batches/{running['batchId']}")
+        self.assertEqual(conflict.status_code, 409, conflict.text)
+        self.assertEqual(conflict.json()["error"]["code"], "SCIENCE125_BATCH_DELETE_CONFLICT")
+
     def test_science125_catalog_failure_returns_safe_service_error(self) -> None:
         from app.services.science125_catalog import Science125CatalogError
 

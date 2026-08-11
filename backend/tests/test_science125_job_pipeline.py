@@ -148,9 +148,9 @@ class Science125JobPipelineTestCase(unittest.TestCase):
         self.assertIn(output["results"][0]["relevanceLabel"], {"low", "medium", "high"})
         self.assertEqual(
             output["results"][0]["relevanceBreakdown"]["scoringVersion"],
-            "science125-relevance-v1",
+            "science125-relevance-v2",
         )
-        self.assertEqual(output["relevanceScoringVersion"], "science125-relevance-v1")
+        self.assertEqual(output["relevanceScoringVersion"], "science125-relevance-v2")
         self.assertEqual(output["evidenceStatus"], "evidence_insufficient")
         self.assertEqual(adapters.call_count, 1)
         self.assertEqual(search.call_args_list[0].args[0], "retrieval.chem.interface.v1")
