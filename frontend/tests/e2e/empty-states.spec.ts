@@ -37,9 +37,11 @@ test("hypothesis generation starts with an honest empty state", async ({ page })
 test("API settings lets a user save external provider keys without returning tokens", async ({ page }) => {
   await mockAuthenticatedEmptyWorkspace(page)
   let savedPayload: unknown = null
+  const savedProviders = new Set<string>()
   await page.route("**/api/settings/api-keys", async (route) => {
     if (route.request().method() === "PUT") {
       savedPayload = route.request().postDataJSON()
+      savedProviders.add((savedPayload as { provider: string }).provider)
     }
     await route.fulfill({
       status: 200,
@@ -48,17 +50,34 @@ test("API settings lets a user save external provider keys without returning tok
         configured: {
           dashscope: true,
           semantic_scholar: true,
-          ncbi: true,
+          ncbi: savedProviders.has("ncbi"),
+          ncbi_tool_email: savedProviders.has("ncbi_tool_email"),
           crossref_mailto: true,
-          nasa_ads: savedPayload !== null,
-          materials_project: savedPayload !== null,
+          nasa_ads: savedProviders.has("nasa_ads"),
+          materials_project: savedProviders.has("materials_project"),
         },
+        effective: { ncbi: savedProviders.has("ncbi") && savedProviders.has("ncbi_tool_email") },
       }),
     })
   })
 
   await page.goto("/")
   await page.locator('[data-nav-key="api"]').click()
+
+  const ncbiProvider = page.getByTestId("api-provider-ncbi")
+  await ncbiProvider.getByLabel("NCBI API Key").fill("ncbi-secret-key")
+  await ncbiProvider.getByRole("button", { name: "保存" }).click()
+  expect(savedPayload).toEqual({ provider: "ncbi", apiKey: "ncbi-secret-key" })
+  await expect(ncbiProvider).toContainText("待补全")
+
+  const ncbiEmailProvider = page.getByTestId("api-provider-ncbi_tool_email")
+  const ncbiEmailInput = ncbiEmailProvider.getByLabel("NCBI Tool Email")
+  await expect(ncbiEmailInput).toHaveAttribute("type", "email")
+  await ncbiEmailInput.fill("team@example.org")
+  await ncbiEmailProvider.getByRole("button", { name: "保存" }).click()
+  expect(savedPayload).toEqual({ provider: "ncbi_tool_email", apiKey: "team@example.org" })
+  await expect(ncbiProvider).toContainText("生效中")
+  await expect(ncbiEmailProvider).toContainText("生效中")
 
   const nasaProvider = page.getByTestId("api-provider-nasa_ads")
   const nasaInput = nasaProvider.getByLabel("NASA ADS API Token")

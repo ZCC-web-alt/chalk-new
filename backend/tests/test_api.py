@@ -439,6 +439,7 @@ class ApiTestCase(unittest.TestCase):
             ("dashscope", "sk-test"),
             ("semantic_scholar", "semantic-test"),
             ("ncbi", "ncbi-test"),
+            ("ncbi_tool_email", "team@example.org"),
             ("crossref_mailto", "researcher@example.com"),
             ("nasa_ads", "ads-test-token"),
             ("materials_project", "mp-test-key"),
@@ -456,10 +457,12 @@ class ApiTestCase(unittest.TestCase):
             "dashscope": True,
             "semantic_scholar": True,
             "ncbi": True,
+            "ncbi_tool_email": True,
             "crossref_mailto": True,
             "nasa_ads": True,
             "materials_project": True,
         })
+        self.assertTrue(status_response.json()["effective"]["ncbi"])
         self.assertNotIn("sk-test", status_response.text)
         self.assertNotIn("semantic-test", status_response.text)
         self.assertNotIn("ads-test-token", status_response.text)
@@ -467,6 +470,8 @@ class ApiTestCase(unittest.TestCase):
         resolved = api_keys_module.api_key_store.science125_environment(1, environ={})
         self.assertEqual(resolved["DASHSCOPE_API_KEY"], "sk-test")
         self.assertEqual(resolved["SCIENCE125_SEMANTIC_SCHOLAR_API_KEY"], "semantic-test")
+        self.assertEqual(resolved["SCIENCE125_NCBI_API_KEY"], "ncbi-test")
+        self.assertEqual(resolved["SCIENCE125_NCBI_TOOL_EMAIL"], "team@example.org")
         self.assertEqual(resolved["MATERIALS_PROJECT_API_KEY"], "mp-test-key")
         self.assertEqual(resolved["MP_API_KEY"], "mp-test-key")
 
@@ -485,6 +490,14 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(updated_ads.status_code, 200, updated_ads.text)
         self.assertTrue(updated_ads.json()["configured"]["nasa_ads"])
         self.assertNotIn("ads-updated-token", updated_ads.text)
+
+        invalid_email = self.client.put(
+            "/api/settings/api-keys",
+            json={"provider": "ncbi_tool_email", "apiKey": "not-an-email"},
+        )
+        self.assertEqual(invalid_email.status_code, 422, invalid_email.text)
+        self.assertEqual(invalid_email.json()["error"]["code"], "INVALID_NCBI_TOOL_EMAIL")
+        self.assertNotIn("not-an-email", invalid_email.text)
 
         invalid = self.client.put(
             "/api/settings/api-keys",

@@ -5,8 +5,11 @@ import { Check, Cpu, Eye, EyeOff, KeyRound, RefreshCw, Search } from "lucide-rea
 import { apiFetch } from "@/lib/api/client"
 import { Btn, FieldLabel, Input, Panel, StatusDot, Tag } from "../ui"
 
-type Provider = "dashscope" | "semantic_scholar" | "ncbi" | "crossref_mailto" | "nasa_ads" | "materials_project"
-type KeyStatus = { configured: Record<Provider, boolean> }
+type Provider = "dashscope" | "semantic_scholar" | "ncbi" | "ncbi_tool_email" | "crossref_mailto" | "nasa_ads" | "materials_project"
+type KeyStatus = {
+  configured: Partial<Record<Provider, boolean>>
+  effective?: { ncbi?: boolean }
+}
 
 type ProviderConfig = {
   id: Provider
@@ -19,6 +22,7 @@ const PROVIDERS: ProviderConfig[] = [
   { id: "dashscope", label: "DashScope API Key", hint: "文献向量化、问答和模型分析", placeholder: "sk-..." },
   { id: "semantic_scholar", label: "Semantic Scholar API Key", hint: "提高 Semantic Scholar 检索配额", placeholder: "输入 API Key" },
   { id: "ncbi", label: "NCBI API Key", hint: "提高 PMC / Entrez 检索配额", placeholder: "输入 API Key" },
+  { id: "ncbi_tool_email", label: "NCBI Tool Email", hint: "NCBI E-utilities 要求的已注册联系邮箱", placeholder: "team@example.org" },
   { id: "crossref_mailto", label: "文献 API 联系邮箱（Crossref / OpenAlex）", hint: "用于 Crossref polite pool 和 OpenAlex API 联系信息", placeholder: "researcher@example.com" },
   {
     id: "nasa_ads",
@@ -38,6 +42,7 @@ const EMPTY_STATUS: Record<Provider, boolean> = {
   dashscope: false,
   semantic_scholar: false,
   ncbi: false,
+  ncbi_tool_email: false,
   crossref_mailto: false,
   nasa_ads: false,
   materials_project: false,
@@ -47,15 +52,37 @@ const EMPTY_VALUES: Record<Provider, string> = {
   dashscope: "",
   semantic_scholar: "",
   ncbi: "",
+  ncbi_tool_email: "",
   crossref_mailto: "",
   nasa_ads: "",
   materials_project: "",
+}
+
+function isEmailProvider(provider: Provider) {
+  return provider === "crossref_mailto" || provider === "ncbi_tool_email"
+}
+
+function ProviderStatusTag({
+  provider,
+  configured,
+  ncbiEffective,
+}: {
+  provider: Provider
+  configured: boolean
+  ncbiEffective: boolean
+}) {
+  if (provider === "ncbi" || provider === "ncbi_tool_email") {
+    if (ncbiEffective) return <Tag tone="green">生效中</Tag>
+    if (configured) return <Tag tone="orange">待补全</Tag>
+  }
+  return <Tag tone={configured ? "green" : "gray"}>{configured ? "已配置" : "未配置"}</Tag>
 }
 
 export function ApiSettingsPage() {
   const [showSecrets, setShowSecrets] = useState(false)
   const [values, setValues] = useState<Record<Provider, string>>(EMPTY_VALUES)
   const [configured, setConfigured] = useState<Record<Provider, boolean>>(EMPTY_STATUS)
+  const [ncbiEffective, setNcbiEffective] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<Provider | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -67,6 +94,7 @@ export function ApiSettingsPage() {
     try {
       const status = await apiFetch<KeyStatus>("/settings/api-keys")
       setConfigured({ ...EMPTY_STATUS, ...status.configured })
+      setNcbiEffective(Boolean(status.effective?.ncbi))
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "配置状态加载失败")
     } finally {
@@ -88,6 +116,7 @@ export function ApiSettingsPage() {
         body: JSON.stringify({ provider, apiKey: value }),
       })
       setConfigured({ ...EMPTY_STATUS, ...status.configured })
+      setNcbiEffective(Boolean(status.effective?.ncbi))
       setValues((current) => ({ ...current, [provider]: "" }))
       setMessage(`${PROVIDERS.find((item) => item.id === provider)?.label} 已保存`)
     } catch (saveError) {
@@ -110,7 +139,7 @@ export function ApiSettingsPage() {
                 <p className="truncate text-[13px] font-medium text-foreground">{provider.label}</p>
                 <p className="text-[11px] text-muted-foreground">{provider.hint}</p>
               </div>
-              <Tag tone={configured[provider.id] ? "green" : "gray"}>{configured[provider.id] ? "已配置" : "未配置"}</Tag>
+              <ProviderStatusTag provider={provider.id} configured={configured[provider.id]} ncbiEffective={ncbiEffective} />
             </div>
           ))}
         </div>
@@ -126,20 +155,20 @@ export function ApiSettingsPage() {
             <div key={provider.id} data-testid={`api-provider-${provider.id}`}>
               <div className="flex items-center justify-between gap-2">
                 <FieldLabel>{provider.label}</FieldLabel>
-                <Tag tone={configured[provider.id] ? "green" : "gray"}>{configured[provider.id] ? "已配置" : "未配置"}</Tag>
+                <ProviderStatusTag provider={provider.id} configured={configured[provider.id]} ncbiEffective={ncbiEffective} />
               </div>
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <Input
                     aria-label={provider.label}
-                    autoComplete="off"
-                    type={provider.id === "crossref_mailto" || showSecrets ? "text" : "password"}
+                    autoComplete={isEmailProvider(provider.id) ? "email" : "off"}
+                    type={isEmailProvider(provider.id) ? "email" : showSecrets ? "text" : "password"}
                     value={values[provider.id]}
                     onChange={(event) => setValues((current) => ({ ...current, [provider.id]: event.target.value }))}
                     placeholder={configured[provider.id] ? "输入新值可覆盖现有配置" : provider.placeholder}
-                    className={provider.id === "crossref_mailto" ? "" : "pr-9 font-mono"}
+                    className={isEmailProvider(provider.id) ? "" : "pr-9 font-mono"}
                   />
-                  {provider.id !== "crossref_mailto" && (
+                  {!isEmailProvider(provider.id) && (
                     <button type="button" onClick={() => setShowSecrets((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={showSecrets ? "隐藏密钥" : "显示密钥"}>
                       {showSecrets ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>

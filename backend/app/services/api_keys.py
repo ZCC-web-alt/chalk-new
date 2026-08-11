@@ -14,6 +14,7 @@ class ApiKeyStore:
         "dashscope",
         "semantic_scholar",
         "ncbi",
+        "ncbi_tool_email",
         "crossref_mailto",
         "nasa_ads",
         "materials_project",
@@ -22,6 +23,7 @@ class ApiKeyStore:
         "dashscope": ("DASHSCOPE_API_KEY",),
         "semantic_scholar": ("SCIENCE125_SEMANTIC_SCHOLAR_API_KEY",),
         "ncbi": ("SCIENCE125_NCBI_API_KEY",),
+        "ncbi_tool_email": ("SCIENCE125_NCBI_TOOL_EMAIL",),
         "crossref_mailto": (
             "SCIENCE125_CROSSREF_MAILTO",
             "SCIENCE125_OPENALEX_MAILTO",

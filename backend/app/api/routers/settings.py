@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Literal
 
 from fastapi import APIRouter, Depends, status
@@ -19,6 +20,7 @@ class ApiKeyInput(BaseModel):
         "dashscope",
         "semantic_scholar",
         "ncbi",
+        "ncbi_tool_email",
         "crossref_mailto",
         "nasa_ads",
         "materials_project",
@@ -40,9 +42,19 @@ def _configured_credentials(user_id: int) -> dict[str, bool]:
     return configured
 
 
+def _credential_status(user_id: int) -> dict[str, dict[str, bool]]:
+    configured = _configured_credentials(user_id)
+    return {
+        "configured": configured,
+        "effective": {
+            "ncbi": configured["ncbi"] and configured["ncbi_tool_email"],
+        },
+    }
+
+
 @router.get("/api-keys")
 def get_api_key_status(user=Depends(current_user)) -> dict[str, dict[str, bool]]:
-    return {"configured": _configured_credentials(user.id)}
+    return _credential_status(user.id)
 
 
 @router.put("/api-keys")
@@ -53,5 +65,12 @@ def set_api_key(payload: ApiKeyInput, user=Depends(current_user)) -> dict[str, d
             "Production credentials must be injected through the server environment.",
             status.HTTP_403_FORBIDDEN,
         )
-    api_keys.api_key_store.set_key(user.id, payload.provider, payload.api_key.strip())
-    return {"configured": _configured_credentials(user.id)}
+    value = payload.api_key.strip()
+    if payload.provider == "ncbi_tool_email" and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
+        raise ApiError(
+            "INVALID_NCBI_TOOL_EMAIL",
+            "Enter a valid contact email for NCBI E-utilities.",
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+        )
+    api_keys.api_key_store.set_key(user.id, payload.provider, value)
+    return _credential_status(user.id)
