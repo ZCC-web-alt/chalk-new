@@ -23,6 +23,7 @@ from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any, Callable, Iterable, Literal, Mapping, Protocol, Sequence
+from urllib.parse import quote, urlsplit
 
 import requests
 from requests import exceptions as requests_exceptions
@@ -1212,6 +1213,7 @@ _provider_defs: dict[str, ProviderDefinition] = {
         domains=("physics", "astronomy"),
         family="hep_index",
         policy=_header_policy("inspire"),
+        capabilities=("metadata", "abstract", "open_full_text"),
     ),
     "nasa_ads": _provider(
         "nasa_ads",
@@ -1231,6 +1233,7 @@ _provider_defs: dict[str, ProviderDefinition] = {
         domains=("information", "ai"),
         family="computer_science_index",
         policy=_header_policy("dblp"),
+        capabilities=("metadata", "open_full_text"),
     ),
     "gbif": _provider(
         "gbif",
@@ -1239,6 +1242,7 @@ _provider_defs: dict[str, ProviderDefinition] = {
         domains=("ecology", "biology"),
         family="biodiversity_index",
         policy=_header_policy("gbif"),
+        capabilities=("metadata", "abstract", "open_full_text"),
     ),
     "osti": _provider(
         "osti",
@@ -1247,6 +1251,7 @@ _provider_defs: dict[str, ProviderDefinition] = {
         domains=("energy", "physics", "engineering_materials", "chemistry"),
         family="government_index",
         policy=_header_policy("osti"),
+        capabilities=("metadata", "abstract", "open_full_text"),
     ),
     "doaj": _provider(
         "doaj",
@@ -1314,7 +1319,8 @@ RETRIEVAL_PROFILE_REGISTRY: Mapping[str, RetrievalProfile] = {
     "retrieval.chemistry.v1": _profile(
         "retrieval.chemistry.v1",
         ("crossref", "openalex", "europe_pmc"),
-        conditional=("materials_project", "arxiv", "osti", "semantic_scholar"),
+        conditional=("doaj", "materials_project", "arxiv", "osti", "semantic_scholar"),
+        max_providers=5,
     ),
     "retrieval.chem.interface.v1": _profile(
         "retrieval.chem.interface.v1",
@@ -1826,9 +1832,10 @@ def _semantic_scholar_adapter(session: Any, environ: Mapping[str, str]) -> Provi
 
 def _clinical_trials_adapter(session: Any) -> ProviderAdapter:
     def adapter(_provider: ProviderDefinition, query: str) -> ProviderSearchResponse:
+        compact_query = _compact_clinical_trials_query(query)
         response = session.get(
             "https://clinicaltrials.gov/api/v2/studies",
-            params={"query.term": query, "pageSize": 20, "format": "json"},
+            params={"query.term": compact_query, "pageSize": 20, "format": "json"},
             timeout=(10, 30),
         )
         status = _response_status(response)
@@ -1861,6 +1868,36 @@ def _clinical_trials_adapter(session: Any) -> ProviderAdapter:
     return adapter
 
 
+_CLINICAL_QUERY_STOPWORDS = frozenset({
+    "a", "an", "and", "are", "as", "at", "be", "been", "by", "can", "could", "do", "does",
+    "for", "from", "how", "in", "into", "is", "it", "many", "may", "of", "on", "or", "our",
+    "should", "that", "the", "their", "these", "this", "to", "using", "what", "when", "where",
+    "which", "with", "would",
+})
+
+
+def _compact_clinical_trials_query(query: str, *, max_chars: int = 180, max_terms: int = 18) -> str:
+    """Convert booklet prose into a conservative ClinicalTrials.gov term query."""
+    normalized = unicodedata.normalize("NFKC", str(query or ""))
+    raw_terms = re.findall(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)?|[\u3400-\u9fff]{1,12}", normalized)
+    terms: list[str] = []
+    seen: set[str] = set()
+    for raw_term in raw_terms:
+        term = raw_term.strip("-'_")
+        folded = term.casefold()
+        if not term or folded in _CLINICAL_QUERY_STOPWORDS or folded in seen:
+            continue
+        candidate = " ".join((*terms, term))
+        if len(candidate) > max_chars or len(terms) >= max_terms:
+            break
+        terms.append(term)
+        seen.add(folded)
+    if terms:
+        return " ".join(terms)
+    fallback = re.sub(r"[^\w\u3400-\u9fff -]+", " ", normalized, flags=re.UNICODE)
+    return " ".join(fallback.split())[:max_chars] or "clinical study"
+
+
 def _inspire_adapter(session: Any) -> ProviderAdapter:
     def adapter(_provider: ProviderDefinition, query: str) -> ProviderSearchResponse:
         response = session.get(
@@ -1889,7 +1926,8 @@ def _inspire_adapter(session: Any) -> ProviderAdapter:
             dois = metadata.get("dois", [])
             doi = _normalize_doi(dois[0].get("value") if isinstance(dois, Sequence) and dois and isinstance(dois[0], Mapping) else None)
             arxiv = metadata.get("arxiv_eprints", [])
-            arxiv_id = str(arxiv[0].get("value") or "").strip() if isinstance(arxiv, Sequence) and arxiv and isinstance(arxiv[0], Mapping) else None
+            raw_arxiv_id = str(arxiv[0].get("value") or "").strip() if isinstance(arxiv, Sequence) and arxiv and isinstance(arxiv[0], Mapping) else ""
+            arxiv_id = _normalize_arxiv_id(raw_arxiv_id)
             abstracts = metadata.get("abstracts", [])
             abstract = _strip_markup(abstracts[0].get("value") if isinstance(abstracts, Sequence) and abstracts and isinstance(abstracts[0], Mapping) else "")
             authors = tuple(
@@ -1905,10 +1943,254 @@ def _inspire_adapter(session: Any) -> ProviderAdapter:
                 abstract=abstract,
                 doi=doi,
                 arxiv_id=arxiv_id,
-                full_text_url=f"https://inspirehep.net/literature/{record_id}",
-                access_status="metadata",
+                full_text_url=(
+                    f"https://arxiv.org/pdf/{arxiv_id}"
+                    if arxiv_id
+                    else f"https://inspirehep.net/literature/{record_id}"
+                ),
+                access_status="open_full_text" if arxiv_id else "metadata",
                 retrieved_at=_utc_now(),
             ))
+        return ProviderSearchResponse(status_code=status, headers=_response_headers(response), records=tuple(records))
+
+    return adapter
+
+
+def _normalize_arxiv_id(value: Any) -> str | None:
+    text = re.sub(r"^arxiv:\s*", "", str(value or "").strip(), flags=re.IGNORECASE)
+    if not text or len(text) > 64:
+        return None
+    if not re.fullmatch(r"(?:\d{4}\.\d{4,5}|[A-Za-z0-9.-]+/\d{7})(?:v\d+)?", text):
+        return None
+    return re.sub(r"v\d+$", "", text)
+
+
+def _first_http_url(values: Any) -> str | None:
+    if isinstance(values, (str, bytes)):
+        candidates: Sequence[Any] = (values,)
+    elif isinstance(values, Sequence):
+        candidates = values
+    else:
+        return None
+    for value in candidates:
+        url = str(value or "").strip()
+        if not url or len(url) > 4_096 or any(ord(char) < 32 for char in url):
+            continue
+        parsed = urlsplit(url)
+        if (
+            parsed.scheme.casefold() in {"http", "https"}
+            and parsed.hostname
+            and parsed.username is None
+            and parsed.password is None
+        ):
+            return url
+    return None
+
+
+def _append_external_evidence(records: list[EvidenceRecord], **values: Any) -> None:
+    try:
+        records.append(EvidenceRecord(**values))
+    except (TypeError, ValueError):
+        # A malformed provider item must not discard other valid records.
+        return
+
+
+def _gbif_adapter(session: Any, *, provider_id: str = "gbif") -> ProviderAdapter:
+    def adapter(_provider: ProviderDefinition, query: str) -> ProviderSearchResponse:
+        response = session.get(
+            "https://api.gbif.org/v1/literature/search",
+            params={"q": query, "limit": 20},
+            headers={"Accept": "application/json", "User-Agent": "ChalkScience125/1.0"},
+            timeout=(10, 30),
+        )
+        status = _response_status(response)
+        if status >= 400:
+            return ProviderSearchResponse(status_code=status, headers=_response_headers(response))
+        items = _response_json(response).get("results", [])
+        records: list[EvidenceRecord] = []
+        for item in items if isinstance(items, Sequence) and not isinstance(items, (str, bytes)) else ():
+            if not isinstance(item, Mapping):
+                continue
+            record_id = str(item.get("id") or "").strip()
+            title = _strip_markup(item.get("title"))
+            if not record_id or not title:
+                continue
+            identifiers = item.get("identifiers") if isinstance(item.get("identifiers"), Mapping) else {}
+            doi = _normalize_doi(identifiers.get("doi"))
+            website = _first_http_url(item.get("websites"))
+            is_open = bool(item.get("openAccess")) and bool(website)
+            _append_external_evidence(records,
+                provider=provider_id,
+                stable_id=f"gbif:{record_id}",
+                title=title,
+                authors=_author_names(item.get("authors")),
+                abstract=_strip_markup(item.get("abstract")),
+                doi=doi,
+                full_text_url=website,
+                access_status="open_full_text" if is_open else "metadata",
+                retrieved_at=_utc_now(),
+            )
+        return ProviderSearchResponse(status_code=status, headers=_response_headers(response), records=tuple(records))
+
+    return adapter
+
+
+def _doaj_adapter(session: Any) -> ProviderAdapter:
+    def adapter(_provider: ProviderDefinition, query: str) -> ProviderSearchResponse:
+        response = session.get(
+            f"https://doaj.org/api/search/articles/{quote(query, safe='')}",
+            params={"pageSize": 20},
+            headers={"Accept": "application/json", "User-Agent": "ChalkScience125/1.0"},
+            timeout=(10, 30),
+        )
+        status = _response_status(response)
+        if status >= 400:
+            return ProviderSearchResponse(status_code=status, headers=_response_headers(response))
+        items = _response_json(response).get("results", [])
+        records: list[EvidenceRecord] = []
+        for item in items if isinstance(items, Sequence) and not isinstance(items, (str, bytes)) else ():
+            if not isinstance(item, Mapping):
+                continue
+            bibjson = item.get("bibjson") if isinstance(item.get("bibjson"), Mapping) else {}
+            record_id = str(item.get("id") or "").strip()
+            title = _strip_markup(bibjson.get("title"))
+            if not record_id or not title:
+                continue
+            identifiers = bibjson.get("identifier")
+            doi = None
+            if isinstance(identifiers, Sequence) and not isinstance(identifiers, (str, bytes)):
+                doi = next((
+                    _normalize_doi(identifier.get("id"))
+                    for identifier in identifiers
+                    if isinstance(identifier, Mapping) and str(identifier.get("type") or "").casefold() == "doi"
+                ), None)
+            links = bibjson.get("link")
+            full_text_url = None
+            if isinstance(links, Sequence) and not isinstance(links, (str, bytes)):
+                ordered_links = sorted(
+                    (link for link in links if isinstance(link, Mapping)),
+                    key=lambda link: str(link.get("content_type") or "").casefold() != "pdf",
+                )
+                full_text_url = next((
+                    _first_http_url(link.get("url"))
+                    for link in ordered_links
+                    if str(link.get("type") or "").casefold() == "fulltext" and _first_http_url(link.get("url"))
+                ), None)
+            _append_external_evidence(records,
+                provider="doaj",
+                stable_id=f"doi:{doi}" if doi else f"doaj:{record_id}",
+                title=title,
+                authors=_author_names(bibjson.get("author")),
+                abstract=_strip_markup(bibjson.get("abstract")),
+                doi=doi,
+                full_text_url=full_text_url,
+                access_status="open_full_text" if full_text_url else "metadata",
+                retrieved_at=_utc_now(),
+            )
+        return ProviderSearchResponse(status_code=status, headers=_response_headers(response), records=tuple(records))
+
+    return adapter
+
+
+def _osti_adapter(session: Any) -> ProviderAdapter:
+    def adapter(_provider: ProviderDefinition, query: str) -> ProviderSearchResponse:
+        response = session.get(
+            "https://www.osti.gov/api/v1/records",
+            params={"q": query, "rows": 20},
+            headers={"Accept": "application/json", "User-Agent": "ChalkScience125/1.0"},
+            timeout=(10, 30),
+        )
+        status = _response_status(response)
+        if status >= 400:
+            return ProviderSearchResponse(status_code=status, headers=_response_headers(response))
+        raw_payload = response.json() if callable(getattr(response, "json", None)) else []
+        if isinstance(raw_payload, Mapping):
+            items = raw_payload.get("records", raw_payload.get("results", []))
+        else:
+            items = raw_payload
+        records: list[EvidenceRecord] = []
+        for item in items if isinstance(items, Sequence) and not isinstance(items, (str, bytes)) else ():
+            if not isinstance(item, Mapping):
+                continue
+            record_id = str(item.get("osti_id") or item.get("identifier") or "").strip()
+            title = _strip_markup(item.get("title"))
+            if not record_id or not title:
+                continue
+            links = item.get("links")
+            full_text_url = None
+            if isinstance(links, Sequence) and not isinstance(links, (str, bytes)):
+                full_text_url = next((
+                    _first_http_url(link.get("href"))
+                    for link in links
+                    if isinstance(link, Mapping)
+                    and str(link.get("rel") or "").casefold() == "fulltext"
+                    and _first_http_url(link.get("href"))
+                ), None)
+            doi = _normalize_doi(item.get("doi"))
+            _append_external_evidence(records,
+                provider="osti",
+                stable_id=f"osti:{record_id}",
+                title=title,
+                authors=_author_names(item.get("authors")),
+                abstract=_strip_markup(item.get("description") or item.get("abstract")),
+                doi=doi,
+                full_text_url=full_text_url or f"https://www.osti.gov/biblio/{record_id}",
+                access_status="open_full_text" if full_text_url else "metadata",
+                retrieved_at=_utc_now(),
+            )
+        return ProviderSearchResponse(status_code=status, headers=_response_headers(response), records=tuple(records))
+
+    return adapter
+
+
+def _dblp_adapter(session: Any) -> ProviderAdapter:
+    def adapter(_provider: ProviderDefinition, query: str) -> ProviderSearchResponse:
+        response = session.get(
+            "https://dblp.org/search/publ/api",
+            params={"q": query, "h": 20, "format": "json"},
+            headers={"Accept": "application/json", "User-Agent": "ChalkScience125/1.0"},
+            timeout=(10, 30),
+        )
+        status = _response_status(response)
+        if status >= 400:
+            return ProviderSearchResponse(status_code=status, headers=_response_headers(response))
+        result = _response_json(response).get("result", {})
+        hits = result.get("hits", {}) if isinstance(result, Mapping) else {}
+        items = hits.get("hit", []) if isinstance(hits, Mapping) else []
+        if isinstance(items, Mapping):
+            items = (items,)
+        records: list[EvidenceRecord] = []
+        for item in items if isinstance(items, Sequence) and not isinstance(items, (str, bytes)) else ():
+            if not isinstance(item, Mapping):
+                continue
+            info = item.get("info") if isinstance(item.get("info"), Mapping) else {}
+            title = _strip_markup(info.get("title"))
+            record_id = str(info.get("key") or item.get("@id") or "").strip()
+            if not title or not record_id:
+                continue
+            raw_authors = info.get("authors", {})
+            raw_authors = raw_authors.get("author", []) if isinstance(raw_authors, Mapping) else []
+            if isinstance(raw_authors, Mapping):
+                raw_authors = (raw_authors,)
+            authors = tuple(
+                str(author.get("text") or author.get("name") or "").strip()
+                for author in raw_authors
+                if isinstance(author, Mapping) and str(author.get("text") or author.get("name") or "").strip()
+            ) if isinstance(raw_authors, Sequence) and not isinstance(raw_authors, (str, bytes)) else ()
+            raw_ee = info.get("ee")
+            full_text_url = _first_http_url(raw_ee)
+            is_open = str(info.get("access") or "").casefold() == "open" and bool(full_text_url)
+            doi = _normalize_doi(info.get("doi"))
+            _append_external_evidence(records,
+                provider="dblp",
+                stable_id=f"doi:{doi}" if doi else f"dblp:{record_id}",
+                title=title,
+                authors=authors,
+                doi=doi,
+                full_text_url=full_text_url or _first_http_url(info.get("url")),
+                access_status="open_full_text" if is_open else "metadata",
+                retrieved_at=_utc_now(),
+            )
         return ProviderSearchResponse(status_code=status, headers=_response_headers(response), records=tuple(records))
 
     return adapter
@@ -2135,6 +2417,11 @@ def default_provider_adapters(
         "inspire": _inspire_adapter(client),
         "nasa_ads": _nasa_ads_adapter(client, env),
         "materials_project": _materials_project_adapter(client, env),
+        "gbif": _gbif_adapter(client),
+        "gbif_literature": _gbif_adapter(client, provider_id="gbif_literature"),
+        "doaj": _doaj_adapter(client),
+        "osti": _osti_adapter(client),
+        "dblp": _dblp_adapter(client),
     }
     return adapters
 

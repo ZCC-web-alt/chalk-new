@@ -38,6 +38,11 @@ class Science125RetrievalRegistryTestCase(unittest.TestCase):
         self.assertIn("retrieval.chem.interface.v1", RETRIEVAL_PROFILE_REGISTRY)
         self.assertIn("crossref", get_retrieval_profile("retrieval.chem.interface.v1").primary)
         self.assertIn("materials_project", get_retrieval_profile("retrieval.chem.interface.v1").conditional)
+        chemistry = get_retrieval_profile("retrieval.chemistry.v1")
+        self.assertEqual(
+            chemistry.provider_ids[: chemistry.max_providers],
+            ("crossref", "openalex", "europe_pmc", "doaj", "materials_project"),
+        )
         materials_project = get_provider("materials_project")
         self.assertEqual(materials_project.family, "materials_database")
         self.assertEqual(materials_project.capabilities, ("structured_material_data",))
@@ -505,8 +510,190 @@ class Science125RateLimiterTestCase(unittest.TestCase):
         self.assertEqual(adapters["europe_pmc"](None, "editing").records[0].pmid, "7654321")  # type: ignore[arg-type]
         self.assertEqual(adapters["semantic_scholar"](None, "interface").records[0].stable_id, "semantic_scholar:paper-1")  # type: ignore[arg-type]
         self.assertEqual(adapters["clinical_trials"](None, "editing").records[0].stable_id, "nct:NCT00000001")  # type: ignore[arg-type]
-        self.assertEqual(adapters["inspire"](None, "cosmic rays").records[0].arxiv_id, "2401.00001")  # type: ignore[arg-type]
+        inspire = adapters["inspire"](None, "cosmic rays").records[0]  # type: ignore[arg-type]
+        self.assertEqual(inspire.arxiv_id, "2401.00001")
+        self.assertEqual(inspire.full_text_url, "https://arxiv.org/pdf/2401.00001")
+        self.assertEqual(inspire.access_status, "open_full_text")
         self.assertEqual(adapters["nasa_ads"](None, "cosmic rays").records[0].ads_id, "2026ApJ...1A")  # type: ignore[arg-type]
+
+    def test_default_adapters_include_and_normalize_registered_public_indexes(self) -> None:
+        from app.services.science125_retrieval import default_provider_adapters
+
+        class Response:
+            status_code = 200
+            headers: dict[str, str] = {}
+
+            def __init__(self, payload):
+                self.payload = payload
+
+            def json(self):
+                return self.payload
+
+        payloads = {
+            "api.gbif.org": {
+                "results": [{
+                    "id": "gbif-lit-1",
+                    "title": "Biodiversity response across seasons",
+                    "abstract": "Repeated observations across sites.",
+                    "authors": [{"firstName": "A", "lastName": "Ecologist"}],
+                    "identifiers": {"doi": "10.1000/gbif"},
+                    "openAccess": True,
+                    "websites": ["https://example.org/gbif-paper.pdf"],
+                }],
+            },
+            "doaj.org": {
+                "results": [{
+                    "id": "doaj-1",
+                    "bibjson": {
+                        "title": "Open access catalysis evidence",
+                        "abstract": "Measured reaction conditions.",
+                        "author": [{"name": "A Chemist"}],
+                        "identifier": [{"type": "doi", "id": "10.1000/doaj"}],
+                        "link": [{
+                            "type": "fulltext",
+                            "content_type": "PDF",
+                            "url": "https://example.org/doaj-paper.pdf",
+                        }],
+                    },
+                }],
+            },
+            "osti.gov": [{
+                "osti_id": "12345",
+                "title": "Energy storage lifetime study",
+                "description": "Long-duration reliability evidence.",
+                "authors": ["A Engineer"],
+                "doi": "10.1000/osti",
+                "links": [{"rel": "fulltext", "href": "https://www.osti.gov/servlets/purl/12345"}],
+            }],
+            "dblp.org": {
+                "result": {"hits": {"hit": [{
+                    "@id": "dblp-1",
+                    "info": {
+                        "title": "Leakage-resistant machine learning evaluation",
+                        "authors": {"author": [{"text": "A Researcher"}]},
+                        "doi": "10.1000/dblp",
+                        "access": "open",
+                        "ee": "https://example.org/dblp-paper.pdf",
+                        "key": "conf/example/Researcher26",
+                    },
+                }] }},
+            },
+        }
+
+        class Session:
+            def get(self, url, **_kwargs):
+                for fragment, payload in payloads.items():
+                    if fragment in url:
+                        return Response(payload)
+                raise AssertionError(url)
+
+        adapters = default_provider_adapters(session=Session())
+        self.assertTrue({"gbif", "gbif_literature", "doaj", "osti", "dblp"}.issubset(adapters))
+
+        gbif = adapters["gbif"](None, "biodiversity")  # type: ignore[arg-type]
+        self.assertEqual(gbif.records[0].doi, "10.1000/gbif")
+        self.assertEqual(gbif.records[0].access_status, "open_full_text")
+        self.assertEqual(adapters["gbif_literature"](None, "biodiversity").records[0].provider, "gbif_literature")  # type: ignore[arg-type]
+
+        doaj = adapters["doaj"](None, "catalysis")  # type: ignore[arg-type]
+        self.assertEqual(doaj.records[0].full_text_url, "https://example.org/doaj-paper.pdf")
+        self.assertEqual(doaj.records[0].access_status, "open_full_text")
+
+        osti = adapters["osti"](None, "energy storage")  # type: ignore[arg-type]
+        self.assertEqual(osti.records[0].stable_id, "osti:12345")
+        self.assertEqual(osti.records[0].access_status, "open_full_text")
+
+        dblp = adapters["dblp"](None, "machine learning")  # type: ignore[arg-type]
+        self.assertEqual(dblp.records[0].doi, "10.1000/dblp")
+        self.assertEqual(dblp.records[0].access_status, "open_full_text")
+
+    def test_clinical_trials_adapter_compacts_long_booklet_context(self) -> None:
+        from app.services.science125_retrieval import default_provider_adapters
+
+        captured: dict[str, object] = {}
+
+        class Response:
+            status_code = 200
+            headers: dict[str, str] = {}
+
+            def json(self):
+                return {"studies": []}
+
+        class Session:
+            def get(self, url, **kwargs):
+                captured["url"] = url
+                captured["params"] = kwargs.get("params")
+                return Response()
+
+        long_query = (
+            "How can genome editing cure inherited disease? "
+            "This full booklet context contains extensive explanatory prose, punctuation, "
+            "ethical discussion, safety endpoints, observational limitations, and many repeated words. "
+        ) * 8
+        adapter = default_provider_adapters(session=Session())["clinical_trials"]
+        adapter(None, long_query)  # type: ignore[arg-type]
+
+        params = captured["params"]
+        compact_query = params["query.term"]  # type: ignore[index]
+        self.assertLessEqual(len(compact_query), 180)
+        self.assertNotIn("?", compact_query)
+        self.assertIn("genome", compact_query.casefold())
+
+    def test_inspire_without_arxiv_identifier_remains_metadata_only(self) -> None:
+        from app.services.science125_retrieval import default_provider_adapters
+
+        class Response:
+            status_code = 200
+            headers: dict[str, str] = {}
+
+            def json(self):
+                return {
+                    "hits": {"hits": [{
+                        "id": "hep-no-arxiv",
+                        "metadata": {"titles": [{"title": "Detector calibration result"}]},
+                    }]},
+                }
+
+        class Session:
+            def get(self, _url, **_kwargs):
+                return Response()
+
+        record = default_provider_adapters(session=Session())["inspire"](None, "detector calibration").records[0]  # type: ignore[arg-type]
+        self.assertEqual(record.access_status, "metadata")
+        self.assertEqual(record.full_text_url, "https://inspirehep.net/literature/hep-no-arxiv")
+
+    def test_public_index_adapters_skip_malformed_external_items(self) -> None:
+        from app.services.science125_retrieval import default_provider_adapters
+
+        class Response:
+            status_code = 200
+            headers: dict[str, str] = {}
+
+            def json(self):
+                return {
+                    "results": [
+                        {
+                            "id": "malformed",
+                            "title": "x" * 2_001,
+                            "openAccess": True,
+                            "websites": ["javascript:alert(1)"],
+                        },
+                        {
+                            "id": "valid",
+                            "title": "Valid biodiversity evidence",
+                            "openAccess": False,
+                            "websites": ["https://example.org/record"],
+                        },
+                    ],
+                }
+
+        class Session:
+            def get(self, _url, **_kwargs):
+                return Response()
+
+        records = default_provider_adapters(session=Session())["gbif"](None, "biodiversity").records  # type: ignore[arg-type]
+        self.assertEqual([record.stable_id for record in records], ["gbif:valid"])
+        self.assertEqual(records[0].access_status, "metadata")
 
     def test_search_cache_hits_without_calling_adapter_and_survives_reopen(self) -> None:
         from app.services.science125_retrieval import (
