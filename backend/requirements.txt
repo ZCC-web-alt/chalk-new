@@ -11,6 +11,7 @@ scikit-learn
 PyMuPDF
 python-multipart>=0.0.9
 Pillow
+python-docx>=1.2.0,<2
 pandas
 openpyxl
 xlrd
