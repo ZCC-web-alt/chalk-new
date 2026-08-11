@@ -486,3 +486,81 @@ test("keeps a confirmed same-job review in the prompt-configuration boundary", a
   await expect(page.getByTestId("hypothesis-generation-blocked")).toHaveCount(0)
   await expect(page.getByTestId("start-hypothesis")).toBeVisible()
 })
+
+test("downloads Science 125 report exports from the backend API", async ({ page }) => {
+  const reportId = "11111111-1111-1111-1111-111111111111"
+  const batchId = "22222222-2222-2222-2222-222222222222"
+  const exportId = "33333333-3333-3333-3333-333333333333"
+  const timestamp = "2026-08-11T00:00:00Z"
+
+  await page.route("**/api/auth/me", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ user: { id: 1, username: "science125-user", createdAt: timestamp } }),
+  }))
+  await page.route("**/api/health", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ status: "ok" }),
+  }))
+  await page.route("**/api/science-125/batches", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([]),
+  }))
+  await page.route(/\/api\/science-125\/reports(?:\?.*)?$/, (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([{
+      reportId,
+      batchId,
+      questionId: question.id,
+      question: question.question,
+      questionZh: question.questionZh,
+      benchmarkDomain: question.benchmarkDomain,
+      primarySubdomain: question.primarySubdomain,
+      status: "SUCCEEDED",
+      attemptNumber: 1,
+      selectedHypothesisId: "H1",
+      selectedHypothesisConfidence: 0.8,
+      selectedHypothesisReason: "Highest confidence candidate.",
+      evidenceStatus: "sufficient",
+      selectedEvidenceCount: 3,
+      providerFamilies: ["doi_registry", "scholarly_index"],
+      model: "qwen3.8-max",
+      requestId: "request-1",
+      totalTokens: 100,
+      latencyMs: 1000,
+      estimatedCostCny: 0.01,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      sourceType: "interactive_job",
+      sourceJobId: "job-1",
+    }]),
+  }))
+  await page.route(`**/api/science-125/reports/${reportId}/exports`, (route) => route.fulfill({
+    status: 201,
+    contentType: "application/json",
+    body: JSON.stringify({
+      exportId,
+      batchId,
+      reportId,
+      format: "json",
+      fileName: `${question.id}.json`,
+      mimeType: "application/json",
+      sizeBytes: 100,
+      createdAt: timestamp,
+    }),
+  }))
+  await page.route(`**/api/science-125/exports/${exportId}`, (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ questionId: question.id }),
+  }))
+
+  await page.goto("/research/general/reports")
+  const downloadRequest = page.waitForRequest(`**/api/science-125/exports/${exportId}`)
+  await page.getByRole("button", { name: "JSON", exact: true }).click()
+
+  expect(new URL((await downloadRequest).url()).origin).toBe("http://127.0.0.1:8000")
+})

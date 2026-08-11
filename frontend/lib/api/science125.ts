@@ -1,4 +1,4 @@
-import { apiFetch } from "./client"
+import { apiFetch, apiUrl } from "./client"
 import type { ResearchOutput } from "./generated/research-v1"
 
 export type Science125Question = {
@@ -238,5 +238,5 @@ export async function createScience125BatchExport(batchId: string, format: Scien
 }
 
 export function science125ExportUrl(exportId: string) {
-  return `/api/science-125/exports/${encodeURIComponent(exportId)}`
+  return apiUrl(`/science-125/exports/${encodeURIComponent(exportId)}`)
 }
