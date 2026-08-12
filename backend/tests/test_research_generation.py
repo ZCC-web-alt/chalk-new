@@ -14,6 +14,14 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 
 class DeterministicResearchTransportTestCase(unittest.TestCase):
+    def test_science125_budget_covers_generation_and_one_schema_repair(self) -> None:
+        from app.services.research_generation import science125_generation_budget
+
+        budget = science125_generation_budget()
+
+        self.assertEqual(budget.max_total_tokens, 60_000)
+        self.assertEqual(budget.max_estimated_cost_cny, 3.0)
+
     def request(self, *, profile: str = "general_science", candidate_count: int = 3):
         from app.services.research_generation import ResearchGenerationRequest
 

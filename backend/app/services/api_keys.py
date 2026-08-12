@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import hmac
 import os
 from pathlib import Path
 from threading import RLock
@@ -10,6 +12,7 @@ from app.core.config import get_settings
 
 
 class ApiKeyStore:
+    _NCBI_VALIDATION_FIELD = "_ncbi_validation_sha256"
     PROVIDERS = (
         "dashscope",
         "semantic_scholar",
@@ -59,7 +62,32 @@ class ApiKeyStore:
             data = self._read()
             user_bucket = data.setdefault(str(user_id), {})
             user_bucket[provider] = api_key
+            if provider == "ncbi":
+                user_bucket.pop(self._NCBI_VALIDATION_FIELD, None)
             self._write(data)
+
+    def set_validated_ncbi_key(self, user_id: int, api_key: str) -> None:
+        if get_settings().is_production:
+            raise RuntimeError("Plaintext API-key storage is disabled in production.")
+        with self._lock:
+            data = self._read()
+            user_bucket = data.setdefault(str(user_id), {})
+            user_bucket["ncbi"] = api_key
+            user_bucket[self._NCBI_VALIDATION_FIELD] = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+            self._write(data)
+
+    def ncbi_key_validated(self, user_id: int, environ: Mapping[str, str] | None = None) -> bool:
+        env = dict(os.environ if environ is None else environ)
+        if str(env.get("SCIENCE125_NCBI_API_KEY", "")).strip():
+            return True
+        if get_settings().is_production:
+            return False
+        with self._lock:
+            bucket = self._read().get(str(user_id), {})
+            key = str(bucket.get("ncbi") or "")
+            expected = str(bucket.get(self._NCBI_VALIDATION_FIELD) or "")
+            actual = hashlib.sha256(key.encode("utf-8")).hexdigest() if key else ""
+            return bool(key and expected and hmac.compare_digest(actual, expected))
 
     def get_key(self, user_id: int, provider: str = "dashscope") -> str | None:
         if get_settings().is_production:
@@ -92,6 +120,11 @@ class ApiKeyStore:
                 value = bucket.get(provider)
                 if not value:
                     continue
+                if provider == "ncbi":
+                    expected = str(bucket.get(self._NCBI_VALIDATION_FIELD) or "")
+                    actual = hashlib.sha256(value.encode("utf-8")).hexdigest()
+                    if not expected or not hmac.compare_digest(actual, expected):
+                        continue
                 for variable_name in variable_names:
                     resolved[variable_name] = value
         return resolved

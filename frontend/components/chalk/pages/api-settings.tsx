@@ -9,6 +9,7 @@ type Provider = "dashscope" | "semantic_scholar" | "ncbi" | "ncbi_tool_email" | 
 type KeyStatus = {
   configured: Partial<Record<Provider, boolean>>
   effective?: { ncbi?: boolean }
+  validated?: { ncbi?: boolean }
 }
 
 type ProviderConfig = {
@@ -66,14 +67,20 @@ function ProviderStatusTag({
   provider,
   configured,
   ncbiEffective,
+  ncbiValidated,
 }: {
   provider: Provider
   configured: boolean
   ncbiEffective: boolean
+  ncbiValidated: boolean
 }) {
-  if (provider === "ncbi" || provider === "ncbi_tool_email") {
+  if (provider === "ncbi") {
+    if (ncbiValidated) return <Tag tone="green">已验证</Tag>
+    if (configured) return <Tag tone="orange">需重新配置</Tag>
+  }
+  if (provider === "ncbi_tool_email") {
     if (ncbiEffective) return <Tag tone="green">生效中</Tag>
-    if (configured) return <Tag tone="orange">待补全</Tag>
+    if (configured) return <Tag tone="orange">待生效</Tag>
   }
   return <Tag tone={configured ? "green" : "gray"}>{configured ? "已配置" : "未配置"}</Tag>
 }
@@ -83,6 +90,7 @@ export function ApiSettingsPage() {
   const [values, setValues] = useState<Record<Provider, string>>(EMPTY_VALUES)
   const [configured, setConfigured] = useState<Record<Provider, boolean>>(EMPTY_STATUS)
   const [ncbiEffective, setNcbiEffective] = useState(false)
+  const [ncbiValidated, setNcbiValidated] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<Provider | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -95,6 +103,7 @@ export function ApiSettingsPage() {
       const status = await apiFetch<KeyStatus>("/settings/api-keys")
       setConfigured({ ...EMPTY_STATUS, ...status.configured })
       setNcbiEffective(Boolean(status.effective?.ncbi))
+      setNcbiValidated(Boolean(status.validated?.ncbi))
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "配置状态加载失败")
     } finally {
@@ -117,6 +126,7 @@ export function ApiSettingsPage() {
       })
       setConfigured({ ...EMPTY_STATUS, ...status.configured })
       setNcbiEffective(Boolean(status.effective?.ncbi))
+      setNcbiValidated(Boolean(status.validated?.ncbi))
       setValues((current) => ({ ...current, [provider]: "" }))
       setMessage(`${PROVIDERS.find((item) => item.id === provider)?.label} 已保存`)
     } catch (saveError) {
@@ -139,7 +149,7 @@ export function ApiSettingsPage() {
                 <p className="truncate text-[13px] font-medium text-foreground">{provider.label}</p>
                 <p className="text-[11px] text-muted-foreground">{provider.hint}</p>
               </div>
-              <ProviderStatusTag provider={provider.id} configured={configured[provider.id]} ncbiEffective={ncbiEffective} />
+              <ProviderStatusTag provider={provider.id} configured={configured[provider.id]} ncbiEffective={ncbiEffective} ncbiValidated={ncbiValidated} />
             </div>
           ))}
         </div>
@@ -155,7 +165,7 @@ export function ApiSettingsPage() {
             <div key={provider.id} data-testid={`api-provider-${provider.id}`}>
               <div className="flex items-center justify-between gap-2">
                 <FieldLabel>{provider.label}</FieldLabel>
-                <ProviderStatusTag provider={provider.id} configured={configured[provider.id]} ncbiEffective={ncbiEffective} />
+                <ProviderStatusTag provider={provider.id} configured={configured[provider.id]} ncbiEffective={ncbiEffective} ncbiValidated={ncbiValidated} />
               </div>
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">

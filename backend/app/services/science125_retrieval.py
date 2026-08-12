@@ -1319,8 +1319,8 @@ RETRIEVAL_PROFILE_REGISTRY: Mapping[str, RetrievalProfile] = {
     "retrieval.chemistry.v1": _profile(
         "retrieval.chemistry.v1",
         ("crossref", "openalex", "europe_pmc"),
-        conditional=("doaj", "materials_project", "arxiv", "osti", "semantic_scholar"),
-        max_providers=5,
+        conditional=("doaj", "arxiv", "materials_project", "osti", "semantic_scholar"),
+        max_providers=6,
     ),
     "retrieval.chem.interface.v1": _profile(
         "retrieval.chem.interface.v1",
@@ -1331,15 +1331,25 @@ RETRIEVAL_PROFILE_REGISTRY: Mapping[str, RetrievalProfile] = {
         query_adapter="chem_interface_v1",
         max_providers=5,
     ),
-    "retrieval.medicine.v1": _profile("retrieval.medicine.v1", ("europe_pmc", "ncbi", "crossref", "openalex"), conditional=("clinical_trials",)),
-    "retrieval.biology.v1": _profile("retrieval.biology.v1", ("europe_pmc", "ncbi", "crossref", "openalex"), conditional=("clinical_trials",)),
+    "retrieval.medicine.v1": _profile(
+        "retrieval.medicine.v1",
+        ("europe_pmc", "ncbi", "crossref", "openalex"),
+        conditional=("clinical_trials", "doaj"),
+        max_providers=6,
+    ),
+    "retrieval.biology.v1": _profile(
+        "retrieval.biology.v1",
+        ("europe_pmc", "ncbi", "crossref", "openalex"),
+        conditional=("gbif_literature", "doaj", "clinical_trials"),
+        max_providers=6,
+    ),
     "retrieval.bio.genome_editing.v1": _profile(
         "retrieval.bio.genome_editing.v1",
-        ("europe_pmc", "ncbi", "crossref"),
-        conditional=("clinical_trials",),
-        required=("ncbi",),
-        required_env_vars=("SCIENCE125_NCBI_API_KEY", "SCIENCE125_CROSSREF_MAILTO"),
+        ("europe_pmc", "ncbi", "crossref", "openalex"),
+        conditional=("clinical_trials", "doaj"),
+        required_env_vars=("SCIENCE125_NCBI_TOOL_EMAIL", "SCIENCE125_CROSSREF_MAILTO"),
         query_adapter="bio_genome_editing_v1",
+        max_providers=6,
     ),
     "retrieval.astronomy.v1": _profile("retrieval.astronomy.v1", ("arxiv", "inspire", "openalex", "crossref")),
     "retrieval.astro.high_energy.v1": _profile(
@@ -1358,9 +1368,19 @@ RETRIEVAL_PROFILE_REGISTRY: Mapping[str, RetrievalProfile] = {
     "retrieval.information.v1": _profile("retrieval.information.v1", ("dblp", "arxiv", "openalex", "crossref")),
     "retrieval.information_science.v1": _profile("retrieval.information_science.v1", ("dblp", "arxiv", "openalex", "crossref")),
     "retrieval.neuroscience.v1": _profile("retrieval.neuroscience.v1", ("europe_pmc", "ncbi", "crossref", "openalex"), conditional=("clinical_trials",)),
-    "retrieval.ecology.v1": _profile("retrieval.ecology.v1", ("gbif", "openalex", "crossref", "europe_pmc"), conditional=("doaj",)),
+    "retrieval.ecology.v1": _profile(
+        "retrieval.ecology.v1",
+        ("gbif", "openalex", "crossref", "europe_pmc"),
+        conditional=("doaj",),
+        max_providers=5,
+    ),
     "retrieval.energy.v1": _profile("retrieval.energy.v1", ("osti", "crossref", "openalex", "arxiv"), conditional=("doaj",)),
-    "retrieval.ai.v1": _profile("retrieval.ai.v1", ("arxiv", "dblp", "openalex", "crossref"), conditional=("semantic_scholar",)),
+    "retrieval.ai.v1": _profile(
+        "retrieval.ai.v1",
+        ("arxiv", "dblp", "openalex", "crossref"),
+        conditional=("europe_pmc", "doaj", "semantic_scholar"),
+        max_providers=6,
+    ),
 }
 
 
@@ -1622,6 +1642,9 @@ def _ncbi_adapter(session: Any, environ: Mapping[str, str]) -> ProviderAdapter:
         )
         status = _response_status(response)
         if status >= 400:
+            error_text = str(_response_json(response).get("error") or "").casefold()
+            if "api key" in error_text and any(term in error_text for term in ("malformed", "wellformed", "invalid")):
+                status = 401
             return ProviderSearchResponse(status_code=status, headers=_response_headers(response))
         result = _response_json(response).get("esearchresult", {})
         ids = result.get("idlist", []) if isinstance(result, Mapping) else []
@@ -1762,6 +1785,14 @@ def _europe_pmc_adapter(session: Any) -> ProviderAdapter:
             stable_id = f"pmid:{pmid}" if pmid else f"doi:{doi}" if doi else f"europe_pmc:{item.get('id') or _hash_text(title)[:24]}"
             author_string = str(item.get("authorString") or "")
             authors = tuple(part.strip() for part in author_string.split(",") if part.strip())
+            pmcid = str(item.get("pmcid") or "").strip() or None
+            has_europe_pmc_full_text = bool(
+                pmcid
+                and any(
+                    str(item.get(field) or "").strip().upper() == "Y"
+                    for field in ("isOpenAccess", "inEPMC", "hasPDF", "hasBook")
+                )
+            )
             records.append(EvidenceRecord(
                 provider="europe_pmc",
                 stable_id=stable_id,
@@ -1770,8 +1801,14 @@ def _europe_pmc_adapter(session: Any) -> ProviderAdapter:
                 abstract=_strip_markup(item.get("abstractText")),
                 doi=doi,
                 pmid=pmid,
-                full_text_url=f"https://europepmc.org/article/MED/{pmid}" if pmid else None,
-                access_status="open_full_text" if str(item.get("isOpenAccess") or "").upper() == "Y" else "metadata",
+                full_text_url=(
+                    f"https://europepmc.org/articles/{pmcid}"
+                    if has_europe_pmc_full_text
+                    else f"https://europepmc.org/article/MED/{pmid}"
+                    if pmid
+                    else None
+                ),
+                access_status="open_full_text" if has_europe_pmc_full_text else "metadata",
                 retrieved_at=_utc_now(),
             ))
         return ProviderSearchResponse(status_code=status, headers=_response_headers(response), records=tuple(records))

@@ -117,6 +117,26 @@ class Science125QueryExpansionTestCase(unittest.TestCase):
         self.assertTrue(any("chromophore" in query for query in queries))
         self.assertTrue(any("solid-state synthesis" in query for query in queries))
 
+    def test_query_plan_does_not_truncate_domain_terms_mid_word(self) -> None:
+        from app.services.science125_queries import build_science125_query_plan
+
+        pigments = build_science125_query_plan(
+            "default",
+            "Are there more color pigments to discover?",
+            primary_subdomain="chem.colorant_materials",
+            question_id="S125-004",
+        )
+        pandemic = build_science125_query_plan(
+            "default",
+            "Can we predict the next pandemic?",
+            primary_subdomain="med.pandemic_forecasting",
+            question_id="S125-013",
+        )
+
+        self.assertTrue(any("structural characterization" in query for query in pigments.queries))
+        self.assertTrue(any("external validation" in query for query in pandemic.queries))
+        self.assertFalse(any(query.endswith((" toxici", " m")) for query in (*pigments.queries, *pandemic.queries)))
+
 
 if __name__ == "__main__":
     unittest.main()

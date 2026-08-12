@@ -23,6 +23,7 @@ from app.services.research_generation import (
     ResearchGenerationRequest,
     ResearchGenerationService,
     ResearchGenerationValidationError,
+    science125_generation_budget,
 )
 from app.services.science125_catalog import (
     get_science125_catalog,
@@ -1212,7 +1213,7 @@ class Science125ReportService:
         )
         config = self._required_llm_config(user_id)
         llm = load_llm_client()
-        budget = llm.LLMBudget(max_total_tokens=20_000, max_estimated_cost_cny=3.0)
+        budget = science125_generation_budget()
         request = ResearchGenerationRequest(
             question=catalog_item.question,
             profile="general_science",

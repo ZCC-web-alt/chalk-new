@@ -153,7 +153,7 @@ def _unique_terms(*groups: tuple[str, ...], limit: int) -> tuple[str, ...]:
     seen: set[str] = set()
     for group in groups:
         for raw_term in group:
-            term = _normalize_query(raw_term, limit=80).strip(" ,.;:?")
+            term = _normalize_query(raw_term, limit=MAX_QUERY_LENGTH).strip(" ,.;:?")
             key = term.casefold()
             if not term or key in seen:
                 continue

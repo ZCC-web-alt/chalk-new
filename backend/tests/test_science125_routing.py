@@ -136,7 +136,8 @@ class Science125RoutingManifestTestCase(unittest.TestCase):
         ncbi = next(item for item in genome_profile.provider_readiness if item.provider_id == "ncbi")
         self.assertFalse(ncbi.ready)
         self.assertEqual(ncbi.status, "blocked")
-        self.assertIn("NCBI_CREDENTIAL_REQUIRED", ncbi.missing_configuration_codes)
+        self.assertIn("NCBI_TOOL_EMAIL_REQUIRED", ncbi.missing_configuration_codes)
+        self.assertNotIn("NCBI_CREDENTIAL_REQUIRED", ncbi.missing_configuration_codes)
 
         for item in routing.questions:
             with self.subTest(question_id=item.question_id):

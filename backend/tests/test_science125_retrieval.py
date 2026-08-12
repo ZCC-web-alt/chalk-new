@@ -41,8 +41,16 @@ class Science125RetrievalRegistryTestCase(unittest.TestCase):
         chemistry = get_retrieval_profile("retrieval.chemistry.v1")
         self.assertEqual(
             chemistry.provider_ids[: chemistry.max_providers],
-            ("crossref", "openalex", "europe_pmc", "doaj", "materials_project"),
+            ("crossref", "openalex", "europe_pmc", "doaj", "arxiv", "materials_project"),
         )
+        biology = get_retrieval_profile("retrieval.biology.v1")
+        self.assertIn("doaj", biology.provider_ids[: biology.max_providers])
+        genome = get_retrieval_profile("retrieval.bio.genome_editing.v1")
+        self.assertIn("openalex", genome.provider_ids[: genome.max_providers])
+        ecology = get_retrieval_profile("retrieval.ecology.v1")
+        self.assertIn("doaj", ecology.provider_ids[: ecology.max_providers])
+        ai = get_retrieval_profile("retrieval.ai.v1")
+        self.assertIn("europe_pmc", ai.provider_ids[: ai.max_providers])
         materials_project = get_provider("materials_project")
         self.assertEqual(materials_project.family, "materials_database")
         self.assertEqual(materials_project.capabilities, ("structured_material_data",))
@@ -84,7 +92,8 @@ class Science125RetrievalRegistryTestCase(unittest.TestCase):
             environ={"SCIENCE125_NCBI_TOOL_EMAIL": "team@example.org"},
         )
         self.assertFalse(pilot.ready)
-        self.assertIn("MISSING_SCIENCE125_NCBI_API_KEY", pilot.missing_configuration_codes)
+        self.assertNotIn("MISSING_SCIENCE125_NCBI_API_KEY", pilot.missing_configuration_codes)
+        self.assertIn("MISSING_SCIENCE125_CROSSREF_MAILTO", pilot.missing_configuration_codes)
 
 
 class Science125RateLimiterTestCase(unittest.TestCase):
@@ -515,6 +524,38 @@ class Science125RateLimiterTestCase(unittest.TestCase):
         self.assertEqual(inspire.full_text_url, "https://arxiv.org/pdf/2401.00001")
         self.assertEqual(inspire.access_status, "open_full_text")
         self.assertEqual(adapters["nasa_ads"](None, "cosmic rays").records[0].ads_id, "2026ApJ...1A")  # type: ignore[arg-type]
+
+    def test_europe_pmc_recognizes_pmc_full_text_indicators(self) -> None:
+        from app.services.science125_retrieval import default_provider_adapters
+
+        class Response:
+            status_code = 200
+            headers: dict[str, str] = {}
+
+            def json(self):
+                return {
+                    "resultList": {
+                        "result": [{
+                            "id": "PMC1234567",
+                            "pmcid": "PMC1234567",
+                            "pmid": "1234567",
+                            "title": "Open genome editing full text",
+                            "abstractText": "CRISPR delivery and off-target safety.",
+                            "inEPMC": "Y",
+                            "hasPDF": "Y",
+                            "isOpenAccess": "N",
+                        }],
+                    },
+                }
+
+        class Session:
+            def get(self, _url, **_kwargs):
+                return Response()
+
+        record = default_provider_adapters(session=Session())["europe_pmc"](None, "genome editing").records[0]  # type: ignore[arg-type]
+
+        self.assertEqual(record.access_status, "open_full_text")
+        self.assertEqual(record.full_text_url, "https://europepmc.org/articles/PMC1234567")
 
     def test_default_adapters_include_and_normalize_registered_public_indexes(self) -> None:
         from app.services.science125_retrieval import default_provider_adapters

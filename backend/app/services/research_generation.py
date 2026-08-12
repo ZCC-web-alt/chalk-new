@@ -25,6 +25,16 @@ _chat_result = _llm_client._chat_result
 TelemetrySink = Callable[[Mapping[str, Any]], None]
 TEST_TRANSPORT_ENV = "CHALK_RESEARCH_GENERATION_TRANSPORT"
 DETERMINISTIC_FAIL_ONCE_CONTEXT = "__CHALK_TEST_FAIL_ONCE__"
+SCIENCE125_MAX_TOTAL_TOKENS = 60_000
+SCIENCE125_MAX_ESTIMATED_COST_CNY = 3.0
+
+
+def science125_generation_budget() -> LLMBudget:
+    """Cover one Qwen generation plus the contract's single repair call."""
+    return LLMBudget(
+        max_total_tokens=SCIENCE125_MAX_TOTAL_TOKENS,
+        max_estimated_cost_cny=SCIENCE125_MAX_ESTIMATED_COST_CNY,
+    )
 
 
 class ResearchGenerationValidationError(ValueError):
@@ -653,6 +663,9 @@ __all__ = [
     "ResearchGenerationService",
     "ResearchGenerationTransport",
     "ResearchGenerationValidationError",
+    "SCIENCE125_MAX_ESTIMATED_COST_CNY",
+    "SCIENCE125_MAX_TOTAL_TOKENS",
     "generation_prompt",
     "research_generation_service",
+    "science125_generation_budget",
 ]

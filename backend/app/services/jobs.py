@@ -2482,7 +2482,9 @@ class JobService:
         records, evidence_snapshot, evidence_snapshot_hash, policy_hash = self._science125_reviewed_evidence(job)
         self._raise_if_cancelled(job)
         config = self._required_science125_llm_config(job.user_id)
-        budget = llm_client().LLMBudget(max_total_tokens=20_000, max_estimated_cost_cny=3.0)
+        from app.services.research_generation import science125_generation_budget
+
+        budget = science125_generation_budget()
         request = ResearchGenerationRequest(
             question=question,
             profile="general_science",

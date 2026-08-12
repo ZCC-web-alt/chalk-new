@@ -438,7 +438,6 @@ class ApiTestCase(unittest.TestCase):
         for provider, value in [
             ("dashscope", "sk-test"),
             ("semantic_scholar", "semantic-test"),
-            ("ncbi", "ncbi-test"),
             ("ncbi_tool_email", "team@example.org"),
             ("crossref_mailto", "researcher@example.com"),
             ("nasa_ads", "ads-test-token"),
@@ -450,9 +449,25 @@ class ApiTestCase(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 200, response.text)
 
+        class NcbiResponse:
+            status_code = 200
+
+            @staticmethod
+            def json():
+                return {"esearchresult": {"idlist": []}}
+
+        with patch("app.api.routers.settings.requests.get", return_value=NcbiResponse()) as validate_ncbi:
+            response = self.client.put(
+                "/api/settings/api-keys",
+                json={"provider": "ncbi", "apiKey": "a" * 36},
+            )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(validate_ncbi.call_count, 1)
+
         status_response = self.client.get("/api/settings/api-keys")
         self.assertEqual(status_response.status_code, 200, status_response.text)
-        configured = status_response.json()["configured"]
+        status_payload = status_response.json()
+        configured = status_payload["configured"]
         self.assertEqual(configured, {
             "dashscope": True,
             "semantic_scholar": True,
@@ -462,7 +477,8 @@ class ApiTestCase(unittest.TestCase):
             "nasa_ads": True,
             "materials_project": True,
         })
-        self.assertTrue(status_response.json()["effective"]["ncbi"])
+        self.assertTrue(status_payload["validated"]["ncbi"])
+        self.assertTrue(status_payload["effective"]["ncbi"])
         self.assertNotIn("sk-test", status_response.text)
         self.assertNotIn("semantic-test", status_response.text)
         self.assertNotIn("ads-test-token", status_response.text)
@@ -470,7 +486,7 @@ class ApiTestCase(unittest.TestCase):
         resolved = api_keys_module.api_key_store.science125_environment(1, environ={})
         self.assertEqual(resolved["DASHSCOPE_API_KEY"], "sk-test")
         self.assertEqual(resolved["SCIENCE125_SEMANTIC_SCHOLAR_API_KEY"], "semantic-test")
-        self.assertEqual(resolved["SCIENCE125_NCBI_API_KEY"], "ncbi-test")
+        self.assertEqual(resolved["SCIENCE125_NCBI_API_KEY"], "a" * 36)
         self.assertEqual(resolved["SCIENCE125_NCBI_TOOL_EMAIL"], "team@example.org")
         self.assertEqual(resolved["MATERIALS_PROJECT_API_KEY"], "mp-test-key")
         self.assertEqual(resolved["MP_API_KEY"], "mp-test-key")
@@ -499,11 +515,45 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(invalid_email.json()["error"]["code"], "INVALID_NCBI_TOOL_EMAIL")
         self.assertNotIn("not-an-email", invalid_email.text)
 
+        class InvalidNcbiResponse:
+            status_code = 400
+
+            @staticmethod
+            def json():
+                return {"error": "API key not wellformed"}
+
+        with patch("app.api.routers.settings.requests.get", return_value=InvalidNcbiResponse()):
+            invalid_ncbi = self.client.put(
+                "/api/settings/api-keys",
+                json={"provider": "ncbi", "apiKey": "b" * 36},
+            )
+        self.assertEqual(invalid_ncbi.status_code, 422, invalid_ncbi.text)
+        self.assertEqual(invalid_ncbi.json()["error"]["code"], "INVALID_NCBI_API_KEY")
+        self.assertNotIn("b" * 36, invalid_ncbi.text)
+
         invalid = self.client.put(
             "/api/settings/api-keys",
             json={"provider": "arbitrary", "apiKey": "secret"},
         )
         self.assertEqual(invalid.status_code, 422, invalid.text)
+
+    def test_unverified_stored_ncbi_key_is_not_sent_to_ncbi(self) -> None:
+        from app.services import api_keys as api_keys_module
+
+        self.register()
+        api_keys_module.api_key_store.set_key(1, "ncbi", "legacy-unverified-key")
+        api_keys_module.api_key_store.set_key(1, "ncbi_tool_email", "team@example.org")
+
+        status_response = self.client.get("/api/settings/api-keys")
+        self.assertEqual(status_response.status_code, 200, status_response.text)
+        status_payload = status_response.json()
+        self.assertTrue(status_payload["configured"]["ncbi"])
+        self.assertFalse(status_payload["validated"]["ncbi"])
+        self.assertTrue(status_payload["effective"]["ncbi"])
+
+        resolved = api_keys_module.api_key_store.science125_environment(1, environ={})
+        self.assertNotIn("SCIENCE125_NCBI_API_KEY", resolved)
+        self.assertEqual(resolved["SCIENCE125_NCBI_TOOL_EMAIL"], "team@example.org")
 
     def test_production_disables_plaintext_api_key_storage(self) -> None:
         from app.services.api_keys import ApiKeyStore

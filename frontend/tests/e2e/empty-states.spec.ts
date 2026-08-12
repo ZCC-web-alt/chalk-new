@@ -56,7 +56,8 @@ test("API settings lets a user save external provider keys without returning tok
           nasa_ads: savedProviders.has("nasa_ads"),
           materials_project: savedProviders.has("materials_project"),
         },
-        effective: { ncbi: savedProviders.has("ncbi") && savedProviders.has("ncbi_tool_email") },
+        effective: { ncbi: savedProviders.has("ncbi_tool_email") },
+        validated: { ncbi: savedProviders.has("ncbi") },
       }),
     })
   })
@@ -68,7 +69,7 @@ test("API settings lets a user save external provider keys without returning tok
   await ncbiProvider.getByLabel("NCBI API Key").fill("ncbi-secret-key")
   await ncbiProvider.getByRole("button", { name: "保存" }).click()
   expect(savedPayload).toEqual({ provider: "ncbi", apiKey: "ncbi-secret-key" })
-  await expect(ncbiProvider).toContainText("待补全")
+  await expect(ncbiProvider).toContainText("已验证")
 
   const ncbiEmailProvider = page.getByTestId("api-provider-ncbi_tool_email")
   const ncbiEmailInput = ncbiEmailProvider.getByLabel("NCBI Tool Email")
@@ -76,7 +77,7 @@ test("API settings lets a user save external provider keys without returning tok
   await ncbiEmailInput.fill("team@example.org")
   await ncbiEmailProvider.getByRole("button", { name: "保存" }).click()
   expect(savedPayload).toEqual({ provider: "ncbi_tool_email", apiKey: "team@example.org" })
-  await expect(ncbiProvider).toContainText("生效中")
+  await expect(ncbiProvider).toContainText("已验证")
   await expect(ncbiEmailProvider).toContainText("生效中")
 
   const nasaProvider = page.getByTestId("api-provider-nasa_ads")
