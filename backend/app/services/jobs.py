@@ -87,7 +87,7 @@ from app.services.science125_retrieval import (
     profile_readiness,
     search_science125,
 )
-from app.services.science125_queries import build_science125_refinement_queries
+from app.services.science125_queries import build_science125_query_plan
 from app.services.science125_relevance import SCORING_VERSION, qualify_science125_evidence
 from app.services.modeling_generation import (
     MsGuideExtraction,
@@ -1595,11 +1595,19 @@ class JobService:
         adapters = default_provider_adapters(environ=credential_environment)
         search_window = f"daily:{datetime.now(UTC).date().isoformat()}"
         searches: list[tuple[str, Any]] = []
+        query_plan = build_science125_query_plan(
+            retrieval_profile.query_adapter,
+            query_text,
+            primary_subdomain=route.primary_subdomain,
+            question_id=science125_id,
+        )
 
-        def run_search(search_query: str, *, refinement_index: int | None = None) -> None:
-            parameters: dict[str, Any] = {"science125Id": science125_id}
-            if refinement_index is not None:
-                parameters["refinementIndex"] = refinement_index
+        def run_search(search_query: str, *, query_index: int) -> None:
+            parameters: dict[str, Any] = {
+                "science125Id": science125_id,
+                "queryIndex": query_index,
+                "queryPlanVersion": "science125-query-plan-v1",
+            }
             searches.append((
                 search_query,
                 search_science125(
@@ -1625,8 +1633,8 @@ class JobService:
             ).strip().casefold()
 
         def qualification(record: EvidenceRecord):
-            scoring_query = " ".join(search_query for search_query, _result in searches)
-            return qualify_science125_evidence(science125_id, scoring_query or query_text, record)
+            scoring_query = " ".join((query_plan.topic_summary, *query_plan.keywords))
+            return qualify_science125_evidence(science125_id, scoring_query, record)
 
         def merged_records() -> list[EvidenceRecord]:
             merged: dict[str, EvidenceRecord] = {}
@@ -1668,24 +1676,19 @@ class JobService:
                 ),
             }
 
-        run_search(query_text)
-        self._raise_if_cancelled(job)
-        refinement_queries: list[str] = []
-        if not readiness_for(merged_records())["ready"]:
-            planned_refinements = build_science125_refinement_queries(
-                retrieval_profile.query_adapter,
-                query_text,
-                primary_subdomain=route.primary_subdomain,
+        for index, planned_query in enumerate(query_plan.queries, 1):
+            self._update_progress(
+                job,
+                progress=10 + int(index / max(1, len(query_plan.queries)) * 50),
+                message=f"Searching extracted topic keywords ({index}/{len(query_plan.queries)}).",
             )
-            for index, refined_query in enumerate(planned_refinements, 1):
-                self._update_progress(
-                    job,
-                    progress=20 + index * 15,
-                    message=f"Refining the literature search ({index}/{len(planned_refinements)}).",
-                )
-                run_search(refined_query, refinement_index=index)
-                refinement_queries.append(refined_query)
-                self._raise_if_cancelled(job)
+            run_search(planned_query, query_index=index)
+            self._raise_if_cancelled(job)
+            if readiness_for(merged_records())["ready"]:
+                break
+
+        executed_queries = [search_query for search_query, _result in searches]
+        refinement_queries = executed_queries[1:]
 
         records = merged_records()
         evidence_readiness = readiness_for(records)
@@ -1747,6 +1750,19 @@ class JobService:
             "refinementQueries": refinement_queries,
             "query": {
                 "queryText": query_text,
+                "originalQueryText": query_text,
+                "topicSummary": query_plan.topic_summary,
+                "keywords": list(query_plan.keywords),
+                "queries": executed_queries,
+                "queryRuns": [
+                    {
+                        "query": search_query,
+                        "queryHash": search_result.query_hash,
+                        "cacheKey": search_result.cache_key,
+                        "resultCount": len(search_result.evidence),
+                    }
+                    for search_query, search_result in searches
+                ],
                 "science125Id": science125_id,
                 "retrievalProfile": route.retrieval_profile,
                 "queryHash": searches[0][1].query_hash,

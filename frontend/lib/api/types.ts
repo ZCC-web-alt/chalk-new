@@ -257,7 +257,20 @@ export type LiteratureSearchJobResult = {
   refinementQueries?: string[]
   providerDiagnostics?: Array<Record<string, unknown>>
   policyHashes?: Record<string, string>
-  query: Record<string, unknown>
+  query: {
+    queryText?: string
+    originalQueryText?: string
+    topicSummary?: string
+    keywords?: string[]
+    queries?: string[]
+    queryRuns?: Array<{
+      query: string
+      queryHash: string
+      cacheKey: string
+      resultCount: number
+    }>
+    [key: string]: unknown
+  }
 }
 
 export type DocumentAnalysisType = "summary" | "images" | "structures" | "safety" | "sop" | "reactions" | "translation"

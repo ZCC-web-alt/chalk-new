@@ -173,7 +173,15 @@ const completedSearch = {
       ready: true,
     },
     refinementQueries: ["operando nanoscale interface spectroscopy"],
-    query: {},
+    query: {
+      originalQueryText: "How can interface phenomena be measured on the microscopic level?",
+      topicSummary: "interface; microscopic; nanoscale; transport kinetics",
+      keywords: ["interface", "microscopic", "nanoscale", "operando spectroscopy", "transport kinetics", "calibration"],
+      queries: [
+        "interface interfacial phenomena microscopic nanoscale operando spectroscopy",
+        "interface interfacial phenomena microscopic operando spectroscopy in situ microscopy",
+      ],
+    },
   },
   createdAt: "2026-07-15T00:00:00Z",
   updatedAt: "2026-07-15T00:00:01Z",
@@ -434,6 +442,23 @@ test("counts only medium-or-higher full text and explains every rejected lead", 
   await expect(page.getByTestId("science125-evidence-ineligible-result-metadata")).toContainText("仅元数据线索")
   await expect(page.getByTestId("science125-evidence-ineligible-result-low")).toContainText("相关度不足")
   await expect(page.getByTestId("use-literature-for-hypothesis")).toBeDisabled()
+})
+
+test("shows the server-extracted topic, keywords, and short provider queries", async ({ page }) => {
+  await mockScience125Workspace(page, {
+    jobId: completedSearch.id,
+    selectedIds: [],
+    confirmed: false,
+  })
+
+  await page.goto("/research/general/new?question=S125-006&stage=presearch")
+
+  await expect(page.getByTestId("science125-topic-summary")).toContainText("interface")
+  await expect(page.getByTestId("science125-query-plan")).toContainText("operando spectroscopy")
+  await expect(page.getByTestId("science125-executed-queries").locator("li")).toHaveCount(2)
+  await expect(page.getByTestId("science125-executed-queries")).not.toContainText(
+    "How can interface phenomena be measured on the microscopic level?",
+  )
 })
 
 test("does not let reviewed PDF pages alone bypass the evidence gate", async ({ page }) => {

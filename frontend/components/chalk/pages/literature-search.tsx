@@ -416,6 +416,22 @@ export function SearchPage({
         {science125Id && science125Profile && science125Profile.providerReadiness.some((item) => !item.ready) && <p data-testid="science125-provider-readiness" className="mt-2 text-xs text-warning">必需检索源尚未就绪：{science125Profile.providerReadiness.filter((item) => !item.ready).flatMap((item) => item.missingConfigurationCodes).join("、") || "等待 provider cooldown 或服务恢复"}</p>}
         {science125Id && job?.status === "SUCCEEDED" && diagnostics?.evidenceStatus === "evidence_insufficient" && <p data-testid="science125-evidence-insufficient" className="mt-2 text-xs text-warning">自动补检后仍未找到足够的中高相关全文；请从标为“可用于生成”的结果中审核证据，或补充你已核验的 PDF 页。</p>}
         {science125Id && (diagnostics?.refinementQueries?.length ?? 0) > 0 && <p data-testid="science125-refinement-summary" className="mt-1 text-xs text-muted-foreground">系统已按该题目的领域路线自动执行 {diagnostics?.refinementQueries?.length} 条精确子查询；所有请求均受来源官方限频、缓存和冷却状态约束。</p>}
+        {science125Id && diagnostics?.query?.topicSummary && (
+          <div data-testid="science125-query-plan" className="mt-3 border-t border-border pt-3 text-xs">
+            <p><span className="font-medium text-foreground">检索主题：</span><span data-testid="science125-topic-summary" className="text-muted-foreground">{diagnostics.query.topicSummary}</span></p>
+            {(diagnostics.query.keywords?.length ?? 0) > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className="font-medium text-foreground">提取关键词：</span>
+                {diagnostics.query.keywords?.map((keyword) => <Tag key={keyword}>{keyword}</Tag>)}
+              </div>
+            )}
+            {(diagnostics.query.queries?.length ?? 0) > 0 && (
+              <ol data-testid="science125-executed-queries" className="mt-2 space-y-1 text-muted-foreground">
+                {diagnostics.query.queries?.map((query, index) => <li key={`${index}-${query}`}><span className="font-medium text-foreground">查询 {index + 1}：</span>{query}</li>)}
+              </ol>
+            )}
+          </div>
+        )}
       </Panel>
 
       {science125Id && <DocumentPageEvidence

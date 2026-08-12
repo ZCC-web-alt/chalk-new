@@ -5,6 +5,7 @@ import sys
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
@@ -361,6 +362,60 @@ class Science125InteractiveJobImportTestCase(unittest.TestCase):
         self.assertEqual(seen[0], "S125-001")
         self.assertEqual(seen[-1], "S125-125")
         self.assertEqual(seen, sorted(seen))
+
+    def test_batch_retrieval_uses_short_query_plan_and_persists_its_audit_snapshot(self) -> None:
+        from app.services.science125_localization import get_science125_localization
+        from app.services.science125_retrieval import Science125SearchResult
+
+        batch = self.service.create_batch(user_id=1, question_ids=("S125-006",))
+        localization = get_science125_localization("S125-006")
+        self.assertIsNotNone(localization)
+        original_query = str(localization.recommended_query)
+        empty = Science125SearchResult(
+            profile_id="retrieval.chem.interface.v1",
+            query_hash="a" * 64,
+            cache_key="b" * 64,
+            evidence=(),
+            diagnostics=(),
+        )
+        context_index = SimpleNamespace(items={
+            "S125-006": SimpleNamespace(
+                source_context="Hash-verified booklet context about microscopic interface measurement.",
+            ),
+        })
+
+        with patch(
+            "app.services.science125_report_service.load_science125_context_index",
+            return_value=context_index,
+        ), patch(
+            "app.services.science125_report_service.api_keys.api_key_store.science125_environment",
+            return_value={},
+        ), patch(
+            "app.services.science125_report_service.default_provider_adapters",
+            return_value={},
+        ), patch(
+            "app.services.science125_report_service.search_science125",
+            return_value=empty,
+        ) as search:
+            report = self.service.run_report_item(
+                user_id=1,
+                batch_id=batch.id,
+                question_id="S125-006",
+            )
+
+        self.assertEqual(report.status, "BLOCKED_EVIDENCE")
+        self.assertGreaterEqual(search.call_count, 3)
+        self.assertLessEqual(search.call_count, 4)
+        executed = [call.args[1] for call in search.call_args_list]
+        self.assertTrue(all(query != original_query for query in executed))
+        self.assertTrue(all(len(query) <= 180 for query in executed))
+        self.assertEqual(report.retrieval_snapshot["originalQueryText"], original_query)
+        self.assertTrue(report.retrieval_snapshot["topicSummary"])
+        self.assertGreaterEqual(len(report.retrieval_snapshot["keywords"]), 6)
+        self.assertEqual(
+            [item["query"] for item in report.retrieval_snapshot["queries"]],
+            executed,
+        )
 
     def test_batch_pauses_on_rate_limit_and_retry_increments_attempt(self) -> None:
         from app.services.science125_report_service import Science125ReportError

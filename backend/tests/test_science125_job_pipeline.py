@@ -152,10 +152,19 @@ class Science125JobPipelineTestCase(unittest.TestCase):
         )
         self.assertEqual(output["relevanceScoringVersion"], "science125-relevance-v2")
         self.assertEqual(output["evidenceStatus"], "evidence_insufficient")
+        self.assertEqual(output["query"]["originalQueryText"], "microscopic interface measurement")
+        self.assertTrue(output["query"]["topicSummary"])
+        self.assertGreaterEqual(len(output["query"]["keywords"]), 6)
+        self.assertEqual(len(output["query"]["queries"]), search.call_count)
+        self.assertTrue(all(
+            call.args[1] in output["query"]["queries"]
+            for call in search.call_args_list
+        ))
         self.assertEqual(adapters.call_count, 1)
         self.assertEqual(search.call_args_list[0].args[0], "retrieval.chem.interface.v1")
-        self.assertEqual(search.call_args_list[0].args[1], "microscopic interface measurement")
-        self.assertEqual(search.call_count, 3)
+        self.assertNotEqual(search.call_args_list[0].args[1], "microscopic interface measurement")
+        self.assertGreaterEqual(search.call_count, 2)
+        self.assertLessEqual(search.call_count, 4)
         self.assertTrue(all("provider_ids" not in call.kwargs for call in search.call_args_list))
 
     def test_science125_search_refines_when_initial_evidence_is_not_eligible(self) -> None:
@@ -222,8 +231,10 @@ class Science125JobPipelineTestCase(unittest.TestCase):
         self.assertEqual(output["evidenceStatus"], "ready_for_review")
         self.assertEqual(output["evidenceReadiness"]["eligibleFullTextCount"], 3)
         self.assertGreaterEqual(output["evidenceReadiness"]["providerFamilyCount"], 2)
-        self.assertEqual(len(output["refinementQueries"]), 2)
-        self.assertEqual(search.call_count, 3)
+        self.assertGreaterEqual(len(output["refinementQueries"]), 1)
+        self.assertEqual(output["refinementQueries"], output["query"]["queries"][1:])
+        self.assertGreaterEqual(search.call_count, 2)
+        self.assertLessEqual(search.call_count, 4)
         metadata_row = next(row for row in output["results"] if row["id"] == "doi:10.1000/metadata")
         self.assertFalse(metadata_row["evidenceEligibility"]["eligibleForGeneration"])
         self.assertIn("ACCESS_NOT_FULL_TEXT", metadata_row["evidenceEligibility"]["reasons"])

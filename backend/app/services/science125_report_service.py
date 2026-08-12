@@ -35,7 +35,7 @@ from app.services.science125_prompts import (
     SCIENCE125_PROMPT_VERSION,
     load_science125_prompt_registry,
 )
-from app.services.science125_queries import build_science125_refinement_queries
+from app.services.science125_queries import build_science125_query_plan
 from app.services.science125_relevance import EvidenceQualification, qualify_science125_evidence
 from app.services.science125_report_store import (
     Science125ReportStore,
@@ -1107,17 +1107,17 @@ class Science125ReportService:
 
         credential_environment = api_keys.api_key_store.science125_environment(user_id)
         adapters = default_provider_adapters(environ=credential_environment)
-        refinement_queries = build_science125_refinement_queries(
+        query_plan = build_science125_query_plan(
             retrieval_profile.query_adapter,
             query,
             primary_subdomain=route.primary_subdomain,
+            question_id=question_id,
         )
-        queries = (query, *refinement_queries)
         all_records: list[EvidenceRecord] = []
         diagnostics: list[dict[str, Any]] = []
         query_results: list[dict[str, Any]] = []
         selection: Science125EvidenceSelection | None = None
-        for current_query in queries:
+        for current_query in query_plan.queries:
             result = search_science125(
                 route.retrieval_profile,
                 current_query,
@@ -1136,7 +1136,7 @@ class Science125ReportService:
                 "resultCount": len(records),
                 "diagnostics": [diagnostic.to_dict() for diagnostic in result.diagnostics],
             })
-            scoring_query = " ".join(str(item["query"]) for item in query_results)
+            scoring_query = " ".join((query_plan.topic_summary, *query_plan.keywords))
             selection = select_science125_evidence(
                 question_id=question_id,
                 query=scoring_query,
@@ -1146,10 +1146,21 @@ class Science125ReportService:
             if selection.evidence_status == "sufficient":
                 break
         if selection is None:
-            selection = select_science125_evidence(question_id=question_id, query=query, records=(), max_selected=6)
+            selection = select_science125_evidence(
+                question_id=question_id,
+                query=" ".join((query_plan.topic_summary, *query_plan.keywords)),
+                records=(),
+                max_selected=6,
+            )
+        executed_queries = tuple(str(item["query"]) for item in query_results)
+        refinement_queries = executed_queries[1:]
         retrieval_snapshot = {
             "profileId": route.retrieval_profile,
             "queryAdapter": retrieval_profile.query_adapter,
+            "originalQueryText": query,
+            "topicSummary": query_plan.topic_summary,
+            "keywords": list(query_plan.keywords),
+            "plannedQueries": list(query_plan.queries),
             "queries": query_results,
             "diagnostics": diagnostics,
             "resultCount": len(all_records),
